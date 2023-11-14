@@ -118,10 +118,12 @@ def main():
     for t in listTokens:
         donate_initial(t, notional, fundingAccount)
         if ListedTokens[t]["pCashOracle"] == "":
+            # These contracts are verified automatically on Arbiscan
             print("DEPLOYING PCASH ORACLE FOR: ", t)
             pCash = _deploy_pcash_oracle(t, notional, deployer)
             ListedTokens[t]["pCashOracle"] = pCash.address
         if "baseOracle" in ListedTokens[t] and ListedTokens[t]["ethOracle"] == "":
+            # These contracts are verified automatically on Arbiscan
             print("DEPLOYING ETH ORACLE FOR: ", t)
             ethOracle = _deploy_chainlink_oracle(t, deployer)
             ListedTokens[t]["ethOracle"] = ethOracle.address

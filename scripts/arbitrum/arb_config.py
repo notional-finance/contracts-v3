@@ -606,8 +606,8 @@ ListedTokens = {
         "quoteOracle": ChainlinkOracles["ETH/USD"],
         "invertBase": False,
         "invertQuote": False,
-        "pCashOracle": "",
-        "ethOracle": "",
+        "pCashOracle": "0x46D2A413B066aE3A8d6E91BeA96872f541668689",
+        "ethOracle": "0x394235A5BD3c90aD1c504b64329bCb2e06B7BaFe",
 
         "allowDebt": True,
         "buffer": 129,
@@ -634,8 +634,8 @@ ListedTokens = {
         "quoteOracle": ChainlinkOracles["ETH/USD"],
         "invertBase": False,
         "invertQuote": False,
-        "pCashOracle": "",
-        "ethOracle": "",
+        "pCashOracle": "0x1EcE339C5e96B4EDDC14aebb86007346c9c22d2b",
+        "ethOracle": "0x7283b4909127149EaDd229fae945f9E4911B69aE",
 
         "allowDebt": True,
         "buffer": 129,
@@ -662,8 +662,8 @@ ListedTokens = {
         "quoteOracle": ChainlinkOracles["ETH/USD"],
         "invertBase": False,
         "invertQuote": False,
-        "pCashOracle": "",
-        "ethOracle": "",
+        "pCashOracle": "0x8335E695C8d14cc7e93e8c4cf0a919D9cC8705a6",
+        "ethOracle": "0x0fea5ea82add0efD3e197893dBFa40349E4B254f",
 
         "allowDebt": True,
         "buffer": 156,
