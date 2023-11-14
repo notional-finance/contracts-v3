@@ -108,7 +108,7 @@ def list_currency(notional, symbol):
     return callData
 
 def main():
-    listTokens = ['RDNT']
+    listTokens = ['UNI', 'LINK', 'LDO']
     fundingAccount = accounts.at("0x7d7935EDd4b6cDB5f34B0E1cCEAF85a3C4A11254", force=True)
     (addresses, notional, note, router, networkName) = get_addresses()
     deployer = accounts.at("0x8F5ea3CDe898B208280c0e93F3aDaaf1F5c35a7e", force=True)
