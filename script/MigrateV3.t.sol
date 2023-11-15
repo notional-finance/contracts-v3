@@ -3,7 +3,11 @@ pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "forge-std/Script.sol";
-import {UpgradeRouter} from "./utils/UpgradeRouter.s.sol";
+import { UpgradeRouter } from "./utils/UpgradeRouter.s.sol";
+import { MigratePrimeCash } from "@notional-v3/external/patchfix/MigratePrimeCash.sol";
+import { PauseRouter } from "@notional-v3/external/PauseRouter.sol";
+import { Router } from "@notional-v3/external/Router.sol";
+import { nProxy } from "../contracts/proxy/nProxy.sol";
 
 contract MigrateToV3 is UpgradeRouter {
     address BEACON_DEPLOYER = 0x0D251Bd6c14e02d34f68BFCB02c54cBa3D108122;
@@ -17,7 +21,7 @@ contract MigrateToV3 is UpgradeRouter {
     modifier usingAccount(address account) {
         vm.startPrank(account);
         _;
-        vm.stopPrank(account);
+        vm.stopPrank();
     }
 
 //     function deployBeacons(EmptyProxy emptyImpl) internal usingAccount(BEACON_DEPLOYER) {
@@ -62,9 +66,9 @@ contract MigrateToV3 is UpgradeRouter {
         (finalRouter, pauseRouter) = deployRouter(libs, actions);
 
         m = new MigratePrimeCash(
-            nProxy(address(NOTIONAL)).getImplementation(),
-            pauseRouter,
-            address(NOTIONAL)
+            nProxy(payable(address(NOTIONAL))).getImplementation(),
+            address(pauseRouter),
+            NOTIONAL
         );
     }
 
@@ -94,7 +98,7 @@ contract MigrateToV3 is UpgradeRouter {
 //         upgradeTo(finalRouter);
 //     }
 
-    function run() {
+    function run() public {
         // TODO: upgrade router and mark down reserves
         // TODO: push out vault user profits
 

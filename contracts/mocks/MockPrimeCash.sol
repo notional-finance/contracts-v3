@@ -67,16 +67,16 @@ contract MockPrimeCashOracle is IPrimeCashHoldingsOracle {
     }
 
     function getRedemptionCalldataForRebalancing(
-        address[] calldata holdings, 
-        uint256[] calldata withdrawAmounts
+        address[] calldata /* holdings */, 
+        uint256[] calldata /* withdrawAmounts */
     ) external view override returns (
         RedeemData[] memory redeemData
     ) {
     }
 
     function getDepositCalldataForRebalancing(
-        address[] calldata holdings, 
-        uint256[] calldata depositAmount
+        address[] calldata /* holdings */, 
+        uint256[] calldata /* depositAmount */
     ) external view override returns (
         DepositData[] memory depositData
     ) {

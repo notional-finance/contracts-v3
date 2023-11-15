@@ -6,6 +6,13 @@ remappings = [
     "@openzeppelin-4.6/=node_modules/@openzeppelin-4.6/",
     "@openzeppelin/=node_modules/@openzeppelin/",
     "hardhat/=node_modules/hardhat/",
+    "@notional-v3/external=contracts/external/",
+    "@notional-v3/interfaces=interfaces/notional/",
+    "@notional-v3/=contracts/",
 ]
+
+# libraries = [
+#   <remapped path to lib>:<library name>:<address>
+# ]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

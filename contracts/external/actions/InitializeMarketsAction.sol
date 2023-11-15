@@ -44,7 +44,7 @@ import {nTokenMintAction} from "./nTokenMintAction.sol";
 ///     - rate anchor set by governance
 ///     - percent of cash to deposit into the market set by governance
 ///  - Set new markets and add liquidity tokens to portfolio
-library InitializeMarketsAction {
+contract InitializeMarketsAction {
     using Bitmap for bytes32;
     using SafeUint256 for uint256;
     using SafeInt256 for int256;
