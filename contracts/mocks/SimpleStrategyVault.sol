@@ -27,7 +27,7 @@ contract SimpleStrategyVault is BaseStrategyVault {
         uint16 borrowCurrencyId_
     ) BaseStrategyVault(name_, notional_, borrowCurrencyId_) {
         (
-            Token memory assetToken,
+            /* Token memory assetToken */,
             Token memory underlyingToken
         ) = NotionalProxy(notional_).getCurrency(borrowCurrencyId_);
         _underlyingDecimals = uint256(underlyingToken.decimals);

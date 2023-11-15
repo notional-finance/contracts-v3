@@ -178,6 +178,7 @@ contract PauseRouter is StorageLayoutV2, UUPSUpgradeable, ActionGuards {
         ) {
             return CALCULATION_VIEWS;
         }
+        // TODO: list ERC1155 views as well...
 
         // If not found then delegate to views. This will revert if there is no method on
         // the view contract
