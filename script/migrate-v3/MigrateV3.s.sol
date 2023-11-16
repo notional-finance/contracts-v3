@@ -3,7 +3,7 @@ pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "forge-std/Script.sol";
-import { UpgradeRouter } from "./utils/UpgradeRouter.s.sol";
+import { UpgradeRouter } from "../utils/UpgradeRouter.s.sol";
 import { InitialSettings } from "./InitialSettings.sol";
 
 import { Deployments } from "@notional-v3/global/Deployments.sol";
@@ -23,11 +23,11 @@ import {
     CompoundV2DeploymentParams
 } from "@notional-v3/external/pCash/CompoundV2HoldingsOracle.sol";
 
-import { nProxy } from "../contracts/proxy/nProxy.sol";
-import { UpgradeableBeacon } from "../contracts/proxy/beacon/UpgradeableBeacon.sol";
-import { EmptyProxy } from "../contracts/proxy/EmptyProxy.sol";
+import { nProxy } from "../../contracts/proxy/nProxy.sol";
+import { UpgradeableBeacon } from "../../contracts/proxy/beacon/UpgradeableBeacon.sol";
+import { EmptyProxy } from "../../contracts/proxy/EmptyProxy.sol";
 
-contract MigrateToV3 is UpgradeRouter {
+contract MigrateV3 is UpgradeRouter {
     address BEACON_DEPLOYER = 0x0D251Bd6c14e02d34f68BFCB02c54cBa3D108122;
     address DEPLOYER = 0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3;
     address MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;

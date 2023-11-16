@@ -2,7 +2,7 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import {InterestRateCurveSettings, CashGroupSettings} from "../contracts/global/Types.sol";
+import {InterestRateCurveSettings, CashGroupSettings} from "../../contracts/global/Types.sol";
 import {IPrimeCashHoldingsOracle} from "@notional-v3/interfaces/IPrimeCashHoldingsOracle.sol";
 import {CurrencySettings, TotalfCashDebt} from "@notional-v3/external/patchfix/migrate-v3/MigrationSettings.sol";
 

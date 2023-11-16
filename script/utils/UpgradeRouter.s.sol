@@ -91,8 +91,9 @@ contract UpgradeRouter is Script {
         c.calculationViews = r.CALCULATION_VIEWS();
         c.vaultAction = r.VAULT_ACTION();
         c.vaultAccountAction = r.VAULT_ACCOUNT_ACTION();
-        c.vaultLiquidationAction = r.VAULT_LIQUIDATION_ACTION();
-        c.vaultAccountHealth = r.VAULT_ACCOUNT_HEALTH();
+        // FIXME: these are not deployed on V2
+        // c.vaultLiquidationAction = r.VAULT_LIQUIDATION_ACTION();
+        // c.vaultAccountHealth = r.VAULT_ACCOUNT_HEALTH();
     }
 
     function checkDeployedLibs(
@@ -220,7 +221,9 @@ contract UpgradeRouter is Script {
         // FIXME: this is somewhat of a hack since we still need to set the environment for the
         // linker and this won't work in a real deployment
         if (name == ExternalLib.FreeCollateral) {
-            libs[uint256(ExternalLib.FreeCollateral)] = deployCode("FreeCollateralExternal.sol");
+            // TODO: not sure why this fails using deployCode
+            libs[uint256(ExternalLib.FreeCollateral)] = makeAddr("FreeCollateral");
+            vm.etch(libs[uint256(ExternalLib.FreeCollateral)], type(FreeCollateralExternal).runtimeCode);
         } else if (name == ExternalLib.SettleAssets) {
             libs[uint256(ExternalLib.SettleAssets)] = deployCode("SettleAssetsExternal.sol");
         } else if (name == ExternalLib.MigrateIncentives) {
@@ -235,32 +238,22 @@ contract UpgradeRouter is Script {
     }
 
     function setLibsInEnv(address[] memory libs) internal {
-        vm.setEnv("DAPP_LIBRARIES", vm.toString(abi.encodePacked(
+        vm.setEnv("DAPP_LIBRARIES", string(
             abi.encodePacked(
                 "@notional-v3/external/FreeCollateralExternal.sol:FreeCollateralExternal:",
                 vm.toString(libs[uint256(ExternalLib.FreeCollateral)]), ","
-            ),
-            abi.encodePacked(
                 "@notional-v3/external/SettleAssetsExternal.sol:SettleAssetsExternal:",
                 vm.toString(libs[uint256(ExternalLib.SettleAssets)]), ","
-            ),
-            abi.encodePacked(
                 "@notional-v3/external/MigrateIncentives.sol:MigrateIncentives:",
                 vm.toString(libs[uint256(ExternalLib.MigrateIncentives)]), ","
-            ),
-            abi.encodePacked(
                 "@notional-v3/external/actions/TradingAction.sol:TradingAction:",
                 vm.toString(libs[uint256(ExternalLib.TradingAction)]), ","
-            ),
-            abi.encodePacked(
                 "@notional-v3/external/actions/nTokenMintAction.sol:nTokenMintAction:",
                 vm.toString(libs[uint256(ExternalLib.nTokenMint)]), ","
-            ),
-            abi.encodePacked(
                 "@notional-v3/external/actions/nTokenRedeemAction.sol:nTokenRedeemAction:",
                 vm.toString(libs[uint256(ExternalLib.nTokenRedeem)])
             )
-        )));
+        ));
     }
 
     function deployRouter(
@@ -271,15 +264,20 @@ contract UpgradeRouter is Script {
         Router.DeployedContracts memory c = getDeployedContracts();
 
         // libs are updated in memory
-        for (uint256 i; i < upgradeLib.length; i++) _deployLib(upgradeLib[i], libs);
+        for (uint256 i; i < upgradeLib.length; i++) {
+            _deployLib(upgradeLib[i], libs);
+        }
 
-        // Libs are set in the environment for the contract deployment
-        setLibsInEnv(libs);
+        // NOTE: this does not work, it only works if you set it before the process begins
+        // // Libs are set in the environment for the contract deployment
+        // setLibsInEnv(libs);
+        // console.log(vm.envString("DAPP_LIBRARIES"));
         
         bool upgradePauseRouter = false;
         for (uint256 i; i < upgradeActions.length; i++) {
             // c is updated in memory
-            upgradePauseRouter = upgradePauseRouter || _deployContract(upgradeActions[i], c, libs);
+            bool u = _deployContract(upgradeActions[i], c, libs);
+            upgradePauseRouter = upgradePauseRouter || u;
         }
 
         checkDeployedLibs(c, libs);

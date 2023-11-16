@@ -13,8 +13,13 @@ remappings = [
 
 ignored_error_codes = [ 2018, 5667 ]
 
-# libraries = [
-#   <remapped path to lib>:<library name>:<address>
-# ]
+libraries = [
+  "@notional-v3/external/FreeCollateralExternal.sol:FreeCollateralExternal:0xe1E94fAF762c43B6f0041F0d9A01E4b403761b3D",
+  "@notional-v3/external/SettleAssetsExternal.sol:SettleAssetsExternal:0x48A18d9E10DFcbeC38d31884712Dea5a24120FD6",
+  "@notional-v3/external/MigrateIncentives.sol:MigrateIncentives:0x990A55AcF578ece4EEAc459bcB011C5A31922d55",
+  "@notional-v3/external/actions/TradingAction.sol:TradingAction:0xf1dfC222B42233b9947183611F6edf6d1d7DCA3d",
+  "@notional-v3/external/actions/nTokenMintAction.sol:nTokenMintAction:0xE728eAC44f19dB83f7cE847cE7CDB90fd43b07b7",
+  "@notional-v3/external/actions/nTokenRedeemAction.sol:nTokenRedeemAction:0x326746FD16FdA81599a80280AC94d3EdE71E2CE1"
+]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
