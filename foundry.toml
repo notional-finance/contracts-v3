@@ -11,6 +11,8 @@ remappings = [
     "@notional-v3/=contracts/",
 ]
 
+ignored_error_codes = [ 2018, 5667 ]
+
 # libraries = [
 #   <remapped path to lib>:<library name>:<address>
 # ]

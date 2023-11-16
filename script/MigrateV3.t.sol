@@ -38,6 +38,7 @@ contract MigrateToV3 is UpgradeRouter {
         PauseRouter pauseRouter,
         Router finalRouter
     ) {
+        // NOTE: these may need to be deployed manually via forge create
         ExternalLib[] memory libs = new ExternalLib[](NUM_LIBS);
         libs[0] = ExternalLib.FreeCollateral;
         libs[1] = ExternalLib.SettleAssets;

@@ -217,19 +217,50 @@ contract UpgradeRouter is Script {
         ExternalLib name,
         address[] memory libs
     ) private {
-        // if (name == ExternalLib.FreeCollateral) {
-        //     libs[uint256(ExternalLib.FreeCollateral)] = address(FreeCollateralExternal());
-        // } else if (name == ExternalLib.SettleAssets) {
-        //     libs[uint256(ExternalLib.SettleAssets)] = address(SettleAssetsExternal());
-        // } else if (name == ExternalLib.MigrateIncentives) {
-        //     libs[uint256(ExternalLib.MigrateIncentives)] = address(MigrateIncentives());
-        // } else if (name == ExternalLib.TradingAction) {
-        //     libs[uint256(ExternalLib.TradingAction)] = address(TradingAction());
-        // } else if (name == ExternalLib.nTokenMint) {
-        //     libs[uint256(ExternalLib.nTokenMint)] = address(nTokenMintAction());
-        // } else if (name == ExternalLib.nTokenRedeem) {
-        //     libs[uint256(ExternalLib.nTokenRedeem)] = address(nTokenRedeemAction());
-        // }
+        // FIXME: this is somewhat of a hack since we still need to set the environment for the
+        // linker and this won't work in a real deployment
+        if (name == ExternalLib.FreeCollateral) {
+            libs[uint256(ExternalLib.FreeCollateral)] = deployCode("FreeCollateralExternal.sol");
+        } else if (name == ExternalLib.SettleAssets) {
+            libs[uint256(ExternalLib.SettleAssets)] = deployCode("SettleAssetsExternal.sol");
+        } else if (name == ExternalLib.MigrateIncentives) {
+            libs[uint256(ExternalLib.MigrateIncentives)] = deployCode("MigrateIncentives.sol");
+        } else if (name == ExternalLib.TradingAction) {
+            libs[uint256(ExternalLib.TradingAction)] = deployCode("TradingAction.sol");
+        } else if (name == ExternalLib.nTokenMint) {
+            libs[uint256(ExternalLib.nTokenMint)] = deployCode("nTokenMintAction.sol");
+        } else if (name == ExternalLib.nTokenRedeem) {
+            libs[uint256(ExternalLib.nTokenRedeem)] = deployCode("nTokenRedeemAction.sol");
+        }
+    }
+
+    function setLibsInEnv(address[] memory libs) internal {
+        vm.setEnv("DAPP_LIBRARIES", vm.toString(abi.encodePacked(
+            abi.encodePacked(
+                "@notional-v3/external/FreeCollateralExternal.sol:FreeCollateralExternal:",
+                vm.toString(libs[uint256(ExternalLib.FreeCollateral)]), ","
+            ),
+            abi.encodePacked(
+                "@notional-v3/external/SettleAssetsExternal.sol:SettleAssetsExternal:",
+                vm.toString(libs[uint256(ExternalLib.SettleAssets)]), ","
+            ),
+            abi.encodePacked(
+                "@notional-v3/external/MigrateIncentives.sol:MigrateIncentives:",
+                vm.toString(libs[uint256(ExternalLib.MigrateIncentives)]), ","
+            ),
+            abi.encodePacked(
+                "@notional-v3/external/actions/TradingAction.sol:TradingAction:",
+                vm.toString(libs[uint256(ExternalLib.TradingAction)]), ","
+            ),
+            abi.encodePacked(
+                "@notional-v3/external/actions/nTokenMintAction.sol:nTokenMintAction:",
+                vm.toString(libs[uint256(ExternalLib.nTokenMint)]), ","
+            ),
+            abi.encodePacked(
+                "@notional-v3/external/actions/nTokenRedeemAction.sol:nTokenRedeemAction:",
+                vm.toString(libs[uint256(ExternalLib.nTokenRedeem)])
+            )
+        )));
     }
 
     function deployRouter(
@@ -239,9 +270,11 @@ contract UpgradeRouter is Script {
         address[] memory libs = getDeployedLibs();
         Router.DeployedContracts memory c = getDeployedContracts();
 
-        // TODO: we can't deploy libs from inside the script?
         // libs are updated in memory
         for (uint256 i; i < upgradeLib.length; i++) _deployLib(upgradeLib[i], libs);
+
+        // Libs are set in the environment for the contract deployment
+        setLibsInEnv(libs);
         
         bool upgradePauseRouter = false;
         for (uint256 i; i < upgradeActions.length; i++) {
