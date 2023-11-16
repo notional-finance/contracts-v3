@@ -29,7 +29,7 @@ import {Market} from "../../internal/markets/Market.sol";
 import {DateTime} from "../../internal/markets/DateTime.sol";
 import {DeprecatedAssetRate} from "../../internal/markets/DeprecatedAssetRate.sol";
 
-import {UUPSUpgradeable} from "../../proxy/utils/UUPSUpgradeable.sol";
+import {ERC1967Upgrade} from "../../proxy/ERC1967/ERC1967Upgrade.sol";
 import {nBeaconProxy} from "../../proxy/nBeaconProxy.sol";
 import {UpgradeableBeacon} from "../../proxy/beacon/UpgradeableBeacon.sol";
 
@@ -39,7 +39,7 @@ import {AssetRateAdapter} from "../../../interfaces/notional/AssetRateAdapter.so
 
 import {MigrationSettings, CurrencySettings, TotalfCashDebt} from "./migrate-v3/MigrationSettings.sol";
 
-contract MigratePrimeCash is StorageLayoutV2, UUPSUpgradeable {
+contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
     using SafeUint256 for uint256;
     using SafeInt256 for int256;
     using Market for MarketParameters;
@@ -57,12 +57,6 @@ contract MigratePrimeCash is StorageLayoutV2, UUPSUpgradeable {
         MIGRATION_SETTINGS = settings;
         FINAL_ROUTER = finalRouter;
         PAUSE_ROUTER = _pauseRouter;
-    }
-
-    /// @notice Ensures the upgrade can only go to the final router
-    function _authorizeUpgrade(address newImplementation) internal override {
-        require(NOTIONAL_MANAGER == msg.sender);
-        require(newImplementation == FINAL_ROUTER);
     }
 
     fallback() external { _delegate(PAUSE_ROUTER); }
@@ -132,6 +126,8 @@ contract MigratePrimeCash is StorageLayoutV2, UUPSUpgradeable {
             // from one storage slot to the other
             _setFeeReserveCashBalance(currencyId);
         }
+
+        _upgradeTo(FINAL_ROUTER);
     }
 
     function _remapTokenAddress(uint16 currencyId) private returns (
