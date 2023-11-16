@@ -290,7 +290,8 @@ contract UpgradeRouter is Script {
                 c.liquidateCurrency,
                 c.liquidatefCash,
                 c.calculationViews,
-                c.vaultAccountHealth
+                c.vaultAccountHealth,
+                c.erc1155
             );
         } else {
             // Gets the current pause router address;

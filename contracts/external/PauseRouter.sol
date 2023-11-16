@@ -20,6 +20,7 @@ contract PauseRouter is StorageLayoutV2, UUPSUpgradeable, ActionGuards {
     address public immutable LIQUIDATE_FCASH;
     address public immutable CALCULATION_VIEWS;
     address public immutable VAULT_ACCOUNT_HEALTH;
+    address public immutable ERC1155;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
@@ -28,13 +29,15 @@ contract PauseRouter is StorageLayoutV2, UUPSUpgradeable, ActionGuards {
         address liquidateCurrency_,
         address liquidatefCash_,
         address calculationViews_,
-        address vaultAccountHealth_
+        address vaultAccountHealth_,
+        address erc1155_
     ) {
         VIEWS = views_;
         LIQUIDATE_CURRENCY = liquidateCurrency_;
         LIQUIDATE_FCASH = liquidatefCash_;
         CALCULATION_VIEWS = calculationViews_;
         VAULT_ACCOUNT_HEALTH = vaultAccountHealth_;
+        ERC1155 = erc1155_;
     }
 
     /// @dev Internal method will be called during an UUPS upgrade, must return true to
@@ -177,8 +180,17 @@ contract PauseRouter is StorageLayoutV2, UUPSUpgradeable, ActionGuards {
             sig == NotionalCalculations.convertUnderlyingToPrimeCash.selector
         ) {
             return CALCULATION_VIEWS;
+        } else if (
+            // Only view methods are whitelisted here
+            sig == nERC1155Interface.encodeToId.selector ||
+            sig == nERC1155Interface.decodeToAssets.selector ||
+            sig == nERC1155Interface.balanceOf.selector ||
+            sig == nERC1155Interface.balanceOfBatch.selector ||
+            sig == nERC1155Interface.signedBalanceOf.selector ||
+            sig == nERC1155Interface.signedBalanceOfBatch.selector
+        ) {
+            return ERC1155;
         }
-        // TODO: list ERC1155 views as well...
 
         // If not found then delegate to views. This will revert if there is no method on
         // the view contract

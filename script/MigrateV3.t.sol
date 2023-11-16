@@ -156,18 +156,12 @@ contract MigrateToV3 is UpgradeRouter {
 
 //     }
 
-//     function setupMigration() internal usingAccount(NOTIONAL.owner()) { 
-//         NOTIONAL.setPauseRouterAndGuardian(pauseRouter, guardian);
-//         NOTIONAL.transferOwnership(patchFix, false);
-//     }
-
 //     function updateTotalDebt() internal usingAccount(MANAGER) { 
 //         patchFix.updateTotalfCashDebt(...)
 //     }
 
-//     function emitAccountEventsAndUpgrade(Router finalRouter) internal usingAccount(MANAGER) {
-//         patchFix.emitAccountEvents(accounts);
-//         upgradeTo(finalRouter);
+//     function checkUpgradeValidity() internal usingAccount(MANAGER) { 
+//         patchFix.updateTotalfCashDebt(...)
 //     }
 
 //     function executeMigration() internal usingAccount(MANAGER) {
@@ -175,7 +169,7 @@ contract MigrateToV3 is UpgradeRouter {
 //         updateTotalDebt();
 
 //         // Runs upgrade and ends up in paused state again
-//         patchFix.atomicPatchAndUpgrade();
+//         patchFix.executeMigration();
 
 //         // Inside paused state
 //         checkUpgradeValidity();
@@ -190,16 +184,19 @@ contract MigrateToV3 is UpgradeRouter {
         // deployWrappedFCash();
 
         deployBeacons();
-        deployMigratePrimeCash();
+        (
+            MigratePrimeCash migratePrimeCash,
+            PauseRouter pauseRouter,
+            Router finalRouter
+        ) = deployMigratePrimeCash();
         CompoundV2HoldingsOracle[] memory oracles = deployPrimeCashOracles();
 
         // setMigrationSettings();
         // checkAllAccounts();
-        // setupMigration();
 
-        // // Begins migration
-        // vm.prank(NOTIONAL.owner());
-        // NOTIONAL.upgradeTo(pauseRouter);
+        // Begins migration
+        vm.prank(NOTIONAL.owner());
+        NOTIONAL.upgradeTo(address(migratePrimeCash));
 
         // executeMigration();
 
