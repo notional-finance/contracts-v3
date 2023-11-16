@@ -8,6 +8,7 @@ import { Deployments } from "@notional-v3/global/Deployments.sol";
 import { Token } from "@notional-v3/global/Types.sol";
 
 import { MigratePrimeCash } from "@notional-v3/external/patchfix/MigratePrimeCash.sol";
+import { MigrationSettings } from "@notional-v3/external/patchfix/migrate-v3/MigrationSettings.sol";
 import { PauseRouter } from "@notional-v3/external/PauseRouter.sol";
 import { Router } from "@notional-v3/external/Router.sol";
 
@@ -99,11 +100,9 @@ contract MigrateToV3 is UpgradeRouter {
 
         (finalRouter, pauseRouter) = deployRouter(libs, actions);
 
-        m = new MigratePrimeCash(
-            nProxy(payable(address(NOTIONAL))).getImplementation(),
-            address(pauseRouter),
-            NOTIONAL
-        );
+        MigrationSettings settings = new MigrationSettings();
+
+        m = new MigratePrimeCash(settings, address(finalRouter), address(pauseRouter));
     }
 
     function deployPrimeCashOracles() internal usingAccount(DEPLOYER) returns (
@@ -179,7 +178,7 @@ contract MigrateToV3 is UpgradeRouter {
 //     }
 
     function run() public {
-        // TODO: upgrade router and mark down reserves
+        // TODO: mark down reserves
         // TODO: push out vault user profits
         // deployWrappedFCash();
 
