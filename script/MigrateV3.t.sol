@@ -106,7 +106,7 @@ contract MigrateToV3 is UpgradeRouter {
         );
     }
 
-    function deployPrimeCashOracles() internal usingAccount(DEPLOYER) return (
+    function deployPrimeCashOracles() internal usingAccount(DEPLOYER) returns (
         CompoundV2HoldingsOracle[] memory oracles
     ) {
         oracles = new CompoundV2HoldingsOracle[](4);
@@ -117,7 +117,7 @@ contract MigrateToV3 is UpgradeRouter {
                 underlyingToken.tokenAddress,
                 assetToken.tokenAddress,
                 assetToken.tokenAddress
-            ))
+            ));
         }
         {
             (Token memory assetToken, Token memory underlyingToken) = NOTIONAL.getCurrency(DAI);
@@ -126,7 +126,7 @@ contract MigrateToV3 is UpgradeRouter {
                 underlyingToken.tokenAddress,
                 assetToken.tokenAddress,
                 assetToken.tokenAddress
-            ))
+            ));
         }
         {
             (Token memory assetToken, Token memory underlyingToken) = NOTIONAL.getCurrency(USDC);
@@ -135,7 +135,7 @@ contract MigrateToV3 is UpgradeRouter {
                 underlyingToken.tokenAddress,
                 assetToken.tokenAddress,
                 assetToken.tokenAddress
-            ))
+            ));
         }
         {
             (Token memory assetToken, Token memory underlyingToken) = NOTIONAL.getCurrency(WBTC);
@@ -144,7 +144,7 @@ contract MigrateToV3 is UpgradeRouter {
                 underlyingToken.tokenAddress,
                 assetToken.tokenAddress,
                 assetToken.tokenAddress
-            ))
+            ));
         }
     }
 
@@ -191,7 +191,7 @@ contract MigrateToV3 is UpgradeRouter {
 
         deployBeacons();
         deployMigratePrimeCash();
-        // deployPrimeCashOracles();
+        CompoundV2HoldingsOracle[] memory oracles = deployPrimeCashOracles();
 
         // setMigrationSettings();
         // checkAllAccounts();

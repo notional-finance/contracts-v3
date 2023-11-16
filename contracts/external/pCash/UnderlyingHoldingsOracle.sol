@@ -1,7 +1,9 @@
-// SPDX-License-Identifier: BSUL-1.1
-pragma solidity =0.8.17;
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.7.6;
+pragma abicoder v2;
 
 import {Constants} from "../../global/Constants.sol";
+import {SafeUint256} from "../../math/SafeUint256.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
 import {
@@ -11,6 +13,8 @@ import {
 } from "../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 
 contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
+    using SafeUint256 for uint256;
+
     NotionalProxy internal immutable NOTIONAL;
     address internal immutable UNDERLYING_TOKEN;
     uint8 internal immutable UNDERLYING_DECIMALS;
@@ -20,9 +24,12 @@ contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
     constructor(NotionalProxy notional_, address underlying_) {
         NOTIONAL = notional_;
         UNDERLYING_TOKEN = underlying_;
-        UNDERLYING_IS_ETH = underlying_ == Constants.ETH_ADDRESS;
-        UNDERLYING_DECIMALS = UNDERLYING_IS_ETH ? 18 : IERC20(UNDERLYING_TOKEN).decimals();
-        UNDERLYING_PRECISION = 10**UNDERLYING_DECIMALS;
+        bool isETH = underlying_ == Constants.ETH_ADDRESS;
+        UNDERLYING_IS_ETH = isETH;
+        uint8 _decimals = isETH ? 18 : IERC20(underlying_).decimals();
+        require(_decimals <= 18);
+        UNDERLYING_DECIMALS = _decimals;
+        UNDERLYING_PRECISION = 10**_decimals;
     }
     
     /// @notice Returns a list of the various holdings for the prime cash
@@ -49,7 +56,7 @@ contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
         uint256 internalPrecision
     ) {
         nativePrecision = _getTotalUnderlyingValueStateful();
-        internalPrecision = nativePrecision * uint256(Constants.INTERNAL_TOKEN_PRECISION) / UNDERLYING_PRECISION;
+        internalPrecision = nativePrecision.mul(uint256(Constants.INTERNAL_TOKEN_PRECISION)).div(UNDERLYING_PRECISION);
     }
 
     function getTotalUnderlyingValueView() external view override returns (
@@ -57,7 +64,7 @@ contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
         uint256 internalPrecision
     ) {
         nativePrecision = _getTotalUnderlyingValueView();
-        internalPrecision = nativePrecision * uint256(Constants.INTERNAL_TOKEN_PRECISION) / UNDERLYING_PRECISION;
+        internalPrecision = nativePrecision.mul(uint256(Constants.INTERNAL_TOKEN_PRECISION)).div(UNDERLYING_PRECISION);
     }
 
     function holdingValuesInUnderlying() external view override returns (uint256[] memory) {
