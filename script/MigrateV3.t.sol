@@ -4,6 +4,8 @@ pragma abicoder v2;
 
 import "forge-std/Script.sol";
 import { UpgradeRouter } from "./utils/UpgradeRouter.s.sol";
+import { InitialSettings } from "./InitialSettings.sol";
+
 import { Deployments } from "@notional-v3/global/Deployments.sol";
 import { Token } from "@notional-v3/global/Types.sol";
 
@@ -68,7 +70,8 @@ contract MigrateToV3 is UpgradeRouter {
     }
 
     function deployMigratePrimeCash() internal usingAccount(DEPLOYER) returns (
-        MigratePrimeCash m,
+        MigrationSettings settings,
+        MigratePrimeCash migrateRouter,
         PauseRouter pauseRouter,
         Router finalRouter
     ) {
@@ -100,9 +103,8 @@ contract MigrateToV3 is UpgradeRouter {
 
         (finalRouter, pauseRouter) = deployRouter(libs, actions);
 
-        MigrationSettings settings = new MigrationSettings();
-
-        m = new MigratePrimeCash(settings, address(finalRouter), address(pauseRouter));
+        settings = new MigrationSettings();
+        migrateRouter = new MigratePrimeCash(settings, address(finalRouter), address(pauseRouter));
     }
 
     function deployPrimeCashOracles() internal usingAccount(DEPLOYER) returns (
@@ -147,9 +149,15 @@ contract MigrateToV3 is UpgradeRouter {
         }
     }
 
-//     function setMigrationSettings() internal usingAccount(MANAGER) { 
-
-//     }
+    function setMigrationSettings(
+        MigrationSettings settings,
+        CompoundV2HoldingsOracle[] memory oracles
+    ) internal usingAccount(MANAGER) { 
+        settings.setMigrationSettings(ETH, InitialSettings.getETH(oracles[0]));
+        settings.setMigrationSettings(DAI, InitialSettings.getDAI(oracles[1]));
+        settings.setMigrationSettings(USDC, InitialSettings.getUSDC(oracles[2]));
+        settings.setMigrationSettings(WBTC, InitialSettings.getWBTC(oracles[3]));
+    }
 
 //     function checkAllAccounts() internal usingAccount(DEPLOYER) { 
 
@@ -184,17 +192,19 @@ contract MigrateToV3 is UpgradeRouter {
 
         deployBeacons();
         (
+            MigrationSettings settings,
             MigratePrimeCash migratePrimeCash,
             PauseRouter pauseRouter,
             Router finalRouter
         ) = deployMigratePrimeCash();
         CompoundV2HoldingsOracle[] memory oracles = deployPrimeCashOracles();
 
-        // setMigrationSettings();
+        setMigrationSettings(settings, oracles);
         // checkAllAccounts();
 
         // Begins migration
         vm.prank(NOTIONAL.owner());
+        // Now we are paused but no migration
         NOTIONAL.upgradeTo(address(migratePrimeCash));
 
         // executeMigration();
