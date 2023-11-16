@@ -8,7 +8,7 @@ remappings = [
     "hardhat/=node_modules/hardhat/",
     "@notional-v3/external=contracts/external/",
     "@notional-v3/interfaces=interfaces/notional/",
-    "@notional-v3/=contracts/",
+    "@notional-v3/global=contracts/global/",
 ]
 
 ignored_error_codes = [ 2018, 5667 ]

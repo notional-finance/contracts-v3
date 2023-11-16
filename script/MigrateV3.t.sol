@@ -4,19 +4,39 @@ pragma abicoder v2;
 
 import "forge-std/Script.sol";
 import { UpgradeRouter } from "./utils/UpgradeRouter.s.sol";
+import { Deployments } from "@notional-v3/global/Deployments.sol";
+import { Token } from "@notional-v3/global/Types.sol";
+
 import { MigratePrimeCash } from "@notional-v3/external/patchfix/MigratePrimeCash.sol";
 import { PauseRouter } from "@notional-v3/external/PauseRouter.sol";
 import { Router } from "@notional-v3/external/Router.sol";
+
+import { nTokenERC20Proxy } from "@notional-v3/external/proxies/nTokenERC20Proxy.sol";
+import { PrimeCashProxy } from "@notional-v3/external/proxies/PrimeCashProxy.sol";
+import { PrimeDebtProxy } from "@notional-v3/external/proxies/PrimeDebtProxy.sol";
+
+import { 
+    CompoundV2HoldingsOracle,
+    CompoundV2DeploymentParams
+} from "@notional-v3/external/pCash/CompoundV2HoldingsOracle.sol";
+
 import { nProxy } from "../contracts/proxy/nProxy.sol";
+import { UpgradeableBeacon } from "../contracts/proxy/beacon/UpgradeableBeacon.sol";
+import { EmptyProxy } from "../contracts/proxy/EmptyProxy.sol";
 
 contract MigrateToV3 is UpgradeRouter {
     address BEACON_DEPLOYER = 0x0D251Bd6c14e02d34f68BFCB02c54cBa3D108122;
     address DEPLOYER = 0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3;
     address MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
 
-//     UpgradeableBeacon nTokenBeacon;
-//     UpgradeableBeacon pCashBeacon;
-//     UpgradeableBeacon pDebtBeacon;
+    uint16 internal constant ETH = 1;
+    uint16 internal constant DAI = 2;
+    uint16 internal constant USDC = 3;
+    uint16 internal constant WBTC = 4;
+
+    UpgradeableBeacon nTokenBeacon;
+    UpgradeableBeacon pCashBeacon;
+    UpgradeableBeacon pDebtBeacon;
 
     modifier usingAccount(address account) {
         vm.startPrank(account);
@@ -24,14 +44,27 @@ contract MigrateToV3 is UpgradeRouter {
         vm.stopPrank();
     }
 
-//     function deployBeacons(EmptyProxy emptyImpl) internal usingAccount(BEACON_DEPLOYER) {
-//         nTokenBeacon = new UpgradeableBeacon(emptyImpl);
-//         require(address(nTokenBeacon) == address(Deployments.NTOKEN_BEACON));
-//         pCashBeacon = new UpgradeableBeacon(emptyImpl);
-//         require(address(pCashBeacon) == address(Deployments.PCASH_BEACON));
-//         pDebtBeacon = new UpgradeableBeacon(emptyImpl);
-//         require(address(pDebtBeacon) == address(Deployments.PDEBT_BEACON));
-//     }
+    function deployBeacons() internal usingAccount(BEACON_DEPLOYER) {
+        // NOTE: the initial implementation can be any contract
+        nTokenBeacon = new UpgradeableBeacon(MANAGER);
+        require(address(nTokenBeacon) == address(Deployments.NTOKEN_BEACON));
+        pCashBeacon = new UpgradeableBeacon(MANAGER);
+        require(address(pCashBeacon) == address(Deployments.PCASH_BEACON));
+        pDebtBeacon = new UpgradeableBeacon(MANAGER);
+        require(address(pDebtBeacon) == address(Deployments.PDEBT_BEACON));
+
+        address nTokenImpl = address(new nTokenERC20Proxy(NOTIONAL));
+        address pCashImpl = address(new PrimeCashProxy(NOTIONAL));
+        address pDebtImpl = address(new PrimeDebtProxy(NOTIONAL));
+
+        nTokenBeacon.upgradeTo(nTokenImpl);
+        pCashBeacon.upgradeTo(pCashImpl);
+        pDebtBeacon.upgradeTo(pDebtImpl);
+
+        nTokenBeacon.transferOwnership(address(NOTIONAL));
+        pCashBeacon.transferOwnership(address(NOTIONAL));
+        pDebtBeacon.transferOwnership(address(NOTIONAL));
+    }
 
     function deployMigratePrimeCash() internal usingAccount(DEPLOYER) returns (
         MigratePrimeCash m,
@@ -73,9 +106,47 @@ contract MigrateToV3 is UpgradeRouter {
         );
     }
 
-//     function deployPrimeCashOracles() internal usingAccount(DEPLOYER) { 
-
-//     }
+    function deployPrimeCashOracles() internal usingAccount(DEPLOYER) return (
+        CompoundV2HoldingsOracle[] memory oracles
+    ) {
+        oracles = new CompoundV2HoldingsOracle[](4);
+        {
+            (Token memory assetToken, Token memory underlyingToken) = NOTIONAL.getCurrency(ETH);
+            oracles[0] = new CompoundV2HoldingsOracle(CompoundV2DeploymentParams(
+                NOTIONAL,
+                underlyingToken.tokenAddress,
+                assetToken.tokenAddress,
+                assetToken.tokenAddress
+            ))
+        }
+        {
+            (Token memory assetToken, Token memory underlyingToken) = NOTIONAL.getCurrency(DAI);
+            oracles[1] = new CompoundV2HoldingsOracle(CompoundV2DeploymentParams(
+                NOTIONAL,
+                underlyingToken.tokenAddress,
+                assetToken.tokenAddress,
+                assetToken.tokenAddress
+            ))
+        }
+        {
+            (Token memory assetToken, Token memory underlyingToken) = NOTIONAL.getCurrency(USDC);
+            oracles[2] = new CompoundV2HoldingsOracle(CompoundV2DeploymentParams(
+                NOTIONAL,
+                underlyingToken.tokenAddress,
+                assetToken.tokenAddress,
+                assetToken.tokenAddress
+            ))
+        }
+        {
+            (Token memory assetToken, Token memory underlyingToken) = NOTIONAL.getCurrency(WBTC);
+            oracles[3] = new CompoundV2HoldingsOracle(CompoundV2DeploymentParams(
+                NOTIONAL,
+                underlyingToken.tokenAddress,
+                assetToken.tokenAddress,
+                assetToken.tokenAddress
+            ))
+        }
+    }
 
 //     function setMigrationSettings() internal usingAccount(MANAGER) { 
 
@@ -99,17 +170,28 @@ contract MigrateToV3 is UpgradeRouter {
 //         upgradeTo(finalRouter);
 //     }
 
+//     function executeMigration() internal usingAccount(MANAGER) {
+//         // Update total debt if required
+//         updateTotalDebt();
+
+//         // Runs upgrade and ends up in paused state again
+//         patchFix.atomicPatchAndUpgrade();
+
+//         // Inside paused state
+//         checkUpgradeValidity();
+
+//         // Emit all account events
+//         emitAccountEventsAndUpgrade(finalRouter);
+//     }
+
     function run() public {
         // TODO: upgrade router and mark down reserves
         // TODO: push out vault user profits
+        // deployWrappedFCash();
 
-        // vm.prank(DEPLOYER);
-        // EmptyProxy emptyImpl = new EmptyProxy()
-        // deployBeacons(emptyImpl);
-
+        deployBeacons();
         deployMigratePrimeCash();
         // deployPrimeCashOracles();
-        // deployWrappedFCash();
 
         // setMigrationSettings();
         // checkAllAccounts();
@@ -124,17 +206,4 @@ contract MigrateToV3 is UpgradeRouter {
         // TODO: test rebalancing nwTokens down to zero
     }
 
-//     function executeMigration() internal usingAccount(MANAGER) {
-//         // Update total debt if required
-//         updateTotalDebt();
-
-//         // Runs upgrade and ends up in paused state again
-//         patchFix.atomicPatchAndUpgrade();
-
-//         // Inside paused state
-//         checkUpgradeValidity();
-
-//         // Emit all account events
-//         emitAccountEventsAndUpgrade(finalRouter);
-//     }
 }
