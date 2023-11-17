@@ -1,62 +1,70 @@
 [
-  {
-    "currency_id": "1",
-    "maturity": "1702944000",
-    "total_debt": -91689273994
-  },
-  {
-    "currency_id": "1",
-    "maturity": "1710720000",
-    "total_debt": -51536377783
-  },
-  {
-    "currency_id": "2",
-    "maturity": "1702944000",
-    "total_debt": -250655026195038
-  },
-  {
-    "currency_id": "2",
-    "maturity": "1710720000",
-    "total_debt": -238673829641913
-  },
-  {
-    "currency_id": "2",
-    "maturity": "1718496000",
-    "total_debt": -11932114400201
-  },
-  {
-    "currency_id": "2",
-    "maturity": "1726272000",
-    "total_debt": -70846146888815
-  },
-  {
-    "currency_id": "3",
-    "maturity": "1702944000",
-    "total_debt": -937000756392612
-  },
-  {
-    "currency_id": "3",
-    "maturity": "1710720000",
-    "total_debt": -744309473304518
-  },
-  {
-    "currency_id": "3",
-    "maturity": "1718496000",
-    "total_debt": -44187580546018
-  },
-  {
-    "currency_id": "3",
-    "maturity": "1726272000",
-    "total_debt": -223045750716381
-  },
-  {
-    "currency_id": "4",
-    "maturity": "1702944000",
-    "total_debt": -2862489878
-  },
-  {
-    "currency_id": "4",
-    "maturity": "1710720000",
-    "total_debt": -2333838020
-  }
+  [
+    "1",
+    [
+      {
+        "maturity": "1702944000",
+        "totalFCashDebt": 91689273994
+      },
+      {
+        "maturity": "1710720000",
+        "totalFCashDebt": 51536377783
+      }
+    ]
+  ],
+  [
+    "2",
+    [
+      {
+        "maturity": "1702944000",
+        "totalFCashDebt": 250655026195038
+      },
+      {
+        "maturity": "1710720000",
+        "totalFCashDebt": 238673829641913
+      },
+      {
+        "maturity": "1726272000",
+        "totalFCashDebt": 70846146888815
+      },
+      {
+        "maturity": "1718496000",
+        "totalFCashDebt": 11932114400201
+      }
+    ]
+  ],
+  [
+    "3",
+    [
+      {
+        "maturity": "1702944000",
+        "totalFCashDebt": 937000756392612
+      },
+      {
+        "maturity": "1710720000",
+        "totalFCashDebt": 744309473304518
+      },
+      {
+        "maturity": "1726272000",
+        "totalFCashDebt": 223045750716381
+      },
+      {
+        "maturity": "1718496000",
+        "totalFCashDebt": 44187580546018
+      }
+    ]
+  ],
+  [
+    "4",
+    [
+      {
+        "maturity": "1702944000",
+        "totalFCashDebt": 2862489878
+      },
+      {
+        "maturity": "1710720000",
+        "totalFCashDebt": 2333838020
+      }
+    ]
+  ]
 ]

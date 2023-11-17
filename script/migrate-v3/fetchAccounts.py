@@ -72,24 +72,33 @@ def process_accounts(all_accounts):
 
     return totalFCashDebt
 
+def write_total_fcash_debt(total_debt):
+    # Get the script directory
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+
+    # Write sorted output to a separate JSON file in the script directory
+    with open(os.path.join(script_dir, "totalDebt.json"), "w") as file:
+        formatted_output = {}
+
+        for key, value in total_debt.items():
+            currency_id = key[0]
+            maturity = key[1]
+            notional_sum = value["notional_sum"]
+
+            if currency_id not in formatted_output:
+                formatted_output[currency_id] = []
+
+            formatted_output[currency_id].append({"maturity": maturity, "totalFCashDebt": -notional_sum})
+
+        sorted_output = sorted(formatted_output.items(), key=lambda x: x[0])
+
+        json.dump(sorted_output, file, indent=2)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Paginate through GraphQL query for accounts.")
     parser.add_argument("--block_number", type=int, required=True, help="Block number for the query")
     args = parser.parse_args()
 
     all_accounts = paginate_accounts(args.block_number)
-    totalFCashDebt = process_accounts(all_accounts)
-
-    # Print the grouped accounts sorted by currency ID and then maturity
-    sorted_debts = sorted(totalFCashDebt.items(), key=lambda x: (x[0][0], x[0][1]))
-
-    # Get the script directory
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-
-    # Write sorted output to a separate JSON file in the script directory
-    with open(os.path.join(script_dir, "totalDebt.json"), "w") as file:
-        formatted_output = [
-            {"currency_id": key[0], "maturity": key[1], "total_debt": value["notional_sum"]}
-            for key, value in sorted_debts
-        ]
-        json.dump(formatted_output, file, indent=2)
+    total_debt = process_accounts(all_accounts)
+    write_total_fcash_debt(total_debt)

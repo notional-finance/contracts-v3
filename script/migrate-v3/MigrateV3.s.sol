@@ -3,11 +3,12 @@ pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "forge-std/Script.sol";
+import "forge-std/StdJson.sol";
 import { UpgradeRouter } from "../utils/UpgradeRouter.s.sol";
 import { InitialSettings } from "./InitialSettings.sol";
 
 import { Deployments } from "@notional-v3/global/Deployments.sol";
-import { Token } from "@notional-v3/global/Types.sol";
+import { Token, AccountBalance, PortfolioAsset } from "@notional-v3/global/Types.sol";
 
 import { MigratePrimeCash } from "@notional-v3/external/patchfix/MigratePrimeCash.sol";
 import { MigrationSettings } from "@notional-v3/external/patchfix/migrate-v3/MigrationSettings.sol";
@@ -27,7 +28,30 @@ import { nProxy } from "../../contracts/proxy/nProxy.sol";
 import { UpgradeableBeacon } from "../../contracts/proxy/beacon/UpgradeableBeacon.sol";
 import { EmptyProxy } from "../../contracts/proxy/EmptyProxy.sol";
 
+interface NotionalV2 {
+
+    // This is the V2 account context
+    struct AccountContextOld {
+        uint40 nextSettleTime;
+        bytes1 hasDebt;
+        uint8 assetArrayLength;
+        uint16 bitmapCurrencyId;
+        bytes18 activeCurrencies;
+    }
+
+    function getAccount(address account)
+        external
+        view
+        returns (
+            AccountContextOld memory accountContext,
+            AccountBalance[] memory accountBalances,
+            PortfolioAsset[] memory portfolio
+        );
+}
+
 contract MigrateV3 is UpgradeRouter {
+    using stdJson for string;
+
     address BEACON_DEPLOYER = 0x0D251Bd6c14e02d34f68BFCB02c54cBa3D108122;
     address DEPLOYER = 0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3;
     address MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
@@ -159,17 +183,72 @@ contract MigrateV3 is UpgradeRouter {
         settings.setMigrationSettings(WBTC, InitialSettings.getWBTC(oracles[3]));
     }
 
-//     function checkAllAccounts() internal usingAccount(DEPLOYER) { 
+    function checkAllAccounts() internal view { 
+        string memory root = vm.projectRoot();
+        string memory path = string(abi.encodePacked(root, "/script/migrate-v3/accounts.json"));
+        string memory json = vm.readFile(path);
+        // read file of all accounts
+        address[] memory accounts = json.readAddressArray(".accounts");
+        console.log("Found %s Accounts", accounts.length);
 
-//     }
+        bool foundError = false;
+        for (uint256 i; i < accounts.length; i++) {
+            bool err = _checkAccount(accounts[i]);
+            foundError = foundError || err;
+        }
+    }
 
-//     function updateTotalDebt() internal usingAccount(MANAGER) { 
-//         patchFix.updateTotalfCashDebt(...)
-//     }
+    function _checkAccount(address account) private view returns (bool foundError) {
+        (
+            NotionalV2.AccountContextOld memory accountContext,
+            AccountBalance[] memory accountBalances,
+            PortfolioAsset[] memory portfolio
+        ) = NotionalV2(address(NOTIONAL)).getAccount(account);
+        foundError = false;
 
-//     function checkUpgradeValidity() internal usingAccount(MANAGER) { 
-//         patchFix.updateTotalfCashDebt(...)
-//     }
+        if (accountContext.nextSettleTime < block.timestamp) {
+            console.log("Account %s has a matured next settle time", account);
+            foundError = true;
+        }
+
+        for (uint256 i; i < accountBalances.length; i++) {
+            if (accountBalances[i].currencyId == 0) break;
+
+            if (accountBalances[i].cashBalance < 0) {
+                console.log("Account %s has a negative cash balance %s in %s",
+                    account, vm.toString(accountBalances[i].cashBalance), accountBalances[i].currencyId
+                );
+                foundError = true;
+            }
+            if (accountBalances[i].lastClaimTime > 0) {
+                console.log("Account %s has a last claim time in %s",
+                    account, accountBalances[i].currencyId
+                );
+            }
+        }
+
+        for (uint256 i; i < portfolio.length; i++) {
+            if (portfolio[i].maturity < block.timestamp) {
+                console.log("Account %s has a matured asset in %s at %s",
+                    account, portfolio[i].currencyId, portfolio[i].maturity
+                );
+                foundError = true;
+            }
+        }
+    }
+
+    function updateTotalDebt() internal usingAccount(MANAGER) { 
+        // read file of total debts
+        // patchFix.updateTotalfCashDebt(...)
+    }
+
+    function checkUpgradeValidity() internal usingAccount(MANAGER) { 
+        // check settings match expected
+        // check fCash invariant
+        // check prime cash invariant
+        // check balances are equal to expected
+        // check that we can safely initialize markets
+    }
 
 //     function executeMigration() internal usingAccount(MANAGER) {
 //         // Update total debt if required
@@ -190,6 +269,9 @@ contract MigrateV3 is UpgradeRouter {
         // TODO: push out vault user profits
         // deployWrappedFCash();
 
+        // Set fork
+        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), vm.envUint("FORK_BLOCK"));
+
         deployBeacons();
         (
             MigrationSettings settings,
@@ -200,7 +282,7 @@ contract MigrateV3 is UpgradeRouter {
         CompoundV2HoldingsOracle[] memory oracles = deployPrimeCashOracles();
 
         setMigrationSettings(settings, oracles);
-        // checkAllAccounts();
+        checkAllAccounts();
 
         // Begins migration
         vm.prank(NOTIONAL.owner());

@@ -13,6 +13,11 @@ remappings = [
 
 ignored_error_codes = [ 2018, 5667 ]
 
+fs_permissions = [
+  { access = "read", path = "script/migrate-v3"},
+  { access = "read", path = "artifacts"},
+]
+
 libraries = [
   "@notional-v3/external/FreeCollateralExternal.sol:FreeCollateralExternal:0xe1E94fAF762c43B6f0041F0d9A01E4b403761b3D",
   "@notional-v3/external/SettleAssetsExternal.sol:SettleAssetsExternal:0x48A18d9E10DFcbeC38d31884712Dea5a24120FD6",
