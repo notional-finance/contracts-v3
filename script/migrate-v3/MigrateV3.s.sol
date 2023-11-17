@@ -256,7 +256,7 @@ contract MigrateV3 is UpgradeRouter {
     }
 
     function checkUpgradeValidity() internal { 
-        // check settings match expected
+        // check system settings match expected
         // check fCash invariant
         // check prime cash invariant
         // check balances are equal to expected
@@ -269,8 +269,8 @@ contract MigrateV3 is UpgradeRouter {
         // Update total debt if required
         updateTotalDebt(settings);
 
-        // // Runs upgrade and ends up in paused state again
-        // patchFix.executeMigration();
+        // Runs upgrade and ends up in paused state again
+        MigratePrimeCash(address(NOTIONAL)).migratePrimeCash();
 
         // Inside paused state
         checkUpgradeValidity();

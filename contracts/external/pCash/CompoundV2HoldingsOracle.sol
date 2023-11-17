@@ -30,7 +30,7 @@ contract CompoundV2HoldingsOracle is UnderlyingHoldingsOracle {
         UnderlyingHoldingsOracle(params.notional, params.underlying) {
         COMPOUND_ASSET_TOKEN = params.cToken;
         COMPOUND_RATE_ADAPTER = params.cTokenRateAdapter;
-        RATE_ADAPTER_PRECISION = 10**AssetRateAdapter(params.cTokenRateAdapter).decimals();
+        RATE_ADAPTER_PRECISION = 1e18;
     }
 
     /// @notice Returns a list of the various holdings for the prime cash
