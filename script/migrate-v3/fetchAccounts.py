@@ -82,7 +82,7 @@ def write_total_fcash_debt(total_debt):
 
         for key, value in total_debt.items():
             currency_id = key[0]
-            maturity = key[1]
+            maturity = int(key[1])
             notional_sum = value["notional_sum"]
 
             if currency_id not in formatted_output:
@@ -90,9 +90,12 @@ def write_total_fcash_debt(total_debt):
 
             formatted_output[currency_id].append({"maturity": maturity, "totalFCashDebt": -notional_sum})
 
-        sorted_output = sorted(formatted_output.items(), key=lambda x: x[0])
+        sorted_output = [
+            v
+            for (_, v) in sorted(formatted_output.items(), key=lambda x: x[0])
+        ]
 
-        json.dump(sorted_output, file, indent=2)
+        json.dump({'debts': sorted_output}, file, indent=2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Paginate through GraphQL query for accounts.")

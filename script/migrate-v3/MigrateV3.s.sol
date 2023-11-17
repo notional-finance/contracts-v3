@@ -11,7 +11,7 @@ import { Deployments } from "@notional-v3/global/Deployments.sol";
 import { Token, AccountBalance, PortfolioAsset } from "@notional-v3/global/Types.sol";
 
 import { MigratePrimeCash } from "@notional-v3/external/patchfix/MigratePrimeCash.sol";
-import { MigrationSettings } from "@notional-v3/external/patchfix/migrate-v3/MigrationSettings.sol";
+import { MigrationSettings, TotalfCashDebt } from "@notional-v3/external/patchfix/migrate-v3/MigrationSettings.sol";
 import { PauseRouter } from "@notional-v3/external/PauseRouter.sol";
 import { Router } from "@notional-v3/external/Router.sol";
 
@@ -206,7 +206,11 @@ contract MigrateV3 is UpgradeRouter {
         ) = NotionalV2(address(NOTIONAL)).getAccount(account);
         foundError = false;
 
-        if (accountContext.nextSettleTime != 0 && accountContext.nextSettleTime < block.timestamp) {
+        if (
+            accountContext.nextSettleTime != 0 &&
+            accountContext.nextSettleTime < block.timestamp &&
+            accountContext.bitmapCurrencyId == 0
+        ) {
             console.log("Account %s has a matured next settle time", account);
             foundError = true;
         }
@@ -220,11 +224,12 @@ contract MigrateV3 is UpgradeRouter {
                 );
                 foundError = true;
             }
-            if (accountBalances[i].lastClaimTime > 0) {
-                console.log("Account %s has a last claim time in %s",
-                    account, accountBalances[i].currencyId
-                );
-            }
+            // NOTE: this is not strictly necessary to check
+            // if (accountBalances[i].lastClaimTime > 0) {
+            //     console.log("Account %s has a last claim time in %s",
+            //         account, accountBalances[i].currencyId
+            //     );
+            // }
         }
 
         for (uint256 i; i < portfolio.length; i++) {
@@ -237,12 +242,20 @@ contract MigrateV3 is UpgradeRouter {
         }
     }
 
-    function updateTotalDebt() internal usingAccount(MANAGER) { 
-        // read file of total debts
-        // patchFix.updateTotalfCashDebt(...)
+    function updateTotalDebt(MigrationSettings settings) internal { 
+        string memory root = vm.projectRoot();
+        string memory path = string(abi.encodePacked(root, "/script/migrate-v3/totalDebt.json"));
+        string memory json = vm.readFile(path);
+        bytes memory perCurrencyDebts = json.parseRaw(".debts");
+
+        TotalfCashDebt[][] memory debts = abi.decode(perCurrencyDebts, (TotalfCashDebt[][]));
+        settings.updateTotalfCashDebt(ETH, debts[0]);
+        settings.updateTotalfCashDebt(DAI, debts[1]);
+        settings.updateTotalfCashDebt(USDC, debts[2]);
+        settings.updateTotalfCashDebt(WBTC, debts[3]);
     }
 
-    function checkUpgradeValidity() internal usingAccount(MANAGER) { 
+    function checkUpgradeValidity() internal { 
         // check settings match expected
         // check fCash invariant
         // check prime cash invariant
@@ -250,19 +263,21 @@ contract MigrateV3 is UpgradeRouter {
         // check that we can safely initialize markets
     }
 
-//     function executeMigration() internal usingAccount(MANAGER) {
-//         // Update total debt if required
-//         updateTotalDebt();
+    function executeMigration(
+        MigrationSettings settings
+    ) internal usingAccount(MANAGER) {
+        // Update total debt if required
+        updateTotalDebt(settings);
 
-//         // Runs upgrade and ends up in paused state again
-//         patchFix.executeMigration();
+        // // Runs upgrade and ends up in paused state again
+        // patchFix.executeMigration();
 
-//         // Inside paused state
-//         checkUpgradeValidity();
+        // Inside paused state
+        checkUpgradeValidity();
 
-//         // Emit all account events
-//         emitAccountEventsAndUpgrade(finalRouter);
-//     }
+        // // Emit all account events
+        // emitAccountEventsAndUpgrade(finalRouter);
+    }
 
     function run() public {
         // TODO: mark down reserves
@@ -289,7 +304,7 @@ contract MigrateV3 is UpgradeRouter {
         // Now we are paused but no migration
         NOTIONAL.upgradeTo(address(migratePrimeCash));
 
-        // executeMigration();
+        executeMigration(settings);
 
         // TODO: test rebalancing nwTokens down to zero
     }
