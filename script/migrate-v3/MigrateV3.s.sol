@@ -206,7 +206,7 @@ contract MigrateV3 is UpgradeRouter {
         ) = NotionalV2(address(NOTIONAL)).getAccount(account);
         foundError = false;
 
-        if (accountContext.nextSettleTime < block.timestamp) {
+        if (accountContext.nextSettleTime != 0 && accountContext.nextSettleTime < block.timestamp) {
             console.log("Account %s has a matured next settle time", account);
             foundError = true;
         }
