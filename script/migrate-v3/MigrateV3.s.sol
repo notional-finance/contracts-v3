@@ -356,12 +356,7 @@ contract MigrateV3 is UpgradeRouter {
                     require(fCashReserve == 0);
                     require(pCashReserve == 0);
                     require(-totalDebt == t.totalfCashDebt, "Does not match json");
-                    // if (totalDebt != totalFCashDebt[i + 1][t.maturity]) {
-                    //     console.log("Does not match storage %s %s", i + 1, t.maturity);
-                    //     console.logInt(totalDebt);
-                    //     console.logInt(totalFCashDebt[i + 1][t.maturity]);
                     require(totalDebt == totalFCashDebt[i + 1][t.maturity], "Does not match storage");
-                    //}
                 }
             }
         }
@@ -414,8 +409,11 @@ contract MigrateV3 is UpgradeRouter {
         // Inside paused state
         checkUpgradeValidity();
 
-        // Emit all account events
-        // emitAccountEventsAndUpgrade(finalRouter);
+        // TODO: Emit all account events
+        // MigratePrimeCash(address(NOTIONAL)).emitAccountEvents();
+
+        // Upgrade to router
+        MigratePrimeCash(address(NOTIONAL)).upgradeToRouter();
     }
 
     function run() public {
@@ -451,8 +449,14 @@ contract MigrateV3 is UpgradeRouter {
 
         executeMigration(settings);
 
-        // TODO: check that we can safely initialize markets
+        // Check that we can safely initialize markets
         uint256 timeRef = (block.timestamp - block.timestamp % Constants.QUARTER) + Constants.QUARTER;
+        vm.warp(timeRef);
+        NOTIONAL.initializeMarkets(ETH, false);
+        NOTIONAL.initializeMarkets(DAI, false);
+        NOTIONAL.initializeMarkets(USDC, false);
+        NOTIONAL.initializeMarkets(WBTC, false);
+
         // TODO: test rebalancing nwTokens down to zero
     }
 

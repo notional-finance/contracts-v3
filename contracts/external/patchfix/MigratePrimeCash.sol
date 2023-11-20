@@ -12,7 +12,8 @@ import {
     MarketParameters,
     AssetRateStorage,
     TotalfCashDebtStorage,
-    BalanceStorage
+    BalanceStorage,
+    PortfolioAssetStorage
 } from "../../global/Types.sol";
 import {StorageLayoutV2} from "../../global/StorageLayoutV2.sol";
 import {Constants} from "../../global/Constants.sol";
@@ -28,6 +29,7 @@ import {CashGroup} from "../../internal/markets/CashGroup.sol";
 import {Market} from "../../internal/markets/Market.sol";
 import {DateTime} from "../../internal/markets/DateTime.sol";
 import {DeprecatedAssetRate} from "../../internal/markets/DeprecatedAssetRate.sol";
+import {Emitter} from "../../internal/Emitter.sol";
 
 import {ERC1967Upgrade} from "../../proxy/ERC1967/ERC1967Upgrade.sol";
 import {nBeaconProxy} from "../../proxy/nBeaconProxy.sol";
@@ -45,6 +47,7 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
     using Market for MarketParameters;
     using TokenHandler for Token;
 
+    uint256 private constant MAX_PORTFOLIO_ASSETS = 8;
     address internal constant NOTIONAL_MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
 
     MigrationSettings public immutable MIGRATION_SETTINGS;
@@ -64,6 +67,56 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
     function upgradeToRouter() external {
         require(msg.sender == NOTIONAL_MANAGER);
         _upgradeTo(FINAL_ROUTER);
+    }
+
+    function _emitCurrencyEvent(address account, uint8 currencyId, uint256 data) private {
+        uint8 mask = uint8(data & (0xff << 152 + currencyId)) >> (152 + currencyId);
+        if (mask == 0) return;
+
+        mapping(address => mapping(uint256 => BalanceStorage)) storage store = LibStorage.getBalanceStorage();
+        BalanceStorage storage balanceStorage = store[account][currencyId];
+        uint256 nTokenBalance = balanceStorage.nTokenBalance;
+        if (nTokenBalance > 0) {
+            Emitter.emitTransferNToken(address(0), account, currencyId, int256(nTokenBalance));
+        }
+
+        int256 cashBalance = balanceStorage.cashBalance;
+        if (cashBalance > 0) {
+            Emitter.emitMintOrBurnPrimeCash(account, currencyId, cashBalance);
+        }
+    }
+
+    function _emitFCashEvents(address account, uint256 data) private {
+        uint8 length = uint8(data & (0xff << 192) >> 192);
+        if (length == 0) return;
+
+        mapping(address => 
+            PortfolioAssetStorage[MAX_PORTFOLIO_ASSETS]) storage store = LibStorage.getPortfolioArrayStorage();
+        PortfolioAssetStorage[MAX_PORTFOLIO_ASSETS] storage storageArray = store[account];
+
+        for (uint256 i; i < length; i++) {
+            PortfolioAssetStorage storage assetStorage = storageArray[i];
+            uint16 currencyId = assetStorage.currencyId;
+            uint256 maturity = assetStorage.maturity;
+            int256 notional = assetStorage.notional;
+
+            Emitter.emitTransferfCash(address(0), account, currencyId, maturity, notional);
+        }
+    }
+
+    function emitAccountEvents(uint256[] calldata accounts) external {
+        require(msg.sender == NOTIONAL_MANAGER);
+        uint256 len = accounts.length;
+        for (uint256 i; i < len; i++) {
+            uint256 b = accounts[i];
+            address account = address(uint160(b));
+            _emitCurrencyEvent(account, 1, b);
+            _emitCurrencyEvent(account, 2, b);
+            _emitCurrencyEvent(account, 3, b);
+            _emitCurrencyEvent(account, 4, b);
+
+            _emitFCashEvents(account, b);
+        }
     }
 
     /// @notice Executes the prime cash migration but does not upgradeTo the final router
