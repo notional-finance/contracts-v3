@@ -42,7 +42,7 @@ contract MigrationSettings {
     address internal constant NOTIONAL_MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
 
     // @todo reduce this kink diff once we have more proper values for the tests
-    uint256 internal constant MAX_KINK_DIFF = 500 * uint256(1e9 / 10000); // 500 * Constants.BASIS_POINT
+    uint256 internal constant MAX_KINK_DIFF = 250 * uint256(1e9 / 10000); // 250 * Constants.BASIS_POINT
 
     mapping(uint256 => CurrencySettings) internal currencySettings;
 
@@ -124,7 +124,7 @@ contract MigrationSettings {
         bool checkFinalRate,
         int256 assetRateDecimals,
         int256 assetRate
-    ) internal pure returns (InterestRateCurveSettings[] memory finalCurves, uint256[] memory finalRates) {
+    ) internal view returns (InterestRateCurveSettings[] memory finalCurves, uint256[] memory finalRates) {
         // These will be the curves that are set in storage after this method exits
         finalCurves = new InterestRateCurveSettings[](fCashCurves.length);
         // This is just used for the external view method
@@ -154,6 +154,8 @@ contract MigrationSettings {
             require(utilization < uint256(Constants.RATE_PRECISION), "Over Utilization");
             // Cannot overflow the new market's max rate
             require(market.lastImpliedRate < irParams.maxRate, "Over Max Rate");
+            uint256 kinkMidpoint = (irParams.kinkUtilization2 - irParams.kinkUtilization1) / 2
+                + irParams.kinkUtilization1;
 
             if (utilization <= irParams.kinkUtilization1) {
                 // interestRate = (utilization * kinkRate1) / kinkUtilization1
@@ -161,6 +163,7 @@ contract MigrationSettings {
                 uint256 newKinkRate1 = market.lastImpliedRate
                     .mul(irParams.kinkUtilization1)
                     .div(utilization);
+                require(newKinkRate1 < irParams.kinkRate2, "Over Kink Rate 2");
 
                 // Check that the new curve's kink rate does not excessively diverge from the intended value
                 if (checkFinalRate) {
@@ -170,7 +173,9 @@ contract MigrationSettings {
                 irParams.kinkRate1 = newKinkRate1;
                 // Convert the interest rate back to the uint8 storage value
                 irCurve.kinkRate1 = (newKinkRate1 * 256 / maxRate).toUint8();
-            } else if (utilization < irParams.kinkUtilization2) { // Avoid divide by zero by using strictly less than
+            } else if (utilization < kinkMidpoint) { // Avoid divide by zero by using strictly less than
+                // If we are below the kinkMidpoint then modify kinkRate1 to adjust the fCash curve.
+
                 //                (utilization - kinkUtilization1) * (kinkRate2 - kinkRate1) 
                 // interestRate = ---------------------------------------------------------- + kinkRate1
                 //                            (kinkUtilization2 - kinkUtilization1)
@@ -183,6 +188,7 @@ contract MigrationSettings {
                     .sub(irParams.kinkRate2.mulInRatePrecision(utilization.sub(irParams.kinkUtilization1)));
                 uint256 denominator = irParams.kinkUtilization2 - utilization; // no overflow checked above
                 uint256 newKinkRate1 = numerator.divInRatePrecision(denominator);
+                require(newKinkRate1 < irParams.kinkRate2, "Over Kink Rate 2");
 
                 if (checkFinalRate) {
                     require(_absDiff(newKinkRate1, irParams.kinkRate1) < MAX_KINK_DIFF, "Over Diff 2");
@@ -191,6 +197,29 @@ contract MigrationSettings {
                 irParams.kinkRate1 = newKinkRate1;
                 // Convert the interest rate back to the uint8 storage value
                 irCurve.kinkRate1 = (newKinkRate1 * 256 / maxRate).toUint8();
+            } else if (utilization < irParams.kinkUtilization2) { // Avoid divide by zero by using strictly less than
+                // If above the kinkMidpoint but below kinkUtilization2, adjust kinkRate2
+                //                (utilization - kinkUtilization1) * (kinkRate2 - kinkRate1) 
+                // interestRate = ---------------------------------------------------------- + kinkRate1
+                //                            (kinkUtilization2 - kinkUtilization1)
+                // ==> 
+                //                (interestRate - kinkRate1) * (kinkUtilization2 - kinkUtilization1) + kinkRate1 * (utilization - kinkUtilization1) 
+                // kinkRate2 = -------------------------------------------------------------------------------------------------------------------
+                //                                                      (utilization - kinkUtilization1)
+                uint256 numerator = (market.lastImpliedRate.sub(irParams.kinkRate1))
+                    .mulInRatePrecision(irParams.kinkUtilization2.sub(irParams.kinkUtilization1))
+                    .add(irParams.kinkRate1.mulInRatePrecision(utilization.sub(irParams.kinkUtilization1)));
+                uint256 denominator = utilization - irParams.kinkUtilization1; // no overflow checked above
+                uint256 newKinkRate2 = numerator.divInRatePrecision(denominator);
+                require(newKinkRate2 < irParams.maxRate, "Over Max Rate");
+
+                if (checkFinalRate) {
+                    require(_absDiff(newKinkRate2, irParams.kinkRate2) < MAX_KINK_DIFF, "Over Diff 2");
+                }
+
+                irParams.kinkRate2 = newKinkRate2;
+                // Convert the interest rate back to the uint8 storage value
+                irCurve.kinkRate2 = (newKinkRate2 * 256 / maxRate).toUint8();
             } else {
                 //                (utilization - kinkUtilization2) * (maxRate - kinkRate2) 
                 // interestRate = ---------------------------------------------------------- + kinkRate2
@@ -204,6 +233,7 @@ contract MigrationSettings {
                     .sub(irParams.maxRate.mulInRatePrecision(utilization.sub(irParams.kinkUtilization2)));
                 uint256 denominator = uint256(Constants.RATE_PRECISION).sub(utilization);
                 uint256 newKinkRate2 = numerator.divInRatePrecision(denominator);
+                require(newKinkRate2 < irParams.maxRate, "Over Max Rate");
 
                 if (checkFinalRate) {
                     require(_absDiff(newKinkRate2, irParams.kinkRate2) < MAX_KINK_DIFF, "Over Diff 3");

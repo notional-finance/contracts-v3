@@ -162,9 +162,9 @@ library InitialSettings {
         });
         fCashCurves[2] = InterestRateCurveSettings({
             kinkUtilization1: 15,
-            kinkUtilization2: 70,
+            kinkUtilization2: 60,
             kinkRate1: 20,
-            kinkRate2: 61,
+            kinkRate2: 55,
             maxRateUnits: 100,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
@@ -214,8 +214,8 @@ library InitialSettings {
             kinkUtilization1: 15,
             kinkUtilization2: 70,
             kinkRate1: 17,
-            kinkRate2: 51,
-            maxRateUnits: 120,
+            kinkRate2: 40,
+            maxRateUnits: 80,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
             maxFeeRate25BPS: 8
@@ -224,8 +224,8 @@ library InitialSettings {
             kinkUtilization1: 15,
             kinkUtilization2: 70,
             kinkRate1: 20,
-            kinkRate2: 61,
-            maxRateUnits: 100,
+            kinkRate2: 40,
+            maxRateUnits: 80,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
             maxFeeRate25BPS: 8

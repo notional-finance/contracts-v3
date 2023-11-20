@@ -8,16 +8,27 @@ import { UpgradeRouter } from "../utils/UpgradeRouter.s.sol";
 import { InitialSettings } from "./InitialSettings.sol";
 
 import { Deployments } from "@notional-v3/global/Deployments.sol";
-import { Token, AccountBalance, PortfolioAsset } from "@notional-v3/global/Types.sol";
+import { 
+    Token,
+    AccountBalance,
+    PortfolioAsset,
+    InterestRateCurveSettings,
+    MarketParameters
+} from "@notional-v3/global/Types.sol";
 
 import { MigratePrimeCash } from "@notional-v3/external/patchfix/MigratePrimeCash.sol";
-import { MigrationSettings, TotalfCashDebt } from "@notional-v3/external/patchfix/migrate-v3/MigrationSettings.sol";
+import {
+    MigrationSettings,
+    TotalfCashDebt,
+    CurrencySettings
+} from "@notional-v3/external/patchfix/migrate-v3/MigrationSettings.sol";
 import { PauseRouter } from "@notional-v3/external/PauseRouter.sol";
 import { Router } from "@notional-v3/external/Router.sol";
 
 import { nTokenERC20Proxy } from "@notional-v3/external/proxies/nTokenERC20Proxy.sol";
 import { PrimeCashProxy } from "@notional-v3/external/proxies/PrimeCashProxy.sol";
 import { PrimeDebtProxy } from "@notional-v3/external/proxies/PrimeDebtProxy.sol";
+import { InterestRateCurve } from "@notional-v3/internal/markets/InterestRateCurve.sol";
 
 import { 
     CompoundV2HoldingsOracle,
@@ -255,6 +266,41 @@ contract MigrateV3 is UpgradeRouter {
         settings.updateTotalfCashDebt(WBTC, debts[3]);
     }
 
+    function checkfCashCurve(MigrationSettings settings, uint16 currencyId) internal view {
+        MarketParameters[] memory markets = NOTIONAL.getActiveMarkets(currencyId);
+        CurrencySettings memory s = settings.getCurrencySettings(currencyId);
+        (InterestRateCurveSettings[] memory finalCurves, uint256[] memory finalRates) = 
+            settings.getfCashCurveUpdate(currencyId, false);
+
+        console.log("** Check fCash Curve for %s **", currencyId);
+        for (uint256 i; i < markets.length; i++) {
+            uint256 maxRate = InterestRateCurve.calculateMaxRate(s.fCashCurves[i].maxRateUnits);
+            console.log(
+                "Market Index %s: %s [Initial Rate] %s [Final Rate]",
+                i + 1, markets[i].lastImpliedRate, finalRates[i]
+            );
+            if (s.fCashCurves[i].kinkRate1 != finalCurves[i].kinkRate1) {
+                console.log(
+                    "Kink Rate 1: %s [Initial Rate] %s [Final Rate]",
+                    maxRate * s.fCashCurves[i].kinkRate1 / 256,
+                    maxRate * finalCurves[i].kinkRate1 / 256
+                );
+                console.logInt(
+                    int256(maxRate * s.fCashCurves[i].kinkRate1 / 256) - int256(maxRate * finalCurves[i].kinkRate1 / 256)
+                );
+            } else {
+                console.log(
+                    "Kink Rate 2: %s [Initial Rate] %s [Final Rate]",
+                    maxRate * s.fCashCurves[i].kinkRate2 / 256,
+                    maxRate * finalCurves[i].kinkRate2 / 256
+                );
+                console.logInt(
+                    int256(maxRate * s.fCashCurves[i].kinkRate2 / 256) - int256(maxRate * finalCurves[i].kinkRate2 / 256)
+                );
+            }
+        }
+    }
+
     function checkUpgradeValidity() internal { 
         // check system settings match expected
         // check fCash invariant
@@ -298,6 +344,12 @@ contract MigrateV3 is UpgradeRouter {
 
         setMigrationSettings(settings, oracles);
         checkAllAccounts();
+
+        // Check curve settings, this has to happen before we run the upgrade
+        checkfCashCurve(settings, ETH);
+        checkfCashCurve(settings, DAI);
+        checkfCashCurve(settings, USDC);
+        checkfCashCurve(settings, WBTC);
 
         // Begins migration
         vm.prank(NOTIONAL.owner());

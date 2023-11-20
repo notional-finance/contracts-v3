@@ -9,6 +9,7 @@ remappings = [
     "@notional-v3/external=contracts/external/",
     "@notional-v3/interfaces=interfaces/notional/",
     "@notional-v3/global=contracts/global/",
+    "@notional-v3/internal=contracts/internal/",
 ]
 
 ignored_error_codes = [ 2018, 5667 ]
