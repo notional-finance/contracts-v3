@@ -7,16 +7,18 @@ import "forge-std/StdJson.sol";
 import { UpgradeRouter } from "../utils/UpgradeRouter.s.sol";
 import { InitialSettings } from "./InitialSettings.sol";
 
+import { Constants } from "@notional-v3/global/Constants.sol";
 import { Deployments } from "@notional-v3/global/Deployments.sol";
 import { 
     Token,
     AccountBalance,
     PortfolioAsset,
     InterestRateCurveSettings,
-    MarketParameters
+    MarketParameters,
+    PrimeCashFactors
 } from "@notional-v3/global/Types.sol";
 
-import { MigratePrimeCash } from "@notional-v3/external/patchfix/MigratePrimeCash.sol";
+import { MigratePrimeCash, IERC20 } from "@notional-v3/external/patchfix/MigratePrimeCash.sol";
 import {
     MigrationSettings,
     TotalfCashDebt,
@@ -75,6 +77,10 @@ contract MigrateV3 is UpgradeRouter {
     UpgradeableBeacon nTokenBeacon;
     UpgradeableBeacon pCashBeacon;
     UpgradeableBeacon pDebtBeacon;
+
+    mapping(uint256 => mapping(uint256 => int256)) public totalFCashDebt;
+    mapping(uint256 => int256) public nTokenSupply;
+    mapping(uint256 => int256) public cashBalance;
 
     modifier usingAccount(address account) {
         vm.startPrank(account);
@@ -194,7 +200,7 @@ contract MigrateV3 is UpgradeRouter {
         settings.setMigrationSettings(WBTC, InitialSettings.getWBTC(oracles[3]));
     }
 
-    function checkAllAccounts() internal view { 
+    function checkAllAccounts() internal { 
         string memory root = vm.projectRoot();
         string memory path = string(abi.encodePacked(root, "/script/migrate-v3/accounts.json"));
         string memory json = vm.readFile(path);
@@ -207,9 +213,29 @@ contract MigrateV3 is UpgradeRouter {
             bool err = _checkAccount(accounts[i]);
             foundError = foundError || err;
         }
+
+        _checkNTokenAccount(ETH);
+        _checkNTokenAccount(DAI);
+        _checkNTokenAccount(USDC);
+        _checkNTokenAccount(WBTC);
     }
 
-    function _checkAccount(address account) private view returns (bool foundError) {
+    function _checkNTokenAccount(uint16 currencyId) private {
+        address nTokenAddress = NOTIONAL.nTokenAddress(currencyId);
+        (/* */, PortfolioAsset[] memory portfolio) = NOTIONAL.getNTokenPortfolio(nTokenAddress);
+        (,uint256 totalSupply,,,,,,) = NOTIONAL.getNTokenAccount(nTokenAddress);
+
+        for (uint256 i; i < portfolio.length; i++) {
+            if (portfolio[i].notional < 0) {
+                // Set total fCash debt balance here for validation later
+                totalFCashDebt[portfolio[i].currencyId][portfolio[i].maturity] += portfolio[i].notional;
+            }
+        }
+
+        require(totalSupply == uint256(nTokenSupply[currencyId]), "nToken supply");
+    }
+
+    function _checkAccount(address account) private returns (bool foundError) {
         (
             NotionalV2.AccountContextOld memory accountContext,
             AccountBalance[] memory accountBalances,
@@ -228,13 +254,17 @@ contract MigrateV3 is UpgradeRouter {
 
         for (uint256 i; i < accountBalances.length; i++) {
             if (accountBalances[i].currencyId == 0) break;
+            nTokenSupply[accountBalances[i].currencyId] += accountBalances[i].nTokenBalance;
 
             if (accountBalances[i].cashBalance < 0) {
                 console.log("Account %s has a negative cash balance %s in %s",
                     account, vm.toString(accountBalances[i].cashBalance), accountBalances[i].currencyId
                 );
                 foundError = true;
+            } else {
+                cashBalance[accountBalances[i].currencyId] += accountBalances[i].cashBalance;
             }
+
             // NOTE: this is not strictly necessary to check
             // if (accountBalances[i].lastClaimTime > 0) {
             //     console.log("Account %s has a last claim time in %s",
@@ -249,17 +279,24 @@ contract MigrateV3 is UpgradeRouter {
                     account, portfolio[i].currencyId, portfolio[i].maturity
                 );
                 foundError = true;
+            } else if (portfolio[i].notional < 0) {
+                // Set total fCash debt balance here for validation later
+                totalFCashDebt[portfolio[i].currencyId][portfolio[i].maturity] += portfolio[i].notional;
             }
         }
     }
 
-    function updateTotalDebt(MigrationSettings settings) internal { 
+    function getTotalDebts() internal view returns (TotalfCashDebt[][] memory) {
         string memory root = vm.projectRoot();
         string memory path = string(abi.encodePacked(root, "/script/migrate-v3/totalDebt.json"));
         string memory json = vm.readFile(path);
         bytes memory perCurrencyDebts = json.parseRaw(".debts");
 
-        TotalfCashDebt[][] memory debts = abi.decode(perCurrencyDebts, (TotalfCashDebt[][]));
+        return abi.decode(perCurrencyDebts, (TotalfCashDebt[][]));
+    }
+
+    function updateTotalDebt(MigrationSettings settings) internal { 
+        TotalfCashDebt[][] memory debts = getTotalDebts();
         settings.updateTotalfCashDebt(ETH, debts[0]);
         settings.updateTotalfCashDebt(DAI, debts[1]);
         settings.updateTotalfCashDebt(USDC, debts[2]);
@@ -302,11 +339,67 @@ contract MigrateV3 is UpgradeRouter {
     }
 
     function checkUpgradeValidity() internal { 
-        // check system settings match expected
-        // check fCash invariant
-        // check prime cash invariant
-        // check balances are equal to expected
-        // check that we can safely initialize markets
+        // TODO: Check all system settings match expected
+        // _checkGovernanceSettings();
+
+        {
+            // Check Total fCash invariant
+            TotalfCashDebt[][] memory totalDebts = getTotalDebts();
+            for (uint256 i; i < totalDebts.length; i++) {
+                for (uint256 j; j < totalDebts[i].length; j++) {
+                    TotalfCashDebt memory t = totalDebts[i][j];
+                    (
+                        int256 totalDebt,
+                        int256 fCashReserve,
+                        int256 pCashReserve
+                    ) = NOTIONAL.getTotalfCashDebtOutstanding(uint16(i + 1), t.maturity);
+                    require(fCashReserve == 0);
+                    require(pCashReserve == 0);
+                    require(-totalDebt == t.totalfCashDebt, "Does not match json");
+                    // if (totalDebt != totalFCashDebt[i + 1][t.maturity]) {
+                    //     console.log("Does not match storage %s %s", i + 1, t.maturity);
+                    //     console.logInt(totalDebt);
+                    //     console.logInt(totalFCashDebt[i + 1][t.maturity]);
+                    require(totalDebt == totalFCashDebt[i + 1][t.maturity], "Does not match storage");
+                    //}
+                }
+            }
+        }
+
+        // Check prime cash invariant
+        _checkPrimeCashInvariant(ETH);
+        _checkPrimeCashInvariant(DAI);
+        _checkPrimeCashInvariant(USDC);
+        _checkPrimeCashInvariant(WBTC);
+    }
+
+    function _checkPrimeCashInvariant(uint16 currencyId) internal view {
+        // Cannot accrue prime interest while in paused state
+        (/* */, PrimeCashFactors memory pr, /* */, uint256 totalUnderlyingSupply) =
+            NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
+        (Token memory assetToken, Token memory underlyingToken) = NOTIONAL.getCurrency(currencyId);
+        require(pr.totalPrimeSupply == IERC20(assetToken.tokenAddress).balanceOf(address(NOTIONAL)), "total prime supply");
+        require(pr.totalPrimeDebt == 0);
+
+        uint256 underlyingBalance = currencyId == ETH ?
+            assetToken.tokenAddress.balance :
+            IERC20(underlyingToken.tokenAddress).balanceOf(assetToken.tokenAddress);
+
+        require(uint256(cashBalance[currencyId]) <= pr.totalPrimeSupply, "total cash balances");
+
+        require(
+            pr.lastTotalUnderlyingValue <=
+            underlyingBalance * 1e8 / uint256(underlyingToken.decimals),
+            "last underlying held vs assetToken balance"
+        );
+        // This value is converted to underlying using the prime rate and should match the
+        // lastTotalUnderlyingValue
+        requireAbsDiff(
+            pr.lastTotalUnderlyingValue,
+            totalUnderlyingSupply,
+            1,
+            "total underlying supply"
+        );
     }
 
     function executeMigration(
@@ -321,7 +414,7 @@ contract MigrateV3 is UpgradeRouter {
         // Inside paused state
         checkUpgradeValidity();
 
-        // // Emit all account events
+        // Emit all account events
         // emitAccountEventsAndUpgrade(finalRouter);
     }
 
@@ -358,7 +451,12 @@ contract MigrateV3 is UpgradeRouter {
 
         executeMigration(settings);
 
+        // TODO: check that we can safely initialize markets
+        uint256 timeRef = (block.timestamp - block.timestamp % Constants.QUARTER) + Constants.QUARTER;
         // TODO: test rebalancing nwTokens down to zero
     }
 
+    function requireAbsDiff(uint256 a, uint256 b, uint256 abs, string memory m) internal pure {
+        require(a < b ? b - a <= abs : a - b <= abs, m);
+    }
 }

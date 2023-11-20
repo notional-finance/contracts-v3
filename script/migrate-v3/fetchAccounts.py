@@ -59,7 +59,6 @@ def process_accounts(all_accounts):
                     totalFCashDebt[key] = {"notional_sum": 0}
 
                 totalFCashDebt[key]["notional_sum"] += notional
-                account_ids.append(account["id"])
 
         account_ids.append(account["id"])
 
