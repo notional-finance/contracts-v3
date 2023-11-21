@@ -81,6 +81,7 @@ contract MigrateV3 is UpgradeRouter {
     mapping(uint256 => mapping(uint256 => int256)) public totalFCashDebt;
     mapping(uint256 => int256) public nTokenSupply;
     mapping(uint256 => int256) public cashBalance;
+    uint256[] public emitAccounts;
 
     modifier usingAccount(address account) {
         vm.startPrank(account);
@@ -243,6 +244,7 @@ contract MigrateV3 is UpgradeRouter {
             PortfolioAsset[] memory portfolio
         ) = NotionalV2(address(NOTIONAL)).getAccount(account);
         foundError = false;
+        uint256 emitData;
 
         if (
             accountContext.nextSettleTime != 0 &&
@@ -266,12 +268,20 @@ contract MigrateV3 is UpgradeRouter {
                 cashBalance[accountBalances[i].currencyId] += accountBalances[i].cashBalance;
             }
 
+            if (accountBalances[i].cashBalance != 0 || accountBalances[i].nTokenBalance != 0) {
+                emitData = uint256(bytes32((bytes1(0x01) << uint8(accountBalances[i].currencyId))));
+            }
+
             // NOTE: this is not strictly necessary to check
             // if (accountBalances[i].lastClaimTime > 0) {
             //     console.log("Account %s has a last claim time in %s",
             //         account, accountBalances[i].currencyId
             //     );
             // }
+        }
+
+        if (portfolio.length > 0) {
+            emitData = emitData | uint256(bytes32(bytes1(uint8(portfolio.length))) >> 8);
         }
 
         for (uint256 i; i < portfolio.length; i++) {
@@ -284,6 +294,11 @@ contract MigrateV3 is UpgradeRouter {
                 // Set total fCash debt balance here for validation later
                 totalFCashDebt[portfolio[i].currencyId][portfolio[i].maturity] += portfolio[i].notional;
             }
+        }
+
+        if (emitData != 0) {
+            emitData = emitData | uint256(uint160(account));
+            emitAccounts.push(emitData);
         }
     }
 
@@ -410,8 +425,9 @@ contract MigrateV3 is UpgradeRouter {
         // Inside paused state
         checkUpgradeValidity();
 
-        // TODO: Emit all account events
-        // MigratePrimeCash(address(NOTIONAL)).emitAccountEvents();
+        // Emit all account events
+        console.log("Emitting %s account events", emitAccounts.length);
+        MigratePrimeCash(address(NOTIONAL)).emitAccountEvents(emitAccounts);
 
         // Upgrade to router
         MigratePrimeCash(address(NOTIONAL)).upgradeToRouter();

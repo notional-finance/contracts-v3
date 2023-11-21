@@ -70,8 +70,8 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
     }
 
     function _emitCurrencyEvent(address account, uint8 currencyId, uint256 data) private {
-        uint8 mask = uint8(data & (0xff << 152 + currencyId)) >> (152 + currencyId);
-        if (mask == 0) return;
+        bytes1 mask = (bytes1(bytes32(data)) >> currencyId) & 0x01;
+        if (mask == 0x00) return;
 
         mapping(address => mapping(uint256 => BalanceStorage)) storage store = LibStorage.getBalanceStorage();
         BalanceStorage storage balanceStorage = store[account][currencyId];
@@ -87,7 +87,7 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
     }
 
     function _emitFCashEvents(address account, uint256 data) private {
-        uint8 length = uint8(data & (0xff << 192) >> 192);
+        uint8 length = uint8(bytes1(bytes32(data) << 8));
         if (length == 0) return;
 
         mapping(address => 
