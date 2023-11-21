@@ -2,7 +2,7 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
-import "forge-std/Script.sol";
+import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 import { UpgradeRouter } from "../utils/UpgradeRouter.s.sol";
 import { InitialSettings } from "./InitialSettings.sol";
@@ -15,7 +15,11 @@ import {
     PortfolioAsset,
     InterestRateCurveSettings,
     MarketParameters,
-    PrimeCashFactors
+    PrimeCashFactors,
+    BalanceAction,
+    BalanceActionWithTrades,
+    DepositActionType,
+    TradeActionType
 } from "@notional-v3/global/Types.sol";
 
 import { MigratePrimeCash, IERC20 } from "@notional-v3/external/patchfix/MigratePrimeCash.sol";
@@ -62,7 +66,7 @@ interface NotionalV2 {
         );
 }
 
-contract MigrateV3 is UpgradeRouter {
+contract MigrateV3 is UpgradeRouter, Test {
     using stdJson for string;
 
     address BEACON_DEPLOYER = 0x0D251Bd6c14e02d34f68BFCB02c54cBa3D108122;
@@ -427,13 +431,14 @@ contract MigrateV3 is UpgradeRouter {
 
         // Emit all account events
         console.log("Emitting %s account events", emitAccounts.length);
+        // TODO: need to test these emits...
         MigratePrimeCash(address(NOTIONAL)).emitAccountEvents(emitAccounts);
 
         // Upgrade to router
         MigratePrimeCash(address(NOTIONAL)).upgradeToRouter();
     }
 
-    function run() public {
+    function setUp() public {
         // TODO: mark down reserves
         // TODO: push out vault user profits
         // deployWrappedFCash();
@@ -465,11 +470,9 @@ contract MigrateV3 is UpgradeRouter {
         NOTIONAL.upgradeTo(address(migratePrimeCash));
 
         executeMigration(settings);
+    }
 
-        console.log("Implementation: ", nProxy(payable(address(NOTIONAL))).getImplementation());
-        uint256 snapshot = vm.snapshot();
-        console.log("Post Migration Snapshot: %s @ %s", snapshot, block.number);
-
+    function test_initializeMarkets() public {
         // Check that we can safely initialize markets
         uint256 timeRef = (block.timestamp - block.timestamp % Constants.QUARTER) + Constants.QUARTER;
         vm.warp(timeRef);
@@ -479,6 +482,66 @@ contract MigrateV3 is UpgradeRouter {
         NOTIONAL.initializeMarkets(WBTC, false);
 
         // TODO: test rebalancing nwTokens down to zero
+    }
+
+    function dealAndApprove(uint16 currencyId, address account) internal {
+        (/* */, Token memory underlyingToken) = NOTIONAL.getCurrency(currencyId);
+        if (currencyId == ETH) {
+            vm.deal(account, 100_000e18);
+        } else {
+            deal(underlyingToken.tokenAddress, account, 100_000e18);
+
+            vm.prank(account);
+            IERC20(underlyingToken.tokenAddress).approve(address(NOTIONAL), type(uint256).max);
+        }
+    }
+
+    function test_mintNTokens() public {
+        address acct = makeAddr("account");
+        dealAndApprove(ETH, acct);
+
+        (/* */, int256 nTokenBalance, /* */) = NOTIONAL.getAccountBalance(ETH, acct);
+        BalanceAction[] memory actions = new BalanceAction[](1);
+        actions[0] = BalanceAction({
+            actionType: DepositActionType.DepositUnderlyingAndMintNToken,
+            currencyId: ETH,
+            depositActionAmount: 1e18,
+            withdrawAmountInternalPrecision: 0,
+            withdrawEntireCashBalance: false,
+            redeemToUnderlying: true
+        });
+
+        vm.prank(acct);
+        NOTIONAL.batchBalanceAction{value: 1e18}(acct, actions);
+
+        assertGe(nTokenBalance, 0, "Minted nTokens");
+    }
+
+    function test_lendfCash() public {
+        address acct = makeAddr("account");
+        dealAndApprove(ETH, acct);
+
+        BalanceActionWithTrades[] memory actions = new BalanceActionWithTrades[](1);
+        MarketParameters[] memory markets = NOTIONAL.getActiveMarkets(ETH);
+
+        (/* */, /* */, /* */, bytes32 encodedTrade) = NOTIONAL.getDepositFromfCashLend(
+            ETH, 1e8, markets[0].maturity, 0, block.timestamp
+        );
+        bytes32[] memory trades = new bytes32[](1);
+        trades[0] = encodedTrade;
+
+        actions[0] = BalanceActionWithTrades({
+            actionType: DepositActionType.DepositUnderlying,
+            currencyId: ETH,
+            depositActionAmount: 1e18,
+            withdrawAmountInternalPrecision: 0,
+            withdrawEntireCashBalance: false,
+            redeemToUnderlying: true,
+            trades: trades
+        });
+
+        vm.prank(acct);
+        NOTIONAL.batchBalanceAndTradeAction{value: 1e18}(acct, actions);
     }
 
     function requireAbsDiff(uint256 a, uint256 b, uint256 abs, string memory m) internal pure {
