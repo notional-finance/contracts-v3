@@ -448,6 +448,8 @@ contract MigrateV3 is UpgradeRouter {
         NOTIONAL.upgradeTo(address(migratePrimeCash));
 
         executeMigration(settings);
+        uint256 snapshot = vm.snapshot();
+        console.log("Post Migration Snapshot: %s @ %s", snapshot, block.number);
 
         // Check that we can safely initialize markets
         uint256 timeRef = (block.timestamp - block.timestamp % Constants.QUARTER) + Constants.QUARTER;
@@ -458,6 +460,7 @@ contract MigrateV3 is UpgradeRouter {
         NOTIONAL.initializeMarkets(WBTC, false);
 
         // TODO: test rebalancing nwTokens down to zero
+        // TODO need to snapshot here...
     }
 
     function requireAbsDiff(uint256 a, uint256 b, uint256 abs, string memory m) internal pure {
