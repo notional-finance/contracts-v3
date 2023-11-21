@@ -145,6 +145,7 @@ contract MigrateV3 is UpgradeRouter {
         (finalRouter, pauseRouter) = deployRouter(libs, actions);
 
         settings = new MigrationSettings();
+        console.log("Final Router %s", address(finalRouter));
         migrateRouter = new MigratePrimeCash(settings, address(finalRouter), address(pauseRouter));
     }
 
@@ -448,6 +449,8 @@ contract MigrateV3 is UpgradeRouter {
         NOTIONAL.upgradeTo(address(migratePrimeCash));
 
         executeMigration(settings);
+
+        console.log("Implementation: ", nProxy(payable(address(NOTIONAL))).getImplementation());
         uint256 snapshot = vm.snapshot();
         console.log("Post Migration Snapshot: %s @ %s", snapshot, block.number);
 
@@ -460,7 +463,6 @@ contract MigrateV3 is UpgradeRouter {
         NOTIONAL.initializeMarkets(WBTC, false);
 
         // TODO: test rebalancing nwTokens down to zero
-        // TODO need to snapshot here...
     }
 
     function requireAbsDiff(uint256 a, uint256 b, uint256 abs, string memory m) internal pure {
