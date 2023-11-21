@@ -4,10 +4,8 @@ pragma solidity >=0.7.6;
 interface IRewarder {
     function claimRewards(
         address account,
-        uint16 currencyId,
         uint256 nTokenBalanceBefore,
         uint256 nTokenBalanceAfter,
-        int256  netNTokenSupplyChange,
-        uint256 NOTETokensClaimed
+        uint256 totalSupply
     ) external;
 }
