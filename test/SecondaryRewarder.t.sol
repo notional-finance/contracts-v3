@@ -9,6 +9,7 @@ import {TreasuryAction} from "../contracts/external/actions/TreasuryAction.sol";
 import {NotionalProxy} from "../interfaces/notional/NotionalProxy.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 import {SecondaryRewarder} from "../contracts/internal/balances/SecondaryRewarder.sol";
+import {Constants} from "../contracts/global/Constants.sol";
 
 contract SecondaryRewarderTest is Test {
     NotionalProxy constant public NOTIONAL = NotionalProxy(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
@@ -49,10 +50,9 @@ contract SecondaryRewarderTest is Test {
     function setUp() public {
         vm.createSelectFork(ARBITRUM_RPC_URL, ARBITRUM_FORK_BLOCK);
         (uint16 currencyId, address rewardToken) = _getCurrencyAndRewardToken();
-        address nTokenAddress = NOTIONAL.nTokenAddress(currencyId);
         rewarder = new SecondaryRewarder(
             address(NOTIONAL),
-            nTokenAddress,
+            currencyId,
             rewardToken,
             1e5,
             uint32(block.timestamp + 365 days)
@@ -99,7 +99,7 @@ contract SecondaryRewarderTest is Test {
         rewarder.recover(someToken, amount);
     }
 
-    function test_recover_OwnerCanRecoverAnyToken() public {
+    function test_recover_OwnerCanRecoverAnyERC20() public {
         IERC20 someToken = IERC20(0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1);
         uint256 amount = 1000e18;
         deal(address(someToken), address(rewarder), amount);
@@ -112,6 +112,25 @@ contract SecondaryRewarderTest is Test {
 
         uint256 ownerPostBalance = someToken.balanceOf(owner);
         uint256 rewarderPostBalance = someToken.balanceOf(address(rewarder));
+
+        assertLt(ownerPreBalance, ownerPostBalance);
+        assertEq(ownerPreBalance + amount, ownerPostBalance);
+        assertLt(rewarderPostBalance, rewarderPreBalance);
+        assertEq(rewarderPreBalance - amount, rewarderPostBalance);
+    }
+
+    function test_recover_OwnerCanRecoverEth() public {
+        uint256 amount = 1000e18;
+        deal(address(rewarder), amount);
+
+        uint256 ownerPreBalance = owner.balance;
+        uint256 rewarderPreBalance = address(rewarder).balance;
+
+        vm.prank(owner);
+        rewarder.recover(Constants.ETH_ADDRESS, amount);
+
+        uint256 ownerPostBalance = owner.balance;
+        uint256 rewarderPostBalance = address(rewarder).balance;
 
         assertLt(ownerPreBalance, ownerPostBalance);
         assertEq(ownerPreBalance + amount, ownerPostBalance);

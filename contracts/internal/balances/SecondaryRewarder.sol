@@ -16,31 +16,38 @@ contract SecondaryRewarder is IRewarder {
     NotionalProxy public immutable NOTIONAL;
     address public immutable NTOKEN_ADDRESS;
     address public immutable REWARD_TOKEN;
+    uint16 public immutable CURRENCY_ID;
 
-    uint32 public emissionRatePerYear;
     uint32 public endTime;
-    uint32 public lastAccumulatedTime;
-    uint128 public accumulatedRewardPerNToken;
+    uint32 public override emissionRatePerYear;
+    uint32 public override lastAccumulatedTime;
+    uint128 public override accumulatedRewardPerNToken;
 
     mapping(address => uint256) public accountsIncentiveDebts;
 
+    modifier onlyOwner() {
+        require(msg.sender == NOTIONAL.owner(), "Only owner");
+        _;
+    }
+
     constructor(
         address notionalAddress,
-        address ntokenAddress,
+        uint16 currencyId,
         address incentive_token,
         uint32 _emissionRatePerYear,
         uint32 _endTime
     ) {
         NOTIONAL = NotionalProxy(notionalAddress);
-        NTOKEN_ADDRESS = ntokenAddress;
+        CURRENCY_ID = currencyId;
+        NTOKEN_ADDRESS = NotionalProxy(notionalAddress).nTokenAddress(currencyId);
         REWARD_TOKEN = incentive_token;
-        emissionRatePerYear = _emissionRatePerYear;
 
+        emissionRatePerYear = _emissionRatePerYear;
         lastAccumulatedTime = uint32(block.timestamp);
         endTime = _endTime;
     }
 
-    function getAccountRewardClaim(uint32 blockTime) public returns (uint256 rewardToClaim) {
+    function getAccountRewardClaim(uint32 blockTime) external override returns (uint256 rewardToClaim) {
         require(lastAccumulatedTime <= blockTime, "Invalid block time");
         uint256 totalSupply = IERC20(NTOKEN_ADDRESS).totalSupply();
         uint256 nTokenBalance = IERC20(NTOKEN_ADDRESS).balanceOf(msg.sender);
@@ -49,8 +56,7 @@ contract SecondaryRewarder is IRewarder {
         rewardToClaim = _calculateRewardToClaim(msg.sender, nTokenBalance);
     }
 
-    function setIncentiveEmissionRate(uint32 _emissionRatePerYear, uint32 _endTime) external {
-        require(msg.sender == NOTIONAL.owner(), "Only owner");
+    function setIncentiveEmissionRate(uint32 _emissionRatePerYear, uint32 _endTime) external onlyOwner {
         uint256 totalSupply = IERC20(NTOKEN_ADDRESS).totalSupply();
 
         _accumulateRewardPerNToken(uint32(block.timestamp), totalSupply);
@@ -59,20 +65,24 @@ contract SecondaryRewarder is IRewarder {
         endTime = _endTime;
     }
 
-    function recover(address token, uint256 amount) external {
-        address owner = NOTIONAL.owner();
-        require(msg.sender == owner, "Only owner");
-
-        IERC20(token).transfer(owner, amount);
+    function recover(address token, uint256 amount) external onlyOwner {
+        if (Constants.ETH_ADDRESS == token) {
+            (bool status,) = msg.sender.call{value: amount}("");
+            require(status);
+        } else {
+            IERC20(token).transfer(msg.sender, amount);
+        }
     }
 
     function claimRewards(
         address account,
+        uint16 currencyId,
         uint256 nTokenBalanceBefore,
         uint256 nTokenBalanceAfter,
         uint256 totalSupply
     ) external override {
         require(msg.sender == address(NOTIONAL), "Only Notional");
+        require(currencyId == CURRENCY_ID);
 
         _accumulateRewardPerNToken(uint32(block.timestamp), totalSupply);
         uint256 rewardToClaim = _calculateRewardToClaim(account, nTokenBalanceBefore);
@@ -80,7 +90,7 @@ contract SecondaryRewarder is IRewarder {
         accountsIncentiveDebts[account] =
             nTokenBalanceAfter.mul(accumulatedRewardPerNToken).div(Constants.INCENTIVE_ACCUMULATION_PRECISION);
 
-        if (rewardToClaim > 0) {
+        if (0 < rewardToClaim) {
             GenericToken.safeTransferOut(REWARD_TOKEN, account, rewardToClaim);
         }
     }
@@ -88,7 +98,7 @@ contract SecondaryRewarder is IRewarder {
     function _accumulateRewardPerNToken(uint32 blockTime, uint256 totalSupply) private {
         uint32 time = uint32(SafeInt256.min(blockTime, endTime));
 
-        if (lastAccumulatedTime < time && 0 > totalSupply) {
+        if (lastAccumulatedTime < time && totalSupply < 0) {
             uint256 timeSinceLastAccumulation = time - lastAccumulatedTime;
             // forgefmt: disable-next-item
             uint256 additionalIncentiveAccumulatedPerNToken  = timeSinceLastAccumulation
