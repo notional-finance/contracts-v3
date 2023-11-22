@@ -1,30 +1,38 @@
 // SPDX-License-Identifier: BSUL-1.1
-pragma solidity =0.8.17;
+pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import {Constants} from "../../global/Constants.sol";
+import {SafeUint256} from "../../math/SafeUint256.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
 import {
     IPrimeCashHoldingsOracle,
     DepositData,
+    OracleData,
     RedeemData
 } from "../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 
 contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
+    using SafeUint256 for uint256;
+
     NotionalProxy internal immutable NOTIONAL;
     address internal immutable UNDERLYING_TOKEN;
     uint8 internal immutable UNDERLYING_DECIMALS;
-    uint256 private immutable UNDERLYING_PRECISION;
+    uint256 internal immutable UNDERLYING_PRECISION;
     bool internal immutable UNDERLYING_IS_ETH;
 
     constructor(NotionalProxy notional_, address underlying_) {
+        bool underlyingIsEth = underlying_ == Constants.ETH_ADDRESS;
+        uint8 underlyingDecimals = underlyingIsEth ? 18 : IERC20(underlying_).decimals();
+
         NOTIONAL = notional_;
         UNDERLYING_TOKEN = underlying_;
-        UNDERLYING_IS_ETH = underlying_ == Constants.ETH_ADDRESS;
-        UNDERLYING_DECIMALS = UNDERLYING_IS_ETH ? 18 : IERC20(UNDERLYING_TOKEN).decimals();
-        UNDERLYING_PRECISION = 10**UNDERLYING_DECIMALS;
+        UNDERLYING_IS_ETH = underlyingIsEth;
+        UNDERLYING_DECIMALS = underlyingDecimals;
+        UNDERLYING_PRECISION = 10**underlyingDecimals;
     }
-    
+
     /// @notice Returns a list of the various holdings for the prime cash
     /// currency
     function holdings() external view override returns (address[] memory) {
@@ -36,7 +44,7 @@ contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
     function underlying() external view override returns (address) {
         return UNDERLYING_TOKEN;
     }
-    
+
     /// @notice Returns the native decimal precision of the underlying token
     function decimals() external view override returns (uint8) {
         return UNDERLYING_DECIMALS;
@@ -49,7 +57,7 @@ contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
         uint256 internalPrecision
     ) {
         nativePrecision = _getTotalUnderlyingValueStateful();
-        internalPrecision = nativePrecision * uint256(Constants.INTERNAL_TOKEN_PRECISION) / UNDERLYING_PRECISION;
+        internalPrecision = nativePrecision.mul(uint256(Constants.INTERNAL_TOKEN_PRECISION)).div(UNDERLYING_PRECISION);
     }
 
     function getTotalUnderlyingValueView() external view override returns (
@@ -57,7 +65,7 @@ contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
         uint256 internalPrecision
     ) {
         nativePrecision = _getTotalUnderlyingValueView();
-        internalPrecision = nativePrecision * uint256(Constants.INTERNAL_TOKEN_PRECISION) / UNDERLYING_PRECISION;
+        internalPrecision = nativePrecision.mul(uint256(Constants.INTERNAL_TOKEN_PRECISION)).div(UNDERLYING_PRECISION);
     }
 
     function holdingValuesInUnderlying() external view override returns (uint256[] memory) {
@@ -115,4 +123,8 @@ contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
         address[] calldata /* holdings_ */, 
         uint256[] calldata /* depositAmount */
     ) internal view virtual returns (DepositData[] memory /* depositData */) { /* No-op */ }
+
+    function getOracleData() external view virtual override returns (OracleData memory oracleData) {
+        return oracleData;
+    }
 }

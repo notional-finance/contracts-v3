@@ -72,17 +72,13 @@ library TokenHandler {
         }
 
         // Check token address
-        require(tokenStorage.tokenAddress != address(0), "TH: address is zero");
+        require(tokenStorage.tokenAddress != address(0));
         // Once a token is set we cannot override it. In the case that we do need to do change a token address
         // then we should explicitly upgrade this method to allow for a token to be changed.
         Token memory token = _getToken(currencyId, true);
-        require(
-            token.tokenAddress == tokenStorage.tokenAddress || token.tokenAddress == address(0),
-            "TH: token cannot be reset"
-        );
+        require(token.tokenAddress == tokenStorage.tokenAddress || token.tokenAddress == address(0));
 
-        require(0 < tokenStorage.decimalPlaces 
-            && tokenStorage.decimalPlaces <= Constants.MAX_DECIMAL_PLACES, "TH: invalid decimals");
+        require(0 < tokenStorage.decimalPlaces && tokenStorage.decimalPlaces <= Constants.MAX_DECIMAL_PLACES);
 
         // Validate token type
         require(tokenStorage.tokenType != TokenType.Ether); // dev: ether can only be set once
@@ -280,7 +276,7 @@ library TokenHandler {
 
         // This is the total expected underlying that we should redeem after all redemption calls
         // are executed.
-        (/* */, uint256 totalUnderlyingRedeemed) = executeMoneyMarketRedemptions(underlying, data);
+        uint256 totalUnderlyingRedeemed = executeMoneyMarketRedemptions(underlying, data);
 
         // Ensure that we have sufficient funds before we exit
         require(withdrawAmountExternal <= currentBalance.add(totalUnderlyingRedeemed)); // dev: insufficient redeem
@@ -366,7 +362,7 @@ library TokenHandler {
     function executeMoneyMarketRedemptions(
         Token memory underlyingToken,
         RedeemData[] memory redeemData
-    ) internal returns (bool hasFailure, uint256 totalUnderlyingRedeemed) {
+    ) internal returns (uint256 totalUnderlyingRedeemed) {
         for (uint256 i; i < redeemData.length; i++) {
             RedeemData memory data = redeemData[i];
             // Measure the token balance change if the `assetToken` value is set in the
@@ -375,15 +371,12 @@ library TokenHandler {
 
             // Measure the underlying balance change before and after the call.
             uint256 oldUnderlyingBalance = balanceOf(underlyingToken, address(this));
-            
+
             // Some asset tokens may require multiple calls to redeem if there is an unstake
             // or redemption from WETH involved. We only measure the asset token balance change
             // on the final redemption call, as dictated by the prime cash holdings oracle.
             for (uint256 j; j < data.targets.length; j++) {
-                // Allow low level calls to revert
-                if (!GenericToken.executeLowLevelCall(data.targets[j], 0, data.callData[j], true)) {
-                    hasFailure = true;
-                }
+                GenericToken.executeLowLevelCall(data.targets[j], 0, data.callData[j]);
             }
 
             // Ensure that we get sufficient underlying on every redemption
@@ -392,10 +385,18 @@ library TokenHandler {
             // If the call is not the final redemption, then expectedUnderlying should
             // be set to zero.
             require(data.expectedUnderlying <= underlyingBalanceChange);
-        
+
             // Measure and update the asset token
             uint256 newAssetBalance = IERC20(data.assetToken).balanceOf(address(this));
             require(newAssetBalance <= oldAssetBalance);
+
+            if (
+                (data.rebasingTokenBalanceAdjustment != 0) &&
+                (underlyingBalanceChange != oldAssetBalance.sub(newAssetBalance))
+            ) {
+                newAssetBalance = newAssetBalance.add(data.rebasingTokenBalanceAdjustment);
+            }
+
             updateStoredTokenBalance(data.assetToken, oldAssetBalance, newAssetBalance);
 
             // Update the total value with the net change

@@ -19,7 +19,6 @@ artifacts/*
 cache/*
 */.env
 .env
-lib
 broadcast
 .solhint.json
 tags

@@ -13,6 +13,7 @@ interface IRewarder {
 
     function claimRewards(
         address account,
+        uint16 currencyId,
         uint256 nTokenBalanceBefore,
         uint256 nTokenBalanceAfter,
         uint256 totalSupply

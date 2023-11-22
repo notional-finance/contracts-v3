@@ -35,7 +35,7 @@ contract SecondaryRewarderTest is SecondaryRewarderSetupTest {
         owner = NOTIONAL.owner();
 
         Router.DeployedContracts memory c = getDeployedContracts();
-        c.treasury = address(new TreasuryAction(TreasuryAction(c.treasury).COMPTROLLER()));
+        c.treasury = address(new TreasuryAction());
         upgradeTo(c);
 
         vm.prank(owner);
