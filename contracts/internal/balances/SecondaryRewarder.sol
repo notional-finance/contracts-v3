@@ -17,15 +17,16 @@ contract SecondaryRewarder is IRewarder {
     NotionalProxy public immutable NOTIONAL;
     address public immutable NTOKEN_ADDRESS;
     address public immutable REWARD_TOKEN;
+    uint8 public immutable REWARD_TOKEN_DECIMALS;
     uint16 public immutable CURRENCY_ID;
 
     bytes32 public merkleRoot;
     bool public detached; // when true user needs to call contract directly to claim any rewards left
 
     uint32 public endTime; // will alway be less than block.timestamp if detached is true
-    uint32 public override emissionRatePerYear;
+    uint32 public override emissionRatePerYear; // zero precision
     uint32 public override lastAccumulatedTime;
-    uint128 public override accumulatedRewardPerNToken;
+    uint128 public override accumulatedRewardPerNToken; 
 
     mapping(address => uint128) public rewardDeptPerAccount;
 
@@ -50,6 +51,7 @@ contract SecondaryRewarder is IRewarder {
         CURRENCY_ID = currencyId;
         NTOKEN_ADDRESS = notional.nTokenAddress(currencyId);
         REWARD_TOKEN = address(incentive_token);
+        REWARD_TOKEN_DECIMALS = IERC20(address(incentive_token)).decimals();
 
         emissionRatePerYear = _emissionRatePerYear;
         lastAccumulatedTime = uint32(block.timestamp);
@@ -64,7 +66,7 @@ contract SecondaryRewarder is IRewarder {
         override
         returns (uint256 rewardToClaim)
     {
-        require(!detached && block.timestamp < endTime, "Detached");
+        require(!detached, "Detached");
         require(lastAccumulatedTime <= blockTime, "Invalid block time");
 
         uint256 totalSupply = IERC20(NTOKEN_ADDRESS).totalSupply();
@@ -82,6 +84,7 @@ contract SecondaryRewarder is IRewarder {
     function getAccountRewardClaim(address account, uint256 nTokenBalanceAtDetach, bytes32[] calldata proof)
         external
         override
+        view
         returns (uint256 rewardToClaim)
     {
         require(detached && merkleRoot != bytes32(0), "Not detached");
@@ -180,6 +183,7 @@ contract SecondaryRewarder is IRewarder {
         rewardDeptPerAccount[account] = nTokenBalanceAfter
             .mul(accumulatedRewardPerNToken)
             .div(Constants.INCENTIVE_ACCUMULATION_PRECISION)
+            .mul(10 ** REWARD_TOKEN_DECIMALS)
             .toUint128();
 
         if (0 < rewardToClaim) {
@@ -214,6 +218,7 @@ contract SecondaryRewarder is IRewarder {
         return uint256(nTokenBalanceAtLastClaim)
             .mul(accumulatedRewardPerNToken)
             .div(Constants.INCENTIVE_ACCUMULATION_PRECISION)
+            .mul(10 ** REWARD_TOKEN_DECIMALS)
             .sub(rewardDeptPerAccount[account]);
     }
 
