@@ -409,6 +409,11 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     {
         _checkValidCurrency(currencyId);
         require(Address.isContract(address(rewarder)), "Rewarder must be a contract");
+
+        IRewarder currentRewarder = nTokenHandler.getSecondaryRewarder(nTokenHandler.nTokenAddress(currencyId));
+        if (address(currentRewarder) != address(0)) {
+            currentRewarder.detach();
+        }
         nTokenHandler.setSecondaryRewarder(currencyId, rewarder);
         emit UpdateSecondaryIncentiveRewarder(currencyId, address(rewarder));
     }

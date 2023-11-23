@@ -19,8 +19,8 @@ artifacts/*
 cache/*
 */.env
 .env
-lib
 broadcast
 .solhint.json
 tags
 cpsell.json
+merkleGenerator/node_modules

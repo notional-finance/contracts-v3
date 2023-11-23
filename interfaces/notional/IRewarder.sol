@@ -10,11 +10,17 @@ interface IRewarder {
         uint256 totalSupply
     ) external;
 
-    function getAccountRewardClaim(uint32 blockTime) external returns (uint256);
+    function getAccountRewardClaim(address account, uint32 blockTime) external returns (uint256);
 
-    function accumulatedRewardPerNToken() external returns(uint128);
+    function getAccountRewardClaim(address account, uint256 nTokenBalanceAtDetach, bytes32[] calldata proof)
+        external
+        returns (uint256);
 
-    function lastAccumulatedTime() external returns(uint32);
+    function accumulatedRewardPerNToken() external returns (uint128);
 
-    function emissionRatePerYear() external returns(uint32);
+    function lastAccumulatedTime() external returns (uint32);
+
+    function emissionRatePerYear() external returns (uint32);
+
+    function detach() external;
 }

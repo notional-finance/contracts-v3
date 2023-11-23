@@ -8,7 +8,7 @@ remappings = [
     "hardhat/=node_modules/hardhat/",
 ]
 verbosity = 3
-fs_permissions = [{access="read",path="./v3.arbitrum-one.json"}, {access="read",path="./artifacts"}]
+fs_permissions = [{access="read",path="./v3.arbitrum-one.json"}, {access="read",path="./artifacts"}, {access="read",path="./script/merkleConfig.json"}, {access="write",path="./script/merkleProofs.json"}]
 
 [rpc_endpoints]
 arbitrum = "${ARBITRUM_RPC_URL}"

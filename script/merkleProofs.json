@@ -1,0 +1,15 @@
+{
+  "0x016C8780e5ccB32E5CAA342a926794cE64d9C364": {
+    "balance": 10,
+    "proof": [
+      "0xf90d8060a41a8b10e853f21084fae7959da8e1c2a8d7b27cfc15a3c80d47264e"
+    ]
+  },
+  "0x185a4dc360CE69bDCceE33b3784B0282f7961aea": {
+    "balance": 100,
+    "proof": [
+      "0xf3d471ac5bc114e74fc631d8b81a58bc54c46adf46ef4356695ad74c4acf1697"
+    ]
+  },
+  "root": "0xf4fb990916cc5e5e9ee47c7ddae2e694f4197f5a749bf97f79d43ce77d09d24d"
+}
