@@ -6,6 +6,8 @@ import {Test} from "forge-std/Test.sol";
 
 import {NotionalProxy} from "../../interfaces/notional/NotionalProxy.sol";
 import {Router} from "../../contracts/external/Router.sol";
+import {BalanceAction, DepositActionType, Token} from "../../contracts/global/Types.sol";
+import {IERC20} from "../../interfaces/IERC20.sol";
 
 contract SecondaryRewarderSetupTest is Test {
     NotionalProxy constant public NOTIONAL = NotionalProxy(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
@@ -40,7 +42,38 @@ contract SecondaryRewarderSetupTest is Test {
         vm.createSelectFork(ARBITRUM_RPC_URL, ARBITRUM_FORK_BLOCK);
     }
 
-    function forkAfterCbEthDeploy() internal {
-        vm.createSelectFork(ARBITRUM_RPC_URL, 145559028);
+    function _depositAndMintNToken(uint16 currencyId, address account, uint256 amount) internal {
+        BalanceAction[] memory balanceActions = new BalanceAction[](1);
+        BalanceAction memory balanceAction =
+            BalanceAction(DepositActionType.DepositUnderlyingAndMintNToken, currencyId, amount, 0, false, true);
+        balanceActions[0] = balanceAction;
+
+        (,Token memory underlyingToken) = NOTIONAL.getCurrency(currencyId);
+
+        deal(address(underlyingToken.tokenAddress), account, amount);
+        vm.startPrank(account);
+        IERC20(underlyingToken.tokenAddress).approve(address(NOTIONAL), amount);
+        NOTIONAL.batchBalanceAction(account, balanceActions);
+        vm.stopPrank();
+    }
+
+    function _redeemNToken(uint16 currencyId, address account, uint256 amount) internal {
+        BalanceAction[] memory balanceActions = new BalanceAction[](1);
+        BalanceAction memory balanceAction =
+            BalanceAction(DepositActionType.RedeemNToken, currencyId, amount, 0, false, true);
+        balanceActions[0] = balanceAction;
+
+        vm.startPrank(account);
+        NOTIONAL.batchBalanceAction(account, balanceActions);
+        vm.stopPrank();
+    }
+
+    function _initializeMarket(uint16 currencyId) internal {
+        address fundingAccount = 0x7d7935EDd4b6cDB5f34B0E1cCEAF85a3C4A11254;
+        _depositAndMintNToken(currencyId, fundingAccount, 0.05e18);
+
+        vm.startPrank(fundingAccount);
+        NOTIONAL.initializeMarkets(currencyId, true);
+        vm.stopPrank();
     }
 }

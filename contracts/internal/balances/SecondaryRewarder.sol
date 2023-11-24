@@ -28,7 +28,7 @@ contract SecondaryRewarder is IRewarder {
     uint32 public endTime; // will alway be less than block.timestamp if detached is true
     uint32 public override emissionRatePerYear; // zero precision
     uint32 public override lastAccumulatedTime;
-    uint128 public override accumulatedRewardPerNToken; 
+    uint128 public override accumulatedRewardPerNToken;
 
     mapping(address => uint128) public rewardDeptPerAccount; // incentive accumulation precision
 
@@ -85,8 +85,8 @@ contract SecondaryRewarder is IRewarder {
     /// @param proof merkle proof to prove account and nTokenBalanceAtDetach are in tree
     function getAccountRewardClaim(address account, uint256 nTokenBalanceAtDetach, bytes32[] calldata proof)
         external
-        override
         view
+        override
         returns (uint256 rewardToClaim)
     {
         require(detached && merkleRoot != bytes32(0), "Not detached");
@@ -112,7 +112,7 @@ contract SecondaryRewarder is IRewarder {
     /// @notice Set merkle root, only called after rewarder is detached
     /// @param _merkleRoot merkle root of the tree that contains accounts and nToken balances at detach time
     function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
-        require(merkleRoot != bytes32(0), "Invalid");
+        require(_merkleRoot != bytes32(0), "Invalid");
         merkleRoot = _merkleRoot;
     }
 
@@ -150,7 +150,10 @@ contract SecondaryRewarder is IRewarder {
     /// @param account address to claim rewards for
     /// @param nTokenBalanceAtDetach nToken balance of account at time of detachment
     /// @param proof merkle proof to prove account and nTokenBalanceAtDetach are in tree
-    function claimRewardsDirect(address account, uint256 nTokenBalanceAtDetach, bytes32[] calldata proof) external {
+    function claimRewardsDirect(address account, uint256 nTokenBalanceAtDetach, bytes32[] calldata proof)
+        external
+        override
+    {
         require(detached, "Not detached");
 
         _checkProof(account, nTokenBalanceAtDetach, proof);
@@ -171,11 +174,8 @@ contract SecondaryRewarder is IRewarder {
         uint256 nTokenBalanceAfter,
         uint256 totalSupply
     ) external override onlyNotional {
-        console.log("here1");
         require(!detached, "Detached");
-        console.log("here2");
         require(currencyId == CURRENCY_ID, "Wrong currency id");
-        console.log("here3");
 
         _accumulateRewardPerNToken(uint32(block.timestamp), totalSupply);
         _claimRewards(account, nTokenBalanceBefore, nTokenBalanceAfter);

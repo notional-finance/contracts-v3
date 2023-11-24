@@ -16,6 +16,8 @@ interface IRewarder {
         external
         returns (uint256);
 
+    function claimRewardsDirect(address account, uint256 nTokenBalanceAtDetach, bytes32[] calldata proof) external;
+
     function accumulatedRewardPerNToken() external returns (uint128);
 
     function lastAccumulatedTime() external returns (uint32);

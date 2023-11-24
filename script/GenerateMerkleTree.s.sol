@@ -21,7 +21,7 @@ contract GenerateMerkleTree is Script {
 
         string memory finalJson = "finalJson";
         for (uint256 i = 0; i < length; ++i) {
-            string memory proofAndBalance = "proofAndBalance";
+            string memory proofAndBalance = vm.toString(i);
             vm.serializeBytes32(proofAndBalance, "proof", m.getProof(data, i));
             proofAndBalance = vm.serializeUint(proofAndBalance, "balance", nTokenBalances[i]);
             vm.serializeString(finalJson, vm.toString(accounts[i]), proofAndBalance);

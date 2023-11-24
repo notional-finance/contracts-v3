@@ -13,6 +13,7 @@ contract SecondaryRewarderTest is SecondaryRewarderSetupTest {
     SecondaryRewarder private rewarder;
     address private owner;
     uint16 private CURRENCY_ID;
+    address private rewardToken;
 
     function _getCurrencyAndRewardToken() internal virtual returns (uint16, address) {
         return (3, 0x912CE59144191C1204E64559FE8253a0e49E6548);
@@ -21,12 +22,13 @@ contract SecondaryRewarderTest is SecondaryRewarderSetupTest {
     function setUp() public {
         defaultFork();
 
-        (uint16 currencyId, address rewardToken) = _getCurrencyAndRewardToken();
+        (uint16 currencyId, address _rewardToken) = _getCurrencyAndRewardToken();
         CURRENCY_ID = currencyId;
+        rewardToken = _rewardToken;
         rewarder = new SecondaryRewarder(
             NOTIONAL,
             currencyId,
-            IERC20(rewardToken),
+            IERC20(_rewardToken),
             1e5,
             uint32(block.timestamp + Constants.YEAR)
         );
@@ -120,9 +122,9 @@ contract SecondaryRewarderTest is SecondaryRewarderSetupTest {
         SecondaryRewarder newRewarder = new SecondaryRewarder(
             NOTIONAL,
             CURRENCY_ID,
-            IERC20(vm.addr(52542)),
-            2e5,
-            uint32(block.timestamp + 2 * Constants.YEAR)
+            IERC20(rewardToken),
+            1e5,
+            uint32(block.timestamp + Constants.YEAR)
         );
         vm.prank(owner);
         NOTIONAL.setSecondaryIncentiveRewarder(CURRENCY_ID, newRewarder);
