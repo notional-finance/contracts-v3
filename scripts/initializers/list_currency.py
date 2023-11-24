@@ -13,6 +13,9 @@ WHALES = {
     'RDNT': "0x9d9e4A95765154A575555039E9E2a321256B5704"
 }
 
+LIQUIDATOR = '0xCeF77C74C88B6deCeAF2E954038e7789A0F1bB33'
+TRADING_MODULE = '0xBf6B9c5608D520469d8c4BD1E24F850497AF0Bb8'
+
 def donate_initial(symbol, notional, fundingAccount):
     token = ListedTokens[symbol]
     if symbol == 'ETH':
@@ -104,6 +107,18 @@ def list_currency(notional, symbol):
             {"from": notional.owner()}
         )
         callData.append(txn.input)
+    
+    # Set trading module approvals for the liquidator
+    tradingModule = Contract.from_abi("trading", TRADING_MODULE, interface.ITradingModule.abi)
+    
+    txn = tradingModule.setTokenPermissions(
+        LIQUIDATOR,
+        token['address'],
+        (True, 8, 15), # allow sell, 8 is 0x, 15 is all trade types
+        {"from": notional.owner()}
+    )
+
+    callData.append(txn.input)
 
     return callData
 
@@ -144,7 +159,7 @@ def main():
         batchBase['transactions'] = []
         callData = list_currency(notional, t)
         for data in callData:
-            # TODO: append a txn that authorizes the flash liquidator to sell the token via 0x
+            # TODO: flash liquidator needs to approve both aave (if able) and notional
             batchBase['transactions'].append({
                 "to": notional.address,
                 "value": "0",
