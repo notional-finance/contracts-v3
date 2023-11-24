@@ -6,6 +6,8 @@ import {console2 as console} from "forge-std/console2.sol";
 
 import {SecondaryRewarderSetupTest} from "./SecondaryRewarderSetupTest.sol";
 import {Router} from "../../contracts/external/Router.sol";
+import {BatchAction} from "../../contracts/external/actions/BatchAction.sol";
+import {nTokenAction} from "../../contracts/external/actions/nTokenAction.sol";
 import {TreasuryAction} from "../../contracts/external/actions/TreasuryAction.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
 import {BalanceAction, DepositActionType} from "../../contracts/global/Types.sol";
@@ -30,7 +32,7 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
         uint16 initialShare;
     }
 
-    AccountsData[3] private initialAccounts;
+    AccountsData[6] private initialAccounts;
     uint32 private emissionRatePerYear;
     uint256 private incentiveTokenDecimals;
     uint32 private endTime;
@@ -45,8 +47,20 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
             BalanceAction(DepositActionType.DepositUnderlyingAndMintNToken, CURRENCY_ID, amount, 0, false, true);
         balanceActions[0] = balanceAction;
 
+        deal(address(cbEth), account, amount);
         vm.startPrank(account);
         cbEth.approve(address(NOTIONAL), amount);
+        NOTIONAL.batchBalanceAction(account, balanceActions);
+        vm.stopPrank();
+    }
+
+    function _redeemNToken(address account, uint256 amount) private {
+        BalanceAction[] memory balanceActions = new BalanceAction[](1);
+        BalanceAction memory balanceAction =
+            BalanceAction(DepositActionType.RedeemNToken, CURRENCY_ID, amount, 0, false, true);
+        balanceActions[0] = balanceAction;
+
+        vm.startPrank(account);
         NOTIONAL.batchBalanceAction(account, balanceActions);
         vm.stopPrank();
     }
@@ -62,9 +76,13 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
 
     function _depositWithInitialAccounts() private {
         uint256 totalInitialDeposit = 6e20;
-        initialAccounts[0] = AccountsData(vm.addr(12321), 10);
-        initialAccounts[1] = AccountsData(vm.addr(12322), 40);
-        initialAccounts[2] = AccountsData(vm.addr(12323), 50);
+        initialAccounts[0] = AccountsData(vm.addr(12320), 10);
+        initialAccounts[1] = AccountsData(vm.addr(12321), 40);
+        initialAccounts[2] = AccountsData(vm.addr(12322), 15);
+        initialAccounts[3] = AccountsData(vm.addr(12323), 25);
+        initialAccounts[4] = AccountsData(vm.addr(12324), 5);
+        // don't test this one, it will just be used to "round" the 0.05e18 deposited at initialization
+        initialAccounts[5] = AccountsData(vm.addr(12325), 5);
 
         for (uint256 i = 0; i < initialAccounts.length; i++) {
             address account = initialAccounts[i].account;
@@ -72,7 +90,6 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
             if (i + 1 == initialAccounts.length) {
                 amount -= 0.05e18;
             }
-            deal(address(cbEth), account, amount);
             _depositAndMintNToken(account, amount);
         }
     }
@@ -97,10 +114,13 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
             emissionRatePerYear,
             endTime
         );
+        deal(REWARD_TOKEN, address(rewarder), emissionRatePerYear * incentiveTokenDecimals);
         owner = NOTIONAL.owner();
 
         Router.DeployedContracts memory c = getDeployedContracts();
+        c.batchAction = address(new BatchAction());
         c.treasury = address(new TreasuryAction(TreasuryAction(c.treasury).COMPTROLLER()));
+        c.nTokenActions = address(new nTokenAction());
         upgradeTo(c);
 
         vm.prank(owner);
@@ -134,7 +154,146 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
                 .div(Constants.INCENTIVE_ACCUMULATION_PRECISION);
             uint256 reward = rewarder.getAccountRewardClaim(initialAccounts[i].account, uint32(block.timestamp));
 
-            assertEq(reward / incentiveTokenDecimals, predictedReward, vm.toString(i));
+            assertApproxEqAbs(reward / incentiveTokenDecimals, predictedReward, 1, vm.toString(i));
         }
     }
+
+    function test_claimReward_ShouldBeAbleToClaimIncentivesManual(uint32 timeToSkip) public {
+        timeToSkip = uint32(bound(timeToSkip, 1000, uint256(type(uint32).max / 10)));
+
+        skip(timeToSkip);
+
+        for (uint256 i = 0; i < initialAccounts.length - 1; i++) {
+            uint256 reward = rewarder.getAccountRewardClaim(initialAccounts[i].account, uint32(block.timestamp));
+
+            assertEq(IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account), 0);
+
+            vm.prank(initialAccounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            assertEq(IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account), reward);
+        }
+    }
+
+    function test_claimReward_SequentialManualClaims() public {
+        uint32 timeToSkip = 1 weeks;
+
+        skip(timeToSkip);
+
+        for (uint256 i = 0; i < initialAccounts.length - 1; i++) {
+            uint256 reward = rewarder.getAccountRewardClaim(initialAccounts[i].account, uint32(block.timestamp));
+            assertTrue(reward != 0);
+
+            assertEq(IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account), 0);
+
+            vm.prank(initialAccounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            assertEq(IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account), reward);
+        }
+        // second skip
+        skip(2 weeks);
+
+        for (uint256 i = 0; i < initialAccounts.length - 1; i++) {
+            uint256 reward = rewarder.getAccountRewardClaim(initialAccounts[i].account, uint32(block.timestamp));
+            assertTrue(reward != 0);
+
+            uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account);
+
+            vm.prank(initialAccounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account);
+
+            assertEq(newBal, prevBal + reward);
+        }
+    }
+
+    function test_claimReward_TransferOfNTokenShouldTriggerClaim(uint32 timeToSkip) public {
+        timeToSkip = uint32(bound(timeToSkip, 1000, uint256(type(uint32).max / 10)));
+
+        skip(timeToSkip);
+
+        for (uint256 i = 0; i < initialAccounts.length - 1; i++) {
+            uint256 reward = rewarder.getAccountRewardClaim(initialAccounts[i].account, uint32(block.timestamp));
+
+            assertEq(IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account), 0);
+
+            // transfer should trigger claim
+            vm.prank(initialAccounts[i].account);
+            IERC20(NTOKEN).transfer(vm.addr(111111), 100);
+            // trigger claim
+            // _depositAndMintNToken(initialAccounts[i].account, 100);
+
+            assertEq(IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account), reward);
+        }
+    }
+
+    function test_claimReward_ShouldClaimFullAmountAfterTheEnd() public {
+        uint32 afterIncentivePeriod = endTime - uint32(block.timestamp) + 1 weeks;
+        // forgefmt: disable-next-item
+        uint256 totalIncentives = (endTime - block.timestamp)
+                .mul(emissionRatePerYear)
+                .div(Constants.YEAR);
+
+        // should claim full amount
+        skip(afterIncentivePeriod);
+
+        for (uint256 i = 0; i < initialAccounts.length - 1; i++) {
+            // forgefmt: disable-next-item
+            uint256 reward = totalIncentives
+                .mul(initialAccounts[i].initialShare)
+                .div(100);
+            assertTrue(reward != 0);
+
+            uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account);
+            assertEq(prevBal, 0);
+
+            vm.prank(initialAccounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account);
+            assertApproxEqAbs(newBal.div(incentiveTokenDecimals), reward, 1);
+        }
+        // second skip, should claim 0
+        skip(1 weeks);
+
+        for (uint256 i = 0; i < initialAccounts.length - 1; i++) {
+            uint256 reward = rewarder.getAccountRewardClaim(initialAccounts[i].account, uint32(block.timestamp));
+            assertTrue(reward == 0);
+
+            uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account);
+
+            vm.prank(initialAccounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account);
+
+            assertEq(newBal, prevBal);
+        }
+    }
+
+    // TODO: ???
+    // function test_claimReward_MintOfNTokenShouldTriggerClaim(uint32 timeToSkip) public {
+    //     timeToSkip = uint32(bound(timeToSkip, 1000, uint256(type(uint32).max / 10)));
+    //
+    //     skip(timeToSkip);
+    //
+    //     for (uint256 i = 0; i < initialAccounts.length - 1; i++) {
+    //         uint256 reward = rewarder.getAccountRewardClaim(initialAccounts[i].account, uint32(block.timestamp));
+    //
+    //         assertEq(IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account), 0);
+    //
+    //         uint256 prevNTokenBal = IERC20(NTOKEN).balanceOf(initialAccounts[i].account);
+    //         // trigger claim
+    //         _depositAndMintNToken(initialAccounts[i].account, 1e18);
+    //
+    //         uint256 newNTokenBal = IERC20(NTOKEN).balanceOf(initialAccounts[i].account);
+    //
+    //         assertLt(prevNTokenBal, newNTokenBal);
+    //
+    //         assertEq(IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account), reward);
+    //
+    //     }
+    // }
 }

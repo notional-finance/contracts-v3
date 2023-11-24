@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.7.6;
 
+import {console2 as console} from "forge-std/console2.sol";
+
 import {GenericToken} from "./protocols/GenericToken.sol";
 import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
@@ -28,7 +30,7 @@ contract SecondaryRewarder is IRewarder {
     uint32 public override lastAccumulatedTime;
     uint128 public override accumulatedRewardPerNToken; 
 
-    mapping(address => uint128) public rewardDeptPerAccount;
+    mapping(address => uint128) public rewardDeptPerAccount; // incentive accumulation precision
 
     modifier onlyOwner() {
         require(msg.sender == NOTIONAL.owner(), "Only owner");
@@ -169,8 +171,11 @@ contract SecondaryRewarder is IRewarder {
         uint256 nTokenBalanceAfter,
         uint256 totalSupply
     ) external override onlyNotional {
+        console.log("here1");
         require(!detached, "Detached");
+        console.log("here2");
         require(currencyId == CURRENCY_ID, "Wrong currency id");
+        console.log("here3");
 
         _accumulateRewardPerNToken(uint32(block.timestamp), totalSupply);
         _claimRewards(account, nTokenBalanceBefore, nTokenBalanceAfter);
@@ -182,8 +187,6 @@ contract SecondaryRewarder is IRewarder {
         // forgefmt: disable-next-item
         rewardDeptPerAccount[account] = nTokenBalanceAfter
             .mul(accumulatedRewardPerNToken)
-            .div(Constants.INCENTIVE_ACCUMULATION_PRECISION)
-            .mul(10 ** REWARD_TOKEN_DECIMALS)
             .toUint128();
 
         if (0 < rewardToClaim) {
@@ -217,9 +220,9 @@ contract SecondaryRewarder is IRewarder {
         // forgefmt: disable-next-item
         return uint256(nTokenBalanceAtLastClaim)
             .mul(accumulatedRewardPerNToken)
+            .sub(rewardDeptPerAccount[account])
             .div(Constants.INCENTIVE_ACCUMULATION_PRECISION)
-            .mul(10 ** REWARD_TOKEN_DECIMALS)
-            .sub(rewardDeptPerAccount[account]);
+            .mul(10 ** REWARD_TOKEN_DECIMALS);
     }
 
     /// @notice Verify merkle proof, or revert if not in tree
