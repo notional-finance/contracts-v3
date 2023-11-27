@@ -55,6 +55,9 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
     address public immutable PAUSE_ROUTER;
 
     event UpdateCashGroup(uint16 currencyId);
+    event MigratedToV3();
+    event StartV3AccountEvents();
+    event EndV3AccountEvents();
 
     constructor(MigrationSettings settings, address finalRouter, address _pauseRouter) {
         MIGRATION_SETTINGS = settings;
@@ -106,6 +109,13 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
 
     function emitAccountEvents(uint256[] calldata accounts) external {
         require(msg.sender == NOTIONAL_MANAGER);
+
+        // If the subgraph is inside the start and end events, it will only
+        // log the prime cash events as a burn of asset cash and a mint of
+        // prime cash, that is because nToken and fCash are not changing from
+        // V2 to V3
+        emit StartV3AccountEvents();
+
         uint256 len = accounts.length;
         for (uint256 i; i < len; i++) {
             uint256 b = accounts[i];
@@ -117,6 +127,10 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
 
             _emitFCashEvents(account, b);
         }
+
+        // When the subgraph sees this event, it will resume normal processing of V3
+        // transfer events.
+        emit EndV3AccountEvents();
     }
 
     /// @notice Executes the prime cash migration but does not upgradeTo the final router
@@ -133,6 +147,10 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
         // Loop through all all currencies and init the prime cash curve. `maxCurrencyId` is read
         // from the NotionalProxy storage tree.
         uint16 _maxCurrencies = maxCurrencyId;
+
+        // Emit this first to let the subgraph know that the transition to V3 has occurred
+        // for updating view function calls.
+        emit MigratedToV3();
 
         for (uint16 currencyId = 1; currencyId <= _maxCurrencies; currencyId++) {
             CurrencySettings memory settings = MIGRATION_SETTINGS.getCurrencySettings(currencyId);
