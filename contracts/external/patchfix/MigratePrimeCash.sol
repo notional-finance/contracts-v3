@@ -103,7 +103,9 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
             uint256 maturity = assetStorage.maturity;
             int256 notional = assetStorage.notional;
 
-            Emitter.emitTransferfCash(address(0), account, currencyId, maturity, notional);
+            // Only emit fCash mint events here
+            uint256 fCashId = Emitter.encodefCashId(currencyId, maturity, notional);
+            emit Emitter.TransferSingle(msg.sender, address(0), account, fCashId, uint256(notional.abs()));
         }
     }
 

@@ -35,12 +35,14 @@ import { nTokenERC20Proxy } from "@notional-v3/external/proxies/nTokenERC20Proxy
 import { PrimeCashProxy } from "@notional-v3/external/proxies/PrimeCashProxy.sol";
 import { PrimeDebtProxy } from "@notional-v3/external/proxies/PrimeDebtProxy.sol";
 import { InterestRateCurve } from "@notional-v3/internal/markets/InterestRateCurve.sol";
+import { Emitter } from "@notional-v3/internal/Emitter.sol";
 
 import { 
     CompoundV2HoldingsOracle,
     CompoundV2DeploymentParams
 } from "@notional-v3/external/pCash/CompoundV2HoldingsOracle.sol";
 
+import { SafeInt256 } from "../../contracts/math/SafeInt256.sol";
 import { nProxy } from "../../contracts/proxy/nProxy.sol";
 import { UpgradeableBeacon } from "../../contracts/proxy/beacon/UpgradeableBeacon.sol";
 import { EmptyProxy } from "../../contracts/proxy/EmptyProxy.sol";
@@ -68,6 +70,9 @@ interface NotionalV2 {
 
 contract MigrateV3 is UpgradeRouter, Test {
     using stdJson for string;
+    using SafeInt256 for int256;
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
     address BEACON_DEPLOYER = 0x0D251Bd6c14e02d34f68BFCB02c54cBa3D108122;
     address DEPLOYER = 0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3;
@@ -86,6 +91,15 @@ contract MigrateV3 is UpgradeRouter, Test {
     mapping(uint256 => int256) public nTokenSupply;
     mapping(uint256 => int256) public cashBalance;
     uint256[] public emitAccounts;
+
+    // Checks event emission
+    struct ExpectEmit {
+        uint16 currencyId;
+        uint256 erc1155Id;
+        address account;
+        uint256 value;
+    }
+    ExpectEmit[] public emitEvents;
 
     modifier usingAccount(address account) {
         vm.startPrank(account);
@@ -272,8 +286,30 @@ contract MigrateV3 is UpgradeRouter, Test {
                 cashBalance[accountBalances[i].currencyId] += accountBalances[i].cashBalance;
             }
 
-            if (accountBalances[i].cashBalance != 0 || accountBalances[i].nTokenBalance != 0) {
+            if (accountBalances[i].cashBalance > 0 || accountBalances[i].nTokenBalance > 0) {
                 emitData = uint256(bytes32((bytes1(0x01) << uint8(accountBalances[i].currencyId))));
+
+                if (accountBalances[i].nTokenBalance > 0) {
+                    emitEvents.push(
+                        ExpectEmit(
+                            0,
+                            Emitter._legacyNTokenId(accountBalances[i].currencyId),
+                            account,
+                            accountBalances[i].nTokenBalance.toUint()
+                        )
+                    );
+                }
+
+                if (accountBalances[i].cashBalance > 0) {
+                    emitEvents.push(
+                        ExpectEmit(
+                            accountBalances[i].currencyId,
+                            0,
+                            account,
+                            accountBalances[i].cashBalance.toUint()
+                        )
+                    );
+                }
             }
 
             // NOTE: this is not strictly necessary to check
@@ -297,6 +333,17 @@ contract MigrateV3 is UpgradeRouter, Test {
             } else if (portfolio[i].notional < 0) {
                 // Set total fCash debt balance here for validation later
                 totalFCashDebt[portfolio[i].currencyId][portfolio[i].maturity] += portfolio[i].notional;
+            }
+
+            if (portfolio[i].notional != 0) {
+                emitEvents.push(
+                    ExpectEmit(
+                        0,
+                        Emitter.encodefCashId(portfolio[i].currencyId, portfolio[i].maturity, portfolio[i].notional),
+                        account,
+                        portfolio[i].notional.abs().toUint()
+                    )
+                );
             }
         }
 
@@ -430,8 +477,34 @@ contract MigrateV3 is UpgradeRouter, Test {
         checkUpgradeValidity();
 
         // Emit all account events
+        address pETH = NOTIONAL.pCashAddress(ETH);
+        address pDAI = NOTIONAL.pCashAddress(DAI);
+        address pUSDC = NOTIONAL.pCashAddress(USDC);
+        address pWBTC = NOTIONAL.pCashAddress(WBTC);
+
+        // Asserts that all the proper events are emitted
+        for (uint256 i; i < emitEvents.length; i++) {
+            ExpectEmit memory e = emitEvents[i];
+            if (e.currencyId == ETH) {
+                vm.expectEmit(true, true, true, true, pETH);
+                emit Transfer(address(0), e.account, e.value);
+            } else if (e.currencyId == DAI) {
+                vm.expectEmit(true, true, true, true, pDAI);
+                emit Transfer(address(0), e.account, e.value);
+            } else if (e.currencyId == USDC) {
+                vm.expectEmit(true, true, true, true, pUSDC);
+                emit Transfer(address(0), e.account, e.value);
+            } else if (e.currencyId == WBTC) {
+                vm.expectEmit(true, true, true, true, pWBTC);
+                emit Transfer(address(0), e.account, e.value);
+            } else {
+                vm.expectEmit(true, true, true, true, address(NOTIONAL));
+                emit Emitter.TransferSingle(
+                    address(MANAGER), address(0), e.account, e.erc1155Id, e.value
+                );
+            }
+        }
         console.log("Emitting %s account events", emitAccounts.length);
-        // TODO: need to test these emits...
         MigratePrimeCash(address(NOTIONAL)).emitAccountEvents(emitAccounts);
 
         // Upgrade to router

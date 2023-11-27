@@ -187,7 +187,7 @@ library Emitter {
         }
 
         // The first four currencies on mainnet are legacy nTokens.
-        return id == 1 && currencyId <= 4;
+        return (id == 1 || id == 5) && currencyId <= 4;
     }
 
     function _getPrimeProxy(bool isDebt, uint16 currencyId) private view returns (ITransferEmitter) {
