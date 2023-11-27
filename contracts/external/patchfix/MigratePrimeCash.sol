@@ -13,7 +13,7 @@ import {
     AssetRateStorage,
     TotalfCashDebtStorage,
     BalanceStorage,
-    PortfolioAssetStorage
+    PortfolioAsset
 } from "../../global/Types.sol";
 import {StorageLayoutV2} from "../../global/StorageLayoutV2.sol";
 import {Constants} from "../../global/Constants.sol";
@@ -25,6 +25,7 @@ import {SafeInt256} from "../../math/SafeInt256.sol";
 import {PrimeCashExchangeRate} from "../../internal/pCash/PrimeCashExchangeRate.sol";
 import {InterestRateCurve} from "../../internal/markets/InterestRateCurve.sol";
 import {TokenHandler} from "../../internal/balances/TokenHandler.sol";
+import {PortfolioHandler} from "../../internal/portfolio/PortfolioHandler.sol";
 import {CashGroup} from "../../internal/markets/CashGroup.sol";
 import {Market} from "../../internal/markets/Market.sol";
 import {DateTime} from "../../internal/markets/DateTime.sol";
@@ -93,15 +94,12 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
         uint8 length = uint8(bytes1(bytes32(data) << 8));
         if (length == 0) return;
 
-        mapping(address => 
-            PortfolioAssetStorage[MAX_PORTFOLIO_ASSETS]) storage store = LibStorage.getPortfolioArrayStorage();
-        PortfolioAssetStorage[MAX_PORTFOLIO_ASSETS] storage storageArray = store[account];
+        PortfolioAsset[] memory assets = PortfolioHandler.getSortedPortfolio(account, length);
 
-        for (uint256 i; i < length; i++) {
-            PortfolioAssetStorage storage assetStorage = storageArray[i];
-            uint16 currencyId = assetStorage.currencyId;
-            uint256 maturity = assetStorage.maturity;
-            int256 notional = assetStorage.notional;
+        for (uint256 i; i < assets.length; i++) {
+            uint16 currencyId = assets[i].currencyId;
+            uint256 maturity = assets[i].maturity;
+            int256 notional = assets[i].notional;
 
             // Only emit fCash mint events here
             uint256 fCashId = Emitter.encodefCashId(currencyId, maturity, notional);
