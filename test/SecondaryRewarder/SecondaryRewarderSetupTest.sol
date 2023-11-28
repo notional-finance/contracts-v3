@@ -10,7 +10,7 @@ import {BalanceAction, DepositActionType, Token} from "../../contracts/global/Ty
 import {IERC20} from "../../interfaces/IERC20.sol";
 
 contract SecondaryRewarderSetupTest is Test {
-    NotionalProxy constant public NOTIONAL = NotionalProxy(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
+    NotionalProxy public constant NOTIONAL = NotionalProxy(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
     string public ARBITRUM_RPC_URL = vm.envString("ARBITRUM_RPC_URL");
     uint256 private ARBITRUM_FORK_BLOCK = 152642413;
 
@@ -48,12 +48,20 @@ contract SecondaryRewarderSetupTest is Test {
             BalanceAction(DepositActionType.DepositUnderlyingAndMintNToken, currencyId, amount, 0, false, true);
         balanceActions[0] = balanceAction;
 
-        (,Token memory underlyingToken) = NOTIONAL.getCurrency(currencyId);
+        (, Token memory underlyingToken) = NOTIONAL.getCurrency(currencyId);
 
-        deal(address(underlyingToken.tokenAddress), account, amount);
         vm.startPrank(account);
-        IERC20(underlyingToken.tokenAddress).approve(address(NOTIONAL), amount);
-        NOTIONAL.batchBalanceAction(account, balanceActions);
+        if (underlyingToken.tokenAddress == address(0)) {
+            deal(account, amount);
+            (bool status,) = address(NOTIONAL).call{value: amount}(
+                abi.encodeWithSelector(NOTIONAL.batchBalanceAction.selector, account, balanceActions)
+            );
+            require(status, "Eth DepositUnderlyingAndMintNToken failed");
+        } else {
+            deal(underlyingToken.tokenAddress, account, amount);
+            IERC20(underlyingToken.tokenAddress).approve(address(NOTIONAL), amount);
+            NOTIONAL.batchBalanceAction(account, balanceActions);
+        }
         vm.stopPrank();
     }
 

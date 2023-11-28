@@ -7,18 +7,18 @@ import {Router} from "../../contracts/external/Router.sol";
 import {BatchAction} from "../../contracts/external/actions/BatchAction.sol";
 import {nTokenAction} from "../../contracts/external/actions/nTokenAction.sol";
 import {TreasuryAction} from "../../contracts/external/actions/TreasuryAction.sol";
+import {AccountAction} from "../../contracts/external/actions/AccountAction.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
 import {SecondaryRewarder} from "../../contracts/internal/balances/SecondaryRewarder.sol";
 import {Constants} from "../../contracts/global/Constants.sol";
 import {SafeInt256} from "../../contracts/math/SafeInt256.sol";
 import {SafeUint256} from "../../contracts/math/SafeUint256.sol";
 
-contract ClaimRewards is SecondaryRewarderSetupTest {
+abstract contract ClaimRewards is SecondaryRewarderSetupTest {
     using SafeUint256 for uint256;
     using SafeInt256 for int256;
 
     SecondaryRewarder private rewarder;
-    IERC20 private cbEth = IERC20(0x1DEBd73E752bEaF79865Fd6446b0c970EaE7732f);
     address private owner;
     uint16 private CURRENCY_ID;
     address private REWARD_TOKEN;
@@ -34,24 +34,29 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
     uint256 private incentiveTokenDecimals;
     uint32 private endTime;
 
+    function _getRewardToken() internal virtual returns(address); 
+
     function _getCurrencyRewardTokenAndForkBlock()
         internal
-        virtual
-        returns (uint16 currencyId, address rewardToken, uint256 marketInitializationBlock)
+        returns (uint16 currencyId, address rewardToken)
     {
         currencyId = 9;
-        rewardToken = 0x912CE59144191C1204E64559FE8253a0e49E6548;
-        marketInitializationBlock = 145559028;
+        rewardToken = _getRewardToken();
+    }
+
+    function _fork() internal {
+        vm.createSelectFork(ARBITRUM_RPC_URL, 145559028); // CbEth deployment time
+        _initializeMarket(CURRENCY_ID);
     }
 
     function _depositWithInitialAccounts() private {
         uint256 totalInitialDeposit = 6e20;
         // all shares should add up to 95
-        accounts[0] = AccountsData(vm.addr(12320), 10);
-        accounts[1] = AccountsData(vm.addr(12321), 40);
-        accounts[2] = AccountsData(vm.addr(12322), 15);
-        accounts[3] = AccountsData(vm.addr(12323), 25);
-        accounts[4] = AccountsData(vm.addr(12324), 5);
+        accounts[0] = AccountsData(0xD2162F65D5be7533220a4F016CCeCF0f9C1CADB3, 10);
+        accounts[1] = AccountsData(0xf3A007b9d892Ace8cc3cb77444C3B9e556E263b2, 40);
+        accounts[2] = AccountsData(0x4357b2A65E8AD9588B8614E8Fe589e518bDa5F2E, 15);
+        accounts[3] = AccountsData(0xea0B1eeA6d1dFD490b9267c479E3f22049AAFa3B, 25);
+        accounts[4] = AccountsData(0xA9908242897d282760341e415fcF120Ec15ecaC0, 5);
 
         for (uint256 i = 0; i < accounts.length; i++) {
             address account = accounts[i].account;
@@ -64,13 +69,11 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
     }
 
     function setUp() public {
-        (uint16 currencyId, address rewardToken, uint256 marketInitializationBlock) =
-            _getCurrencyRewardTokenAndForkBlock();
+        (uint16 currencyId, address rewardToken) = _getCurrencyRewardTokenAndForkBlock();
         CURRENCY_ID = currencyId;
         REWARD_TOKEN = rewardToken;
 
-        vm.createSelectFork(ARBITRUM_RPC_URL, marketInitializationBlock);
-        _initializeMarket(currencyId);
+        _fork();
         _depositWithInitialAccounts();
 
         NTOKEN = NOTIONAL.nTokenAddress(currencyId);
@@ -89,6 +92,7 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
 
         Router.DeployedContracts memory c = getDeployedContracts();
         c.batchAction = address(new BatchAction());
+        c.accountAction = address(new AccountAction());
         c.treasury = address(new TreasuryAction(TreasuryAction(c.treasury).COMPTROLLER()));
         c.nTokenActions = address(new nTokenAction());
         upgradeTo(c);
@@ -104,7 +108,7 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
         }
     }
 
-    function test_getAccountRewardClaim_ShouldNotBeZeroAfterSomeTime(uint32 timeToSkip) public {
+    function testFuzz_getAccountRewardClaim_ShouldNotBeZeroAfterSomeTime(uint32 timeToSkip) public {
         timeToSkip = uint32(bound(timeToSkip, 0, uint256(type(uint32).max / 10)));
         uint40 starTime = uint40(block.timestamp);
 
@@ -128,7 +132,7 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
         }
     }
 
-    function test_claimReward_ShouldBeAbleToClaimIncentivesManual(uint32 timeToSkip) public {
+    function testFuzz_claimReward_ShouldBeAbleToClaimIncentivesManual(uint32 timeToSkip) public {
         timeToSkip = uint32(bound(timeToSkip, 1000, uint256(type(uint32).max / 10)));
 
         skip(timeToSkip);
@@ -179,7 +183,7 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
         }
     }
 
-    function test_claimReward_TransferOfNTokenShouldTriggerClaim(uint32 timeToSkip) public {
+    function testFuzz_claimReward_TransferOfNTokenShouldTriggerClaim(uint32 timeToSkip) public {
         timeToSkip = uint32(bound(timeToSkip, 1000, uint256(type(uint32).max / 10)));
 
         skip(timeToSkip);
@@ -320,27 +324,75 @@ contract ClaimRewards is SecondaryRewarderSetupTest {
         }
     }
 
-    // TODO: ???
-    // function test_claimReward_MintOfNTokenShouldTriggerClaim(uint32 timeToSkip) public {
-    //     timeToSkip = uint32(bound(timeToSkip, 1000, uint256(type(uint32).max / 10)));
-    //
-    //     skip(timeToSkip);
-    //
-    //     for (uint256 i = 0; i < initialAccounts.length - 1; i++) {
-    //         uint256 reward = rewarder.getAccountRewardClaim(initialAccounts[i].account, uint32(block.timestamp));
-    //
-    //         assertEq(IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account), 0);
-    //
-    //         uint256 prevNTokenBal = IERC20(NTOKEN).balanceOf(initialAccounts[i].account);
-    //         // trigger claim
-    //         _depositAndMintNToken(initialAccounts[i].account, 1e18);
-    //
-    //         uint256 newNTokenBal = IERC20(NTOKEN).balanceOf(initialAccounts[i].account);
-    //
-    //         assertLt(prevNTokenBal, newNTokenBal);
-    //
-    //         assertEq(IERC20(REWARD_TOKEN).balanceOf(initialAccounts[i].account), reward);
-    //
-    //     }
-    // }
+    function testFuzz_claimReward_RedeemOfNTokenShouldTriggerClaim(uint32 timeToSkip) public {
+        // set upper bond to 6 weeks to avoid need for settlement
+        timeToSkip = uint32(bound(timeToSkip, 0, uint256(6 weeks)));
+
+        skip(timeToSkip);
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            address account = accounts[i].account;
+            uint256 reward = rewarder.getAccountRewardClaim(account, uint32(block.timestamp));
+            assertTrue(reward != 0 || timeToSkip < 1 hours);
+
+            assertEq(IERC20(REWARD_TOKEN).balanceOf(account), 0);
+
+            uint256 prevNTokenBal = IERC20(NTOKEN).balanceOf(account);
+            // trigger claim
+            vm.prank(account);
+            _depositAndMintNToken(CURRENCY_ID, account, 1e18);
+
+            uint256 newNTokenBal = IERC20(NTOKEN).balanceOf(account);
+
+            assertEq(prevNTokenBal + 1e8, newNTokenBal);
+
+            assertEq(IERC20(REWARD_TOKEN).balanceOf(account), reward);
+
+        }
+    }
+
+    function testFuzz_claimReward_MintOfNTokenShouldTriggerClaim(uint32 timeToSkip) public {
+        // set upper bond to 6 weeks to avoid need for settlement
+        timeToSkip = uint32(bound(timeToSkip, 0, uint256(6 weeks)));
+
+        skip(timeToSkip);
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            address account = accounts[i].account;
+            uint256 reward = rewarder.getAccountRewardClaim(account, uint32(block.timestamp));
+            assertTrue(reward != 0 || timeToSkip < 1 hours, "1");
+
+            assertEq(IERC20(REWARD_TOKEN).balanceOf(account), 0, "2");
+
+            uint256 prevNTokenBal = IERC20(NTOKEN).balanceOf(account);
+            // trigger claim
+            vm.prank(account);
+            NOTIONAL.nTokenRedeem(account, CURRENCY_ID, 100, true, true);
+
+            uint256 newNTokenBal = IERC20(NTOKEN).balanceOf(account);
+
+            assertEq(prevNTokenBal, newNTokenBal + 100, "3");
+
+            assertEq(IERC20(REWARD_TOKEN).balanceOf(account), reward, "4");
+
+        }
+    }
+}
+
+contract ClaimRewardsARB is ClaimRewards {
+    function _getRewardToken() internal pure override returns(address) {
+        return 0x912CE59144191C1204E64559FE8253a0e49E6548;
+    }
+}
+
+contract ClaimRewardsUSDC is ClaimRewards {
+    function _getRewardToken() internal pure override returns(address) {
+        return 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+    }
+}
+
+contract ClaimRewardsLido is ClaimRewards {
+    function _getRewardToken() internal pure override returns(address) {
+        return 0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60;
+    }
 }

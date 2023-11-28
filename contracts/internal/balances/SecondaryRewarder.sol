@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.7.6;
 
-import {console2 as console} from "forge-std/console2.sol";
-
 import {GenericToken} from "./protocols/GenericToken.sol";
 import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";

@@ -12,6 +12,7 @@ contract GenerateMerkleTree is Script {
         uint256[] memory nTokenBalances = vm.parseJsonUintArray(json, ".nTokenBalances");
         require(accounts.length == nTokenBalances.length, "Invalid data");
         uint256 length = accounts.length;
+
         // Initialize
         Merkle m = new Merkle();
         bytes32[] memory data = new bytes32[](length);
@@ -25,8 +26,6 @@ contract GenerateMerkleTree is Script {
             vm.serializeBytes32(proofAndBalance, "proof", m.getProof(data, i));
             proofAndBalance = vm.serializeUint(proofAndBalance, "balance", nTokenBalances[i]);
             vm.serializeString(finalJson, vm.toString(accounts[i]), proofAndBalance);
-
-            // require(m.verifyProof(root, m.getProof(data, i), data[i]), "proof not verified");
         }
         finalJson = vm.serializeBytes32(finalJson, "root", m.getRoot(data));
 

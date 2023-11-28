@@ -13,7 +13,7 @@ import {Constants} from "../../contracts/global/Constants.sol";
 import {SafeInt256} from "../../contracts/math/SafeInt256.sol";
 import {SafeUint256} from "../../contracts/math/SafeUint256.sol";
 
-contract ClaimRewardsDetached is SecondaryRewarderSetupTest {
+abstract contract ClaimRewardsDetached is SecondaryRewarderSetupTest {
     using SafeUint256 for uint256;
     using SafeInt256 for int256;
 
@@ -38,24 +38,29 @@ contract ClaimRewardsDetached is SecondaryRewarderSetupTest {
     uint256 private incentivePeriod;
     uint32 private endTime;
 
+    function _getRewardToken() internal virtual returns(address); 
+
     function _getCurrencyRewardTokenAndForkBlock()
         internal
-        virtual
-        returns (uint16 currencyId, address rewardToken, uint256 marketInitializationBlock)
+        returns (uint16 currencyId, address rewardToken)
     {
         currencyId = 9;
-        rewardToken = 0x912CE59144191C1204E64559FE8253a0e49E6548;
-        marketInitializationBlock = 145559028;
+        rewardToken = _getRewardToken();
+    }
+
+    function _fork() internal {
+        vm.createSelectFork(ARBITRUM_RPC_URL, 145559028); // CbEth deployment time
+        _initializeMarket(CURRENCY_ID);
     }
 
     function _depositWithInitialAccounts() private {
         uint256 totalInitialDeposit = 6e20;
         // all shares should add up to 95
-        accounts[0] = AccountsData(vm.addr(12320), 10);
-        accounts[1] = AccountsData(vm.addr(12321), 40);
-        accounts[2] = AccountsData(vm.addr(12322), 15);
-        accounts[3] = AccountsData(vm.addr(12323), 25);
-        accounts[4] = AccountsData(vm.addr(12324), 5);
+        accounts[0] = AccountsData(0xD2162F65D5be7533220a4F016CCeCF0f9C1CADB3, 10);
+        accounts[1] = AccountsData(0xf3A007b9d892Ace8cc3cb77444C3B9e556E263b2, 40);
+        accounts[2] = AccountsData(0x4357b2A65E8AD9588B8614E8Fe589e518bDa5F2E, 15);
+        accounts[3] = AccountsData(0xea0B1eeA6d1dFD490b9267c479E3f22049AAFa3B, 25);
+        accounts[4] = AccountsData(0xA9908242897d282760341e415fcF120Ec15ecaC0, 5);
 
         for (uint256 i = 0; i < accounts.length; i++) {
             address account = accounts[i].account;
@@ -74,6 +79,7 @@ contract ClaimRewardsDetached is SecondaryRewarderSetupTest {
     ///     "0xea0B1eeA6d1dFD490b9267c479E3f22049AAFa3B",
     ///     "0xA9908242897d282760341e415fcF120Ec15ecaC0"
     /// ],
+    //  (totalInitialDeposit * initialShare)
     /// "nTokenBalances": [
     ///     "6000000000",
     ///     "24000000000",
@@ -110,13 +116,12 @@ contract ClaimRewardsDetached is SecondaryRewarderSetupTest {
     }
 
     function setUp() public {
-        (uint16 currencyId, address rewardToken, uint256 marketInitializationBlock) =
-            _getCurrencyRewardTokenAndForkBlock();
+        (uint16 currencyId, address rewardToken) = _getCurrencyRewardTokenAndForkBlock();
         CURRENCY_ID = currencyId;
         REWARD_TOKEN = rewardToken;
 
-        vm.createSelectFork(ARBITRUM_RPC_URL, marketInitializationBlock);
-        _initializeMarket(currencyId);
+        _fork();
+
         _depositWithInitialAccounts();
         _setProofs();
 
@@ -251,5 +256,23 @@ contract ClaimRewardsDetached is SecondaryRewarderSetupTest {
 
             assertEq(IERC20(REWARD_TOKEN).balanceOf(accounts[i].account), prevBalance);
         }
+    }
+}
+
+contract ClaimRewardsDetachedARB is ClaimRewardsDetached {
+    function _getRewardToken() internal pure override returns(address) {
+        return 0x912CE59144191C1204E64559FE8253a0e49E6548;
+    }
+}
+
+contract ClaimRewardsDetachedUSDC is ClaimRewardsDetached {
+    function _getRewardToken() internal pure override returns(address) {
+        return 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+    }
+}
+
+contract ClaimRewardsDetachedLido is ClaimRewardsDetached {
+    function _getRewardToken() internal pure override returns(address) {
+        return 0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60;
     }
 }

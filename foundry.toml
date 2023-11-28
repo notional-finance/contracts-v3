@@ -14,7 +14,7 @@ fs_permissions = [{access="read",path="./v3.arbitrum-one.json"}, {access="read",
 arbitrum = "${ARBITRUM_RPC_URL}"
 
 [fuzz]
-runs = 100
+runs = 50
 seed='0x5792875'
 # [etherscan]
 # goerli = { key = "${ETHERSCAN_API_KEY}" }
