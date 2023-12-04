@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.17;
+pragma solidity >=0.7.6;
+pragma abicoder v2;
 
 import {UnderlyingHoldingsOracle} from "./UnderlyingHoldingsOracle.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
@@ -24,7 +25,7 @@ contract CompoundV2HoldingsOracle is UnderlyingHoldingsOracle {
         UnderlyingHoldingsOracle(params.notional, params.underlying) {
         COMPOUND_ASSET_TOKEN = params.cToken;
         COMPOUND_RATE_ADAPTER = params.cTokenRateAdapter;
-        RATE_ADAPTER_PRECISION = 10**AssetRateAdapter(COMPOUND_RATE_ADAPTER).decimals();
+        RATE_ADAPTER_PRECISION = 10**AssetRateAdapter(params.cTokenRateAdapter).decimals();
     }
 
     /// @notice Returns a list of the various holdings for the prime cash
