@@ -74,16 +74,25 @@ library TargetHelper {
         // all above the target.
         if (targetExternalUnderlyingLend < 0) targetExternalUnderlyingLend = 0;
 
-        // TODO: this value will change after rebalance is completed, should we count that value?
-        uint256 maxExternalUnderlyingLend = oracleData.externalUnderlyingAvailableForWithdraw
-            .div(rebalancingTargetData.externalWithdrawThreshold)
-            .mul(uint256(Constants.PERCENTAGE_DECIMALS));
+        // this limit should ensures we can always withdraw deposited underlying, can be increased/decreased by 
+        // setting externalWithdrawThreshold
+        uint256 maxExternalUnderlyingLend;
+        if (oracleData.currentExternalUnderlyingLend < oracleData.externalUnderlyingAvailableForWithdraw) {
+            maxExternalUnderlyingLend =
+                (oracleData.externalUnderlyingAvailableForWithdraw - oracleData.currentExternalUnderlyingLend)
+                .mul(uint256(Constants.PERCENTAGE_DECIMALS))
+                .div(rebalancingTargetData.externalWithdrawThreshold);
+        } else {
+            maxExternalUnderlyingLend = 0;
+        }
 
         targetAmount = Math.min(
             // totalPrimeCashInUnderlying and totalPrimeDebtInUnderlying are in 8 decimals, convert it to native
             // token precision here for accurate comparison. No underflow possible since targetExternalUnderlyingLend
             // is floored at zero.
             uint256(underlyingToken.convertToExternal(targetExternalUnderlyingLend)),
+            // maxExternalUnderlyingLend is limit enforced by setting externalWithdrawThreshold
+            // maxExternalDeposit is limit due to the supply cap on external pools
             Math.min(maxExternalUnderlyingLend, oracleData.maxExternalDeposit)
         );
         // in case of redemption, make sure there is enough to withdraw, important for health check so that
@@ -183,6 +192,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
         require(config.holding == holding);
         require(config.targetUtilization < 100);
+        require(100 <= config.externalWithdrawThreshold);
 
         rebalancingTargets[holding] = RebalancingTargetData(config.targetUtilization, config.externalWithdrawThreshold);
 
