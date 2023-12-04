@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity >=0.8.11;
+pragma solidity >=0.7.6;
 
 import {ERC20} from "@openzeppelin-4.6/contracts/token/ERC20/ERC20.sol";
 import {Deployments} from "../global/Deployments.sol";
@@ -119,5 +119,4 @@ contract MockCTokenAssetRateAdapter {
         return int256(cToken.exchangeRateStored());
     }
 }
-
 

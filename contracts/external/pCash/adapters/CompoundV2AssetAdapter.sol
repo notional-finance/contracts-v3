@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.17;
+pragma solidity >=0.7.6;
 
 import {CErc20Interface} from "../../../../interfaces/compound/CErc20Interface.sol";
 import {CEtherInterface} from "../../../../interfaces/compound/CEtherInterface.sol";

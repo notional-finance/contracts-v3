@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity >=0.8.11;
+pragma solidity >=0.7.6;
 
 import {Deployments} from "../../../global/Deployments.sol";
 import {DepositData, RedeemData} from "../../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";

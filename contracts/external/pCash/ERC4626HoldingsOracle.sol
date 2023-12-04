@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.17;
+pragma solidity >=0.7.6;
+pragma abicoder v2;
 
 import {UnderlyingHoldingsOracle} from "./UnderlyingHoldingsOracle.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
