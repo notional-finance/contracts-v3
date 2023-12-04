@@ -118,9 +118,7 @@ def list_currency(notional, symbol):
         {"from": notional.owner()}
     )
 
-    callData.append(txn.input)
-
-    return callData
+    return {'notional': callData, 'tradingModule': txn.input}
 
 def main():
     listTokens = ['UNI', 'LINK', 'LDO']
@@ -157,9 +155,8 @@ def main():
 
     for t in listTokens:
         batchBase['transactions'] = []
-        callData = list_currency(notional, t)
-        for data in callData:
-            # TODO: flash liquidator needs to approve both aave (if able) and notional
+        transactions = list_currency(notional, t)
+        for data in transactions['notional']:
             batchBase['transactions'].append({
                 "to": notional.address,
                 "value": "0",
@@ -167,6 +164,15 @@ def main():
                 "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
                 "contractInputsValues": None
             })
+
+        batchBase['transactions'].append({
+            "to": TRADING_MODULE,
+            "value": "0",
+            "data": transactions['tradingModule'],
+            "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
+            "contractInputsValues": None
+        })
+        
         json.dump(batchBase, open("batch-{}.json".format(t), 'w'))
 
         token = ListedTokens[t]
