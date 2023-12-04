@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.7.6;
 
-import {ERC20} from "@openzeppelin-4.6/contracts/token/ERC20/ERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Deployments} from "../global/Deployments.sol";
 
 contract MockCToken is ERC20 {

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.17;
+pragma solidity >=0.7.6;
+pragma abicoder v2;
 
 import {Token, TokenType} from "../global/Types.sol";
 import {IStrategyVault} from "../../interfaces/notional/IStrategyVault.sol";
 import {NotionalProxy} from "../../interfaces/notional/NotionalProxy.sol";
-import {ERC20} from "@openzeppelin-4.6/contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from "@openzeppelin-4.6/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 // NOTE: the canonical BaseStrategyVault is in the https://github.com/notional-finance/leveraged-vaults repo,
 // this version is used for testing purposes only.
@@ -17,9 +18,9 @@ abstract contract BaseStrategyVault is IStrategyVault {
         address account,
         uint256 strategyTokens,
         uint256 maturity
-    ) public view virtual returns (int256 underlyingValue);
+    ) public view virtual override returns (int256 underlyingValue);
 
-    function strategy() external view virtual returns (bytes4 strategyId);
+    function strategy() external view virtual override returns (bytes4 strategyId);
 
     // Vaults need to implement these two methods
     function _depositFromNotional(
@@ -45,7 +46,7 @@ abstract contract BaseStrategyVault is IStrategyVault {
     uint8 internal constant INTERNAL_TOKEN_DECIMALS = 8;
     string public override name;
 
-    function decimals() public pure returns (uint8) {
+    function decimals() public pure override returns (uint8) {
         return INTERNAL_TOKEN_DECIMALS;
     }
 
@@ -81,7 +82,7 @@ abstract contract BaseStrategyVault is IStrategyVault {
         uint256 deposit,
         uint256 maturity,
         bytes calldata data
-    ) external payable onlyNotional returns (uint256 strategyTokensMinted) {
+    ) external payable override onlyNotional returns (uint256 strategyTokensMinted) {
         return _depositFromNotional(account, deposit, maturity, data);
     }
 
@@ -92,7 +93,7 @@ abstract contract BaseStrategyVault is IStrategyVault {
         uint256 maturity,
         uint256 underlyingToRepayDebt,
         bytes calldata data
-    ) external onlyNotional returns (uint256 transferToReceiver) {
+    ) external override onlyNotional returns (uint256 transferToReceiver) {
         uint256 tokensFromRedeem = _redeemFromNotional(
             account, strategyTokens, maturity, underlyingToRepayDebt, data
         );
@@ -108,9 +109,7 @@ abstract contract BaseStrategyVault is IStrategyVault {
             transferToNotional = tokensFromRedeem;
         } else {
             transferToNotional = underlyingToRepayDebt;
-            unchecked {
-                transferToReceiver = tokensFromRedeem - underlyingToRepayDebt;
-            }
+            transferToReceiver = tokensFromRedeem - underlyingToRepayDebt;
         }
 
         if (UNDERLYING_IS_ETH) {
@@ -127,7 +126,7 @@ abstract contract BaseStrategyVault is IStrategyVault {
         address account,
         uint256 strategyTokens,
         uint256 maturity
-    ) external onlyNotional returns (uint256 primeStrategyTokens) {
+    ) external override onlyNotional returns (uint256 primeStrategyTokens) {
         return _convertVaultSharesToPrimeMaturity(account, strategyTokens, maturity);
     }
 
