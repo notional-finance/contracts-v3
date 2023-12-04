@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSUL-1.1
-pragma solidity =0.8.17;
+pragma solidity =0.7.6;
 
 import {CErc20Interface} from "../../../../interfaces/compound/CErc20Interface.sol";
 import {CEtherInterface} from "../../../../interfaces/compound/CEtherInterface.sol";
@@ -61,7 +61,7 @@ library CompoundV2AssetAdapter {
     ) internal view returns (uint256) {
         return assetBalance * _toUint(AssetRateAdapter(assetRateAdapter).getExchangeRateView()) / rateAdapterPrecision;
     }
-    
+
     function _toUint(int256 x) private pure returns (uint256) {
         require(x >= 0);
         return uint256(x);

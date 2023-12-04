@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: BSUL-1.1
-pragma solidity =0.8.11;
+pragma solidity =0.7.6;
 pragma abicoder v2;
 
 import {Token, TokenType} from "../global/Types.sol";
 import {IStrategyVault} from "../../interfaces/notional/IStrategyVault.sol";
 import {NotionalProxy} from "../../interfaces/notional/NotionalProxy.sol";
-import {IVaultController} from "../../interfaces/notional/IVaultController.sol";
 import {ERC20} from "@openzeppelin-4.6/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin-4.6/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ILendingPool} from "../../interfaces/aave/ILendingPool.sol";
-import {CErc20Interface} from "../../interfaces/compound/CErc20Interface.sol";
-import {CEtherInterface} from "../../interfaces/compound/CEtherInterface.sol";
 
 // NOTE: the canonical BaseStrategyVault is in the https://github.com/notional-finance/leveraged-vaults repo,
 // this version is used for testing purposes only.

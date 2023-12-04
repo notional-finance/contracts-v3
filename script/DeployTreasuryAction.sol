@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.11;
+pragma solidity >=0.7.6;
+pragma abicoder v2;
 
-import "forge-std/Script.sol";
+import {Script} from "forge-std/Script.sol";
 
+import {TreasuryAction} from "../contracts/external/actions/TreasuryAction.sol";
+import {Router} from "../contracts/external/Router.sol";
 import {NotionalProxy} from "../interfaces/notional/NotionalProxy.sol";
-import {IRouter} from "../interfaces/notional/IRouter.sol";
-
-interface ITreasuryAction {
-    function COMPTROLLER() external view returns (address);
-}
 
 contract DeployTreasuryAction is Script {
-    function getDeployedContracts(address notional) private view returns (IRouter.DeployedContracts memory c) {
-        IRouter r = IRouter(payable(notional));
+    function getDeployedContracts(address notional) private view returns (Router.DeployedContracts memory c) {
+        Router r = Router(payable(notional));
         c.governance = r.GOVERNANCE();
         c.views = r.VIEWS();
         c.initializeMarket = r.INITIALIZE_MARKET();
@@ -37,15 +35,15 @@ contract DeployTreasuryAction is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        IRouter.DeployedContracts memory c = getDeployedContracts(address(NOTIONAL));
+        Router.DeployedContracts memory c = getDeployedContracts(address(NOTIONAL));
 
-        c.treasury = deployCode(
-            "TreasuryAction.sol:TreasuryAction", abi.encode(ITreasuryAction(c.treasury).COMPTROLLER(), REBALANCE_BOT)
-        );
+        c.treasury = address(new TreasuryAction());
 
-        IRouter r = IRouter(deployCode("Router.sol:Router", abi.encode(c)));
+        Router r = new Router(c);
 
         NOTIONAL.upgradeTo(address(r));
+
+        NOTIONAL.setRebalancingBot(REBALANCE_BOT);
 
         vm.stopBroadcast();
     }

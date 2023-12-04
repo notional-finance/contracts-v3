@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSUL-1.1
-pragma solidity =0.8.17;
+pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import {UnderlyingHoldingsOracle} from "./UnderlyingHoldingsOracle.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
@@ -50,7 +51,7 @@ contract ERC4626HoldingsOracle is UnderlyingHoldingsOracle {
             assetToken: ASSET_TOKEN,
             assetBalance: assetBalance
         });
-    } 
+    }
 
     /// @notice Returns calldata for how to withdraw an amount
     function _getRedemptionCalldata(uint256 withdrawAmount) internal view virtual override returns (

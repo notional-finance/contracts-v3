@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.13;
+pragma solidity >=0.7.6;
+pragma abicoder v2;
 
-import "forge-std/Script.sol";
-import "forge-std/console.sol";
+import {Script} from "forge-std/Script.sol";
+import {console} from "forge-std/console.sol";
+
+import {NotionalTreasury} from "../interfaces/notional/NotionalTreasury.sol";
 
 enum Module {
     RESOLVER,
@@ -26,11 +29,6 @@ interface IOpsProxyFactory {
     function getProxyOf(address account) external view returns (address, bool);
 }
 
-interface INotional {
-    function rebalance(uint16[] calldata currencyId) external;
-    function checkRebalance() external view returns (bool canExec, bytes memory execPayload);
-}
-
 contract CreateRebalanceGelatoTask is Script {
     function run() external {
         string memory json = vm.readFile("v3.arbitrum-one.json");
@@ -46,11 +44,11 @@ contract CreateRebalanceGelatoTask is Script {
 
         moduleData.modules[0] = Module.RESOLVER;
 
-        moduleData.args[0] = abi.encode(NOTIONAL, abi.encodeCall(INotional.checkRebalance, ()));
+        moduleData.args[0] = abi.encode(NOTIONAL, abi.encodeCall(NotionalTreasury.checkRebalance, ()));
 
         bytes32 id = automate.createTask(
             NOTIONAL,
-            abi.encode(INotional.rebalance.selector),
+            abi.encode(NotionalTreasury.rebalance.selector),
             moduleData,
             address(0) // will use gelato  1balance for funding
         );
