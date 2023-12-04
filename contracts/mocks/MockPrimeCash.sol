@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.7.6;
+pragma solidity >=0.7.6;
 pragma abicoder v2;
 
 import "../internal/pCash/PrimeCashExchangeRate.sol";
 import "../internal/pCash/PrimeRateLib.sol";
 import "../internal/markets/Market.sol";
 import "./valuation/AbstractSettingsRouter.sol";
-import {DepositData, RedeemData} from "../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
+import {DepositData, RedeemData} from "../../contracts/global/Types.sol";
 
-contract MockPrimeCashOracle is IPrimeCashHoldingsOracle {
+abstract contract MockPrimeCashOracle is IPrimeCashHoldingsOracle {
     uint256 public nativeValue;
     uint256 public internalValue;
 
@@ -67,7 +67,7 @@ contract MockPrimeCashOracle is IPrimeCashHoldingsOracle {
     }
 
     function getRedemptionCalldataForRebalancing(
-        address[] calldata holdings, 
+        address[] calldata _holdings, 
         uint256[] calldata withdrawAmounts
     ) external view override returns (
         RedeemData[] memory redeemData
@@ -75,7 +75,7 @@ contract MockPrimeCashOracle is IPrimeCashHoldingsOracle {
     }
 
     function getDepositCalldataForRebalancing(
-        address[] calldata holdings, 
+        address[] calldata _holdings, 
         uint256[] calldata depositAmount
     ) external view override returns (
         DepositData[] memory depositData

@@ -3,7 +3,6 @@ pragma solidity =0.8.17;
 
 import {CErc20Interface} from "../../../../interfaces/compound/CErc20Interface.sol";
 import {CEtherInterface} from "../../../../interfaces/compound/CEtherInterface.sol";
-import {CTokenInterface} from "../../../../interfaces/compound/CTokenInterface.sol";
 import {AssetRateAdapter} from "../../../../interfaces/notional/AssetRateAdapter.sol";
 import {DepositData, RedeemData} from "../../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 
@@ -25,7 +24,7 @@ library CompoundV2AssetAdapter {
         callData[0] = abi.encodeWithSelector(CErc20Interface.redeemUnderlying.selector, redeemUnderlyingAmount);
 
         data = new RedeemData[](1);
-        data[0] = RedeemData(targets, callData, redeemUnderlyingAmount, assetToken);
+        data[0] = RedeemData(targets, callData, redeemUnderlyingAmount, assetToken, 0);
     }
 
     function getDepositCalldata(
@@ -52,7 +51,7 @@ library CompoundV2AssetAdapter {
         );
 
         data = new DepositData[](1);
-        data[0] = DepositData(targets, callData, msgValue, depositUnderlyingAmount, assetToken);
+        data[0] = DepositData(targets, callData, msgValue, depositUnderlyingAmount, assetToken, 0);
     }
 
     function getUnderlyingValue(

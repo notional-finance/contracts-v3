@@ -10,6 +10,7 @@ import "../../interfaces/notional/NotionalProxy.sol";
 import {nERC1155Interface} from "../../interfaces/notional/nERC1155Interface.sol";
 import {NotionalGovernance} from "../../interfaces/notional/NotionalGovernance.sol";
 import {NotionalCalculations} from "../../interfaces/notional/NotionalCalculations.sol";
+import {IRouter} from "../../interfaces/notional/IRouter.sol";
 import {
     IVaultAction,
     IVaultAccountAction,
@@ -26,42 +27,24 @@ import {
  * allows for atomic upgrades of the entire system. Individual implementation contracts will be deployed and then a
  * new Router with the new hardcoded addresses will then be deployed and upgraded into place.
  */
-contract Router is StorageLayoutV1 {
+contract Router is StorageLayoutV1, IRouter {
     // These contract addresses cannot be changed once set by the constructor
-    address public immutable GOVERNANCE;
-    address public immutable VIEWS;
-    address public immutable INITIALIZE_MARKET;
-    address public immutable NTOKEN_ACTIONS;
-    address public immutable BATCH_ACTION;
-    address public immutable ACCOUNT_ACTION;
-    address public immutable ERC1155;
-    address public immutable LIQUIDATE_CURRENCY;
-    address public immutable LIQUIDATE_FCASH;
-    address public immutable TREASURY;
-    address public immutable CALCULATION_VIEWS;
-    address public immutable VAULT_ACCOUNT_ACTION;
-    address public immutable VAULT_ACTION;
-    address public immutable VAULT_LIQUIDATION_ACTION;
-    address public immutable VAULT_ACCOUNT_HEALTH;
+    address public immutable override GOVERNANCE;
+    address public immutable override VIEWS;
+    address public immutable override INITIALIZE_MARKET;
+    address public immutable override NTOKEN_ACTIONS;
+    address public immutable override BATCH_ACTION;
+    address public immutable override ACCOUNT_ACTION;
+    address public immutable override ERC1155;
+    address public immutable override LIQUIDATE_CURRENCY;
+    address public immutable override LIQUIDATE_FCASH;
+    address public immutable override TREASURY;
+    address public immutable override CALCULATION_VIEWS;
+    address public immutable override VAULT_ACCOUNT_ACTION;
+    address public immutable override VAULT_ACTION;
+    address public immutable override VAULT_LIQUIDATION_ACTION;
+    address public immutable override VAULT_ACCOUNT_HEALTH;
     address private immutable DEPLOYER;
-
-    struct DeployedContracts {
-        address governance;
-        address views;
-        address initializeMarket;
-        address nTokenActions;
-        address batchAction;
-        address accountAction;
-        address erc1155;
-        address liquidateCurrency;
-        address liquidatefCash;
-        address treasury;
-        address calculationViews;
-        address vaultAccountAction;
-        address vaultAction;
-        address vaultLiquidationAction;
-        address vaultAccountHealth;
-    }
 
     // Ensures that when we deploy, the hardcoded addresses are encoded properly to the chain that is
     // being deployed to
@@ -107,7 +90,7 @@ contract Router is StorageLayoutV1 {
         hasInitialized = true;
     }
 
-    function initialize(address owner_, address pauseRouter_, address pauseGuardian_) public {
+    function initialize(address owner_, address pauseRouter_, address pauseGuardian_) public override {
         // Check that only the deployer can initialize
         require(msg.sender == DEPLOYER && !hasInitialized);
 
@@ -122,7 +105,7 @@ contract Router is StorageLayoutV1 {
     /// @notice Returns the implementation contract for the method signature
     /// @param sig method signature to call
     /// @return implementation address
-    function getRouterImplementation(bytes4 sig) public view returns (address) {
+    function getRouterImplementation(bytes4 sig) public view override returns (address) {
         if (
             sig == NotionalProxy.batchBalanceAction.selector ||
             sig == NotionalProxy.batchBalanceAndTradeAction.selector ||
@@ -251,13 +234,15 @@ contract Router is StorageLayoutV1 {
             return GOVERNANCE;
         } else if (
             sig == NotionalTreasury.updateIncentiveEmissionRate.selector ||
-            sig == NotionalTreasury.claimCOMPAndTransfer.selector ||
             sig == NotionalTreasury.transferReserveToTreasury.selector ||
             sig == NotionalTreasury.setTreasuryManager.selector ||
+            sig == NotionalTreasury.setRebalancingBot.selector ||
             sig == NotionalTreasury.setReserveBuffer.selector ||
             sig == NotionalTreasury.setReserveCashBalance.selector ||
             sig == NotionalTreasury.setRebalancingTargets.selector ||
             sig == NotionalTreasury.setRebalancingCooldown.selector ||
+            sig == NotionalTreasury.harvestAssetInterest.selector ||
+            sig == NotionalTreasury.checkRebalance.selector ||
             sig == NotionalTreasury.rebalance.selector
         ) {
             return TREASURY;

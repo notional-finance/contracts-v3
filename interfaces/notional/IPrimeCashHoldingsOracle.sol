@@ -8,6 +8,7 @@ struct DepositData {
     uint256[] msgValue;
     uint256 underlyingDepositAmount;
     address assetToken;
+    uint8 assetTokenBalanceAdjustment;
 }
 
 struct RedeemData {
@@ -15,6 +16,14 @@ struct RedeemData {
     bytes[] callData;
     uint256 expectedUnderlying;
     address assetToken;
+    uint8 assetTokenBalanceAdjustment;
+}
+
+struct OracleData {
+    address holding;
+    uint256 externalUnderlyingAvailableForWithdraw;
+    uint256 currentExternalUnderlyingLend;
+    uint256 maxExternalDeposit;
 }
 
 interface IPrimeCashHoldingsOracle {
@@ -25,7 +34,7 @@ interface IPrimeCashHoldingsOracle {
     /// @notice Returns the underlying token that all holdings can be redeemed
     /// for.
     function underlying() external view returns (address);
-    
+
     /// @notice Returns the native decimal precision of the underlying token
     function decimals() external view returns (uint8);
 
@@ -56,9 +65,11 @@ interface IPrimeCashHoldingsOracle {
     );
 
     function getDepositCalldataForRebalancing(
-        address[] calldata _holdings, 
+        address[] calldata _holdings,
         uint256[] calldata depositAmounts
     ) external view returns (
         DepositData[] memory depositData
     );
+
+    function getOracleData() external view returns (OracleData memory);
 }
