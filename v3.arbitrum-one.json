@@ -65,5 +65,10 @@
         "wstETH": {
             "address": "0x5979D7b546E38E414F7E9822514be443A4800529"
         }
-    }
+    },
+    "aaveLendingPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+    "aavePoolDataProvider": "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654",
+    "gelatoBot": "0xF8FA7ca6D40F6cB0BA467aBBc23D2107EaEA7071",
+    "gelatoAutomate": "0xB3f5503f93d5Ef84b06993a1975B9D21B962892F",
+    "gelatoOpsProxyFactory": "0xC815dB16D4be6ddf2685C201937905aBf338F5D7"
 }

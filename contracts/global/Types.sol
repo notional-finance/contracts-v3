@@ -777,3 +777,8 @@ struct TotalfCashDebtStorage {
     uint80 fCashDebtHeldInSettlementReserve;
     uint80 primeCashHeldInSettlementReserve;
 }
+
+struct RebalancingTargetData {
+    uint8 targetUtilization;
+    uint16 externalWithdrawThreshold;
+}
