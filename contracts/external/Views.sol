@@ -168,6 +168,8 @@ contract Views is StorageLayoutV2, NotionalViews {
             currencyId,
             maxMarketIndex
         );
+
+        return (deprecated_annualizedAnchorRates, proportions);
     }
 
     /// @notice Returns nToken deposit parameters for a given currency

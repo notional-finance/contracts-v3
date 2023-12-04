@@ -238,6 +238,7 @@ contract NotionalBaseTest is Test {
         upgradeTo(c);
 
         vm.startPrank(owner);
+
         NOTIONAL.setRebalancingBot(REBALANCE_BOT);
         vm.stopPrank();
     }
