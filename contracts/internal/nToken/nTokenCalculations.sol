@@ -50,6 +50,7 @@ library nTokenCalculations {
         }
 
         // This is the total value in liquid assets
+        // todo: use lastImpliedRate...
         (int256 totalAssetValueInMarkets, /* int256[] memory netfCash */) = getNTokenMarketValue(nToken, blockTime);
 
         // Then get the total value in any idiosyncratic fCash residuals (if they exist)
@@ -230,6 +231,7 @@ library nTokenCalculations {
                         blockTime,
                         // No need to call cash group for oracle rate, it is up to date here
                         // and we are assured to be referring to this market.
+                        // todo: use lastImpliedRate here
                         market.oracleRate
                     )
                 )
