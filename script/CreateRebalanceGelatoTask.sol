@@ -44,7 +44,7 @@ contract CreateRebalanceGelatoTask is Script {
 
         moduleData.modules[0] = Module.RESOLVER;
 
-        moduleData.args[0] = abi.encode(NOTIONAL, abi.encodeCall(NotionalTreasury.checkRebalance, ()));
+        moduleData.args[0] = abi.encode(NOTIONAL, abi.encodeWithSelector(NotionalTreasury.checkRebalance.selector));
 
         bytes32 id = automate.createTask(
             NOTIONAL,
