@@ -13,7 +13,10 @@ ChainlinkOracles = {
     "cbETH/ETH": "0xa668682974e3f121185a3cd94f00322bec674275",
     "GMX/USD": "0xdb98056fecfff59d032ab628337a4887110df3db",
     "ARB/USD": "0xb2a824043730fe05f3da2efafa1cbbe83fa548d6",
-    "RDNT/USD": "0x20d0fcab0ecfd078b036b6caf1fac69a6453b352"
+    "RDNT/USD": "0x20d0fcab0ecfd078b036b6caf1fac69a6453b352",
+    "LINK/USD": "0x86e53cf1b870786351da77a57575e79cb55812cb",
+    "UNI/USD": "0x9c917083fdb403ab5adbec26ee294f6ecada2720",
+    "LDO/USD": "0xa43a34030088e6510feccfb77e88ee5e7ed0fe64"
 }
 
 CurrencyDefaults = {
@@ -594,6 +597,90 @@ ListedTokens = {
             "minFeeRate5BPS": 10,
             "maxFeeRate25BPS": 160
         },
+    },
+    'UNI': PrimeOnlyDefaults | {
+        "address": "0xFa7F8980b0f1E64A2062791cc3b0871572f1F7f0",
+        "name": "Uniswap",
+        "decimals": 18,
+        "baseOracle": ChainlinkOracles["UNI/USD"],
+        "quoteOracle": ChainlinkOracles["ETH/USD"],
+        "invertBase": False,
+        "invertQuote": False,
+        "pCashOracle": "0x46D2A413B066aE3A8d6E91BeA96872f541668689",
+        "ethOracle": "0x394235A5BD3c90aD1c504b64329bCb2e06B7BaFe",
+
+        "allowDebt": True,
+        "buffer": 129,
+        "haircut": 78,
+        "liquidationDiscount": 108,
+        "maxUnderlyingSupply": 120_000e8,
+
+        "primeCashCurve": {
+            "kinkUtilization1": 15,
+            "kinkUtilization2": 70,
+            "kinkRate1": 1,
+            "kinkRate2": 3,
+            "maxRate25BPS": 225,
+            "feeRatePercent": 20,
+            "minFeeRate5BPS": 10,
+            "maxFeeRate25BPS": 160
+        },
+    },
+    'LINK': PrimeOnlyDefaults | {
+        "address": "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4",
+        "name": "ChainLink Token",
+        "decimals": 18,
+        "baseOracle": ChainlinkOracles["LINK/USD"],
+        "quoteOracle": ChainlinkOracles["ETH/USD"],
+        "invertBase": False,
+        "invertQuote": False,
+        "pCashOracle": "0x1EcE339C5e96B4EDDC14aebb86007346c9c22d2b",
+        "ethOracle": "0x7283b4909127149EaDd229fae945f9E4911B69aE",
+
+        "allowDebt": True,
+        "buffer": 129,
+        "haircut": 78,
+        "liquidationDiscount": 108,
+        "maxUnderlyingSupply": 45_000e8,
+
+        "primeCashCurve": {
+            "kinkUtilization1": 15,
+            "kinkUtilization2": 70,
+            "kinkRate1": 1,
+            "kinkRate2": 3,
+            "maxRate25BPS": 225,
+            "feeRatePercent": 20,
+            "minFeeRate5BPS": 10,
+            "maxFeeRate25BPS": 160
+        },
+    },
+    'LDO': PrimeOnlyDefaults | {
+        "address": "0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60",
+        "name": "Lido DAO Token",
+        "decimals": 18,
+        "baseOracle": ChainlinkOracles["LDO/USD"],
+        "quoteOracle": ChainlinkOracles["ETH/USD"],
+        "invertBase": False,
+        "invertQuote": False,
+        "pCashOracle": "0x8335E695C8d14cc7e93e8c4cf0a919D9cC8705a6",
+        "ethOracle": "0x0fea5ea82add0efD3e197893dBFa40349E4B254f",
+
+        "allowDebt": True,
+        "buffer": 156,
+        "haircut": 64,
+        "liquidationDiscount": 109,
+        "maxUnderlyingSupply": 55_000e8,
+
+        "primeCashCurve": {
+            "kinkUtilization1": 15,
+            "kinkUtilization2": 70,
+            "kinkRate1": 1,
+            "kinkRate2": 3,
+            "maxRate25BPS": 225,
+            "feeRatePercent": 20,
+            "minFeeRate5BPS": 10,
+            "maxFeeRate25BPS": 160
+        },
     }
 }
 
@@ -603,5 +690,7 @@ ListedOrder = [
     # 5-8
     'wstETH', 'FRAX', 'rETH', 'USDT',
     # 9-12
-    'cbETH', 'GMX', 'ARB', 'RDNT'
+    'cbETH', 'GMX', 'ARB', 'RDNT',
+    # 13-15
+    'UNI', 'LINK', 'LDO'
 ]

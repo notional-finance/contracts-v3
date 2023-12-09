@@ -13,6 +13,9 @@ WHALES = {
     'RDNT': "0x9d9e4A95765154A575555039E9E2a321256B5704"
 }
 
+LIQUIDATOR = '0xCeF77C74C88B6deCeAF2E954038e7789A0F1bB33'
+TRADING_MODULE = '0xBf6B9c5608D520469d8c4BD1E24F850497AF0Bb8'
+
 def donate_initial(symbol, notional, fundingAccount):
     token = ListedTokens[symbol]
     if symbol == 'ETH':
@@ -104,11 +107,21 @@ def list_currency(notional, symbol):
             {"from": notional.owner()}
         )
         callData.append(txn.input)
+    
+    # Set trading module approvals for the liquidator
+    tradingModule = Contract.from_abi("trading", TRADING_MODULE, interface.ITradingModule.abi)
+    
+    txn = tradingModule.setTokenPermissions(
+        LIQUIDATOR,
+        token['address'],
+        (True, 8, 15), # allow sell, 8 is 0x, 15 is all trade types
+        {"from": notional.owner()}
+    )
 
-    return callData
+    return {'notional': callData, 'tradingModule': txn.input}
 
 def main():
-    listTokens = ['RDNT']
+    listTokens = ['UNI', 'LINK', 'LDO']
     fundingAccount = accounts.at("0x7d7935EDd4b6cDB5f34B0E1cCEAF85a3C4A11254", force=True)
     (addresses, notional, note, router, networkName) = get_addresses()
     deployer = accounts.at("0x8F5ea3CDe898B208280c0e93F3aDaaf1F5c35a7e", force=True)
@@ -118,10 +131,12 @@ def main():
     for t in listTokens:
         donate_initial(t, notional, fundingAccount)
         if ListedTokens[t]["pCashOracle"] == "":
+            # These contracts are verified automatically on Arbiscan
             print("DEPLOYING PCASH ORACLE FOR: ", t)
             pCash = _deploy_pcash_oracle(t, notional, deployer)
             ListedTokens[t]["pCashOracle"] = pCash.address
         if "baseOracle" in ListedTokens[t] and ListedTokens[t]["ethOracle"] == "":
+            # These contracts are verified automatically on Arbiscan
             print("DEPLOYING ETH ORACLE FOR: ", t)
             ethOracle = _deploy_chainlink_oracle(t, deployer)
             ListedTokens[t]["ethOracle"] = ethOracle.address
@@ -140,9 +155,8 @@ def main():
 
     for t in listTokens:
         batchBase['transactions'] = []
-        callData = list_currency(notional, t)
-        for data in callData:
-            # TODO: append a txn that authorizes the flash liquidator to sell the token via 0x
+        transactions = list_currency(notional, t)
+        for data in transactions['notional']:
             batchBase['transactions'].append({
                 "to": notional.address,
                 "value": "0",
@@ -150,6 +164,15 @@ def main():
                 "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
                 "contractInputsValues": None
             })
+
+        batchBase['transactions'].append({
+            "to": TRADING_MODULE,
+            "value": "0",
+            "data": transactions['tradingModule'],
+            "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
+            "contractInputsValues": None
+        })
+        
         json.dump(batchBase, open("batch-{}.json".format(t), 'w'))
 
         token = ListedTokens[t]

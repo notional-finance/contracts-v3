@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-v3
+// SPDX-License-Identifier: BSUL-1.1
 pragma solidity >=0.7.0;
 pragma abicoder v2;
 

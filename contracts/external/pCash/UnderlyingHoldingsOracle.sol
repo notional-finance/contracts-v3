@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: GPL-3.0-only
-pragma solidity >=0.7.6;
-pragma abicoder v2;
+// SPDX-License-Identifier: BSUL-1.1
+pragma solidity =0.8.17;
 
 import {Constants} from "../../global/Constants.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";
