@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSUL-1.1
 pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import {CErc20Interface} from "../../../../interfaces/compound/CErc20Interface.sol";
 import {CEtherInterface} from "../../../../interfaces/compound/CEtherInterface.sol";

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSUL-1.1
 pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import {Deployments} from "../../../global/Deployments.sol";
 import {DepositData, RedeemData} from "../../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
@@ -65,7 +66,7 @@ library ERC4626AssetAdapter {
                 IERC4626.deposit.selector, 
                 depositUnderlyingAmount,
                 from
-            );        
+            );
         } else {
             targets[0] = underlyingToken;
             callData[0] = abi.encodeWithSelector(IERC20.approve.selector, assetToken, depositUnderlyingAmount);
