@@ -94,7 +94,7 @@ library Incentives {
     ) internal returns (uint256 incentivesToClaim) {
         uint256 blockTime = block.timestamp;
         address tokenAddress = nTokenHandler.nTokenAddress(balanceState.currencyId);
-        (uint256 priorNTokenSupply,,) = nTokenSupply.getStoredNTokenSupplyFactors(tokenAddress);
+        (uint256 priorNTokenSupply, /* */, /* */) = nTokenSupply.getStoredNTokenSupplyFactors(tokenAddress);
         // This will updated the nToken storage and return what the accumulatedNOTEPerNToken
         // is up until this current block time in 1e18 precision
         uint256 accumulatedNOTEPerNToken = nTokenSupply.changeNTokenSupply(

@@ -402,11 +402,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     /// @dev emit:UpdateSecondaryIncentiveRewarder
     /// @param currencyId currency id of the nToken
     /// @param rewarder rewarder contract
-    function setSecondaryIncentiveRewarder(uint16 currencyId, IRewarder rewarder)
-        external
-        override
-        onlyOwner
-    {
+    function setSecondaryIncentiveRewarder(uint16 currencyId, IRewarder rewarder) external override onlyOwner {
         _checkValidCurrency(currencyId);
         require(Address.isContract(address(rewarder)), "Rewarder must be a contract");
 

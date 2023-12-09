@@ -14,21 +14,38 @@ contract SecondaryRewarder is IRewarder {
     using SafeUint256 for uint256;
     using SafeInt256 for int256;
 
+    event RewardTransfer(address indexed rewardToken, address indexed account, uint256 amount);
+
     NotionalProxy public immutable NOTIONAL;
     address public immutable NTOKEN_ADDRESS;
     address public immutable REWARD_TOKEN;
     uint8 public immutable REWARD_TOKEN_DECIMALS;
     uint16 public immutable CURRENCY_ID;
 
+    /// @notice When a rewarder is detached, it converts to an airdrop contract using the
+    /// this merkleRoot that is set.
+    /// @dev Uses a single storage slot
     bytes32 public merkleRoot;
-    bool public detached; // when true user needs to call contract directly to claim any rewards left
 
-    uint32 public endTime; // will alway be less than block.timestamp if detached is true
-    uint32 public override emissionRatePerYear; // zero precision
+    /* Rest of storage variables are packed into 232 bits (29 bytes, 3 left unused) */
+    /// @notice When true user needs to call contract directly to claim any rewards left
+    bool public detached;
+    /// @notice Marks the timestamp when incentives will end. Will always be less than block.timestamp
+    /// if detached is true.
+    uint32 public endTime;
+
+    /// @notice The emission rate of REWARD_TOKEN in WHOLE token precision (i.e. token value without
+    /// any decimals).
+    uint32 public override emissionRatePerYear;
+
+    /// @notice Last time the contract accumulated the reward
     uint32 public override lastAccumulatedTime;
+
+    /// @notice Aggregate tokens accumulated per nToken at `lastAccumulateTime`
     uint128 public override accumulatedRewardPerNToken;
 
-    mapping(address => uint128) public rewardDeptPerAccount; // incentive accumulation precision
+    /// @notice Reward debt per account stored in 18 decimals.
+    mapping(address => uint128) public rewardDebtPerAccount;
 
     modifier onlyOwner() {
         require(msg.sender == NOTIONAL.owner(), "Only owner");
@@ -164,31 +181,36 @@ contract SecondaryRewarder is IRewarder {
     /// @param currencyId id number of the currency
     /// @param nTokenBalanceBefore account nToken balance before the change
     /// @param nTokenBalanceAfter account nToken balance after the change
-    /// @param totalSupply total nToken supply before the change
+    /// @param priorNTokenSupply total nToken supply before the change
     function claimRewards(
         address account,
         uint16 currencyId,
         uint256 nTokenBalanceBefore,
         uint256 nTokenBalanceAfter,
-        uint256 totalSupply
+        uint256 priorNTokenSupply
     ) external override onlyNotional {
         require(!detached, "Detached");
         require(currencyId == CURRENCY_ID, "Wrong currency id");
 
-        _accumulateRewardPerNToken(uint32(block.timestamp), totalSupply);
+        _accumulateRewardPerNToken(uint32(block.timestamp), priorNTokenSupply);
         _claimRewards(account, nTokenBalanceBefore, nTokenBalanceAfter);
     }
 
     function _claimRewards(address account, uint256 nTokenBalanceBefore, uint256 nTokenBalanceAfter) private {
         uint256 rewardToClaim = _calculateRewardToClaim(account, nTokenBalanceBefore);
 
+        // Precision here is:
+        //  nTokenBalanceAfter (INTERNAL_TOKEN_PRECISION)
+        //  accumulatedRewardPerNToken (INCENTIVE_ACCUMULATION_PRECISION - INTERNAL_TOKEN_PRECISION)
+        //  => INCENTIVE_ACCUMULATION_PRECISION (1e18)
         // forgefmt: disable-next-item
-        rewardDeptPerAccount[account] = nTokenBalanceAfter
+        rewardDebtPerAccount[account] = nTokenBalanceAfter
             .mul(accumulatedRewardPerNToken)
             .toUint128();
 
         if (0 < rewardToClaim) {
             GenericToken.safeTransferOut(REWARD_TOKEN, account, rewardToClaim);
+            emit RewardTransfer(REWARD_TOKEN, account, rewardToClaim);
         }
     }
 
@@ -196,9 +218,20 @@ contract SecondaryRewarder is IRewarder {
         uint32 time = uint32(SafeInt256.min(blockTime, endTime));
 
         if (lastAccumulatedTime < time && 0 < totalSupply) {
+            // NOTE: no underflow, checked in if statement
             uint256 timeSinceLastAccumulation = time - lastAccumulatedTime;
+            // Precision here is:
+            //  timeSinceLastAccumulation (SECONDS)
+            //  INCENTIVE_ACCUMULATION_PRECISION (1e18)
+            //  WHOLE_TOKENS (?)
+            // DIVIDE BY
+            //  YEAR (SECONDS)
+            //  INTERNAL_TOKEN_PRECISION
+            // => Precision = 10 ** (INCENTIVE_ACCUMULATION_PRECISION - INTERNAL_TOKEN_PRECISION)
+            // => 1e10
+
             // forgefmt: disable-next-item
-            uint256 additionalIncentiveAccumulatedPerNToken  = timeSinceLastAccumulation
+            uint256 additionalIncentiveAccumulatedPerNToken = timeSinceLastAccumulation
                 .mul(Constants.INCENTIVE_ACCUMULATION_PRECISION)
                 .mul(emissionRatePerYear)
                 .div(Constants.YEAR)
@@ -215,10 +248,20 @@ contract SecondaryRewarder is IRewarder {
         view
         returns (uint256)
     {
+        // Precision here is:
+        //   nTokenBalanceAtLastClaim (INTERNAL_TOKEN_PRECISION)
+        //   accumulatedRewardPerNToken (INCENTIVE_ACCUMULATION_PRECISION - INTERNAL_TOKEN_PRECISION)
+        // => INCENTIVE_ACCUMULATION_PRECISION
+        // SUB rewardDebtPerAccount (INCENTIVE_ACCUMULATION_PRECISION)
+        //
+        // - div INCENTIVE_ACCUMULATION_PRECISION
+        // - mul REWARD_TOKEN_DECIMALS
+        // => REWARD_TOKEN_DECIMALS
+
         // forgefmt: disable-next-item
         return uint256(nTokenBalanceAtLastClaim)
             .mul(accumulatedRewardPerNToken)
-            .sub(rewardDeptPerAccount[account])
+            .sub(rewardDebtPerAccount[account])
             .div(Constants.INCENTIVE_ACCUMULATION_PRECISION)
             .mul(10 ** REWARD_TOKEN_DECIMALS);
     }
