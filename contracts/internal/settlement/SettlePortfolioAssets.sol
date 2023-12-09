@@ -2,7 +2,7 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import {SettleAmount, PrimeRate} from "../../global/Types.sol";
+import {SettleAmount, AssetStorageState, PrimeRate} from "../../global/Types.sol";
 import {SafeInt256} from "../../math/SafeInt256.sol";
 import {Constants} from "../../global/Constants.sol";
 

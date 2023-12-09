@@ -277,6 +277,7 @@ library PrimeCashExchangeRate {
 
         int256 newTotalPrimeDebt = int256(uint256(s.totalPrimeDebt))
             .add(netPrimeDebtChange);
+        
         // When totalPrimeDebt increases, totalPrimeSupply will also increase, no underflow
         // to zero occurs. Utilization will not exceed 100% since both values increase at the
         // same rate.
@@ -294,6 +295,7 @@ library PrimeCashExchangeRate {
 
         s.totalPrimeDebt = newTotalPrimeDebt.toUint().toUint88();
         s.totalPrimeSupply = newTotalPrimeSupply.toUint().toUint88();
+
         Emitter.emitBorrowOrRepayPrimeDebt(account, currencyId, netPrimeSupplyChange, netPrimeDebtChange);
         _checkInvariant(s);
     }
@@ -533,7 +535,6 @@ library PrimeCashExchangeRate {
             //    or some incident that requires a haircut to lenders
             uint256 underlyingInterestRate;
 
-            require(prior.lastTotalUnderlyingValue <= currentUnderlyingValue, "#cl");
             if (prior.lastTotalUnderlyingValue > 0) {
                 // If lastTotalUnderlyingValue == 0 (meaning we have no tokens held), then the
                 // underlying interest rate is exactly zero and we avoid a divide by zero error.
