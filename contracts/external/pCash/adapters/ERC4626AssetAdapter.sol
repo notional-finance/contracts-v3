@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSUL-1.1
-pragma solidity =0.8.17;
+pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import {Deployments} from "../../../global/Deployments.sol";
 import {DepositData, RedeemData} from "../../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";

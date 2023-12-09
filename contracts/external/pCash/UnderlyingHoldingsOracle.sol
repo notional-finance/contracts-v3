@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BSUL-1.1
-pragma solidity =0.8.17;
+pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import {Constants} from "../../global/Constants.sol";
+import {SafeUint256} from "../../math/SafeUint256.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
 import {
@@ -12,6 +14,8 @@ import {
 } from "../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 
 contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
+    using SafeUint256 for uint256;
+
     NotionalProxy internal immutable NOTIONAL;
     address internal immutable UNDERLYING_TOKEN;
     uint8 internal immutable UNDERLYING_DECIMALS;
@@ -53,7 +57,7 @@ contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
         uint256 internalPrecision
     ) {
         nativePrecision = _getTotalUnderlyingValueStateful();
-        internalPrecision = nativePrecision * uint256(Constants.INTERNAL_TOKEN_PRECISION) / UNDERLYING_PRECISION;
+        internalPrecision = nativePrecision.mul(uint256(Constants.INTERNAL_TOKEN_PRECISION)).div(UNDERLYING_PRECISION);
     }
 
     function getTotalUnderlyingValueView() external view override returns (
@@ -61,7 +65,7 @@ contract UnderlyingHoldingsOracle is IPrimeCashHoldingsOracle {
         uint256 internalPrecision
     ) {
         nativePrecision = _getTotalUnderlyingValueView();
-        internalPrecision = nativePrecision * uint256(Constants.INTERNAL_TOKEN_PRECISION) / UNDERLYING_PRECISION;
+        internalPrecision = nativePrecision.mul(uint256(Constants.INTERNAL_TOKEN_PRECISION)).div(UNDERLYING_PRECISION);
     }
 
     function holdingValuesInUnderlying() external view override returns (uint256[] memory) {
