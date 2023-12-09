@@ -68,7 +68,6 @@ contract SecondaryRewarder is IRewarder {
         REWARD_TOKEN = address(incentive_token);
         REWARD_TOKEN_DECIMALS = IERC20(address(incentive_token)).decimals();
 
-        // TODO: If using a proxy this needs to be in an initializer function
         emissionRatePerYear = _emissionRatePerYear;
         lastAccumulatedTime = uint32(block.timestamp);
         endTime = _endTime;
@@ -82,7 +81,6 @@ contract SecondaryRewarder is IRewarder {
         override
         returns (uint256 rewardToClaim)
     {
-        // TODO: this should be a view function
         require(!detached, "Detached");
         require(lastAccumulatedTime <= blockTime, "Invalid block time");
 
