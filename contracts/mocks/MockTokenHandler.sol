@@ -104,11 +104,13 @@ contract MockTokenHandler is AbstractSettingsRouter {
         return TokenHandler.getUnderlyingToken(currencyId);
     }
 
-    function setMaxUnderlyingSupply(uint16 currencyId, uint256 maxUnderlying) external {
-        PrimeCashExchangeRate.setMaxUnderlyingSupply(currencyId, maxUnderlying);
+    function setMaxUnderlyingSupply(uint16 currencyId, uint256 maxUnderlying, uint8 maxPrimeDebtUtilization) external {
+        PrimeCashExchangeRate.setMaxUnderlyingSupply(currencyId, maxUnderlying, maxPrimeDebtUtilization);
     }
 
-    function getSupplyCap(uint16 currencyId) external view returns (uint256 maxUnderlying, uint256 totalUnderlying) {
+    function getSupplyCap(uint16 currencyId) external view returns (
+        uint256 maxUnderlying, uint256 totalUnderlying, uint256 maxDebt, uint256 totalDebt
+    ) {
         (PrimeRate memory pr, /* */) = buildPrimeRateView(currencyId, block.timestamp);
         return pr.getSupplyCap(currencyId);
     }

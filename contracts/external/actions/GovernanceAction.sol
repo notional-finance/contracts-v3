@@ -235,9 +235,14 @@ contract GovernanceAction is StorageLayoutV2, NotionalGovernance, UUPSUpgradeabl
 
     function setMaxUnderlyingSupply(
         uint16 currencyId,
-        uint256 maxUnderlyingSupply
+        uint256 maxUnderlyingSupply,
+        uint8 maxPrimeDebtUtilization
     ) external override onlyOwner {
-        uint256 unpackedSupply = PrimeCashExchangeRate.setMaxUnderlyingSupply(currencyId, maxUnderlyingSupply);
+        uint256 unpackedSupply = PrimeCashExchangeRate.setMaxUnderlyingSupply(
+            currencyId,
+            maxUnderlyingSupply,
+            maxPrimeDebtUtilization
+        );
         emit UpdateMaxUnderlyingSupply(currencyId, unpackedSupply);
     }
 
