@@ -707,7 +707,10 @@ struct PrimeCashFactorsStorage {
     // gives us approx 7 digits of precision for each value. Because these are used
     // to maintain supply and borrow caps, they are not required to be exact.
     uint32 maxUnderlyingSupply;
-    uint128 _reserved;
+    // The maximum utilization that prime debt is allowed to reach by users borrowing prime
+    // debt via the markets directly. This cap is not applied to liquidations and settlement.
+    uint8 maxPrimeDebtUtilization;
+    uint120 _reserved;
     // Reserving the next 128 bytes for future use in case we decide to implement debt
     // caps on a currency. In that case, we will need to track the total fcash overall
     // and subtract the total debt held in vaults.

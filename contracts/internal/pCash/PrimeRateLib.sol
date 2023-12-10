@@ -486,20 +486,37 @@ library PrimeRateLib {
     /// @dev Called during deposits in AccountAction and BatchAction. Supply caps are not checked
     /// during settlement, liquidation and withdraws.
     function checkSupplyCap(PrimeRate memory pr, uint16 currencyId) internal view {
-        (uint256 maxUnderlyingSupply, uint256 totalUnderlyingSupply) = getSupplyCap(pr, currencyId);
+        (
+            uint256 maxUnderlyingSupply,
+            uint256 totalUnderlyingSupply,
+            uint256 maxUnderlyingDebt,
+            uint256 totalUnderlyingDebt
+        ) = getSupplyCap(pr, currencyId);
         if (maxUnderlyingSupply == 0) return;
 
         require(totalUnderlyingSupply <= maxUnderlyingSupply, "Over Supply Cap");
+        require(totalUnderlyingDebt <= maxUnderlyingDebt, "Over Debt Cap");
     }
 
-    function getSupplyCap(
-        PrimeRate memory pr,
-        uint16 currencyId
-    ) internal view returns (uint256 maxUnderlyingSupply, uint256 totalUnderlyingSupply) {
+    function getSupplyCap(PrimeRate memory pr, uint16 currencyId) internal view returns (
+        uint256 maxUnderlyingSupply,
+        uint256 totalUnderlyingSupply,
+        uint256 maxUnderlyingDebt,
+        uint256 totalUnderlyingDebt
+    ) {
         PrimeCashFactorsStorage storage s = LibStorage.getPrimeCashFactors()[currencyId];
         maxUnderlyingSupply = FloatingPoint.unpackFromBits(s.maxUnderlyingSupply);
+
+        // If maxPrimeDebtUtilization is not set, then this is allowed to go up to maxUnderlyingSupply
+        // TODO: is this ideal?
+        maxUnderlyingDebt = s.maxPrimeDebtUtilization == 0 ?
+            maxUnderlyingSupply :
+            maxUnderlyingSupply.mul(s.maxPrimeDebtUtilization).div(uint256(Constants.PERCENTAGE_DECIMALS));
+
         // No potential for overflow due to storage size
         int256 totalPrimeSupply = int256(uint256(s.totalPrimeSupply));
         totalUnderlyingSupply = convertToUnderlying(pr, totalPrimeSupply).toUint();
+        int256 totalPrimeDebt = int256(uint256(s.totalPrimeDebt));
+        totalUnderlyingDebt = convertDebtStorageToUnderlying(pr, totalPrimeDebt).toUint();
     }
 }
