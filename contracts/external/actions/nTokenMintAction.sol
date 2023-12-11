@@ -135,20 +135,32 @@ library nTokenMintAction {
             require(nextSettleTime > blockTime, "Requires settlement");
         }
 
-        int256 primeCashPV = nTokenCalculations.getNTokenPrimePV(nToken, blockTime);
+        (int256 nTokenOracleValue, int256 nTokenSpotValue) = nTokenCalculations.getNTokenPrimePVForMinting(
+            nToken, blockTime
+        );
+
         // Defensive check to ensure PV remains positive
-        require(primeCashPV >= 0);
+        require(nTokenOracleValue >= 0);
+        require(nTokenSpotValue >= 0);
+
+        int256 maxValueDeviation = int256(
+            uint256(uint8(nToken.parameters[Constants.MAX_MINT_DEVIATION_LIMIT]))
+        ) * int256(Constants.TEN_BASIS_POINTS);
+        // Check deviation limit here
+        int256 deviationInRatePrecision = nTokenOracleValue.sub(nTokenSpotValue).abs()
+            .divInRatePrecision(nTokenOracleValue);
+        require(deviationInRatePrecision <= maxValueDeviation, "Over Deviation Limit");
 
         // Allow for the first deposit
         if (nToken.totalSupply == 0) {
             return primeCashToDeposit;
         } else {
-            // primeCashPVPost = primeCashPV + amountToDeposit
-            // (tokenSupply + tokensToMint) / tokenSupply == (primeCashPV + amountToDeposit) / primeCashPV
-            // (tokenSupply + tokensToMint) == (primeCashPV + amountToDeposit) * tokenSupply / primeCashPV
-            // (tokenSupply + tokensToMint) == tokenSupply + (amountToDeposit * tokenSupply) / primeCashPV
-            // tokensToMint == (amountToDeposit * tokenSupply) / primeCashPV
-            return primeCashToDeposit.mul(nToken.totalSupply).div(primeCashPV);
+            // nTokenOracleValuePost = nTokenOracleValue + amountToDeposit
+            // (tokenSupply + tokensToMint) / tokenSupply == (nTokenOracleValue + amountToDeposit) / nTokenOracleValue
+            // (tokenSupply + tokensToMint) == (nTokenOracleValue + amountToDeposit) * tokenSupply / nTokenOracleValue
+            // (tokenSupply + tokensToMint) == tokenSupply + (amountToDeposit * tokenSupply) / nTokenOracleValue
+            // tokensToMint == (amountToDeposit * tokenSupply) / nTokenOracleValue
+            return primeCashToDeposit.mul(nToken.totalSupply).div(nTokenOracleValue);
         }
     }
 
