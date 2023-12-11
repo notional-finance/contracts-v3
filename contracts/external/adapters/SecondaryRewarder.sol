@@ -78,6 +78,7 @@ contract SecondaryRewarder is IRewarder {
     /// @param blockTime block time at which to get reward amount
     function getAccountRewardClaim(address account, uint32 blockTime)
         external
+        view
         override
         returns (uint256 rewardToClaim)
     {
@@ -87,8 +88,9 @@ contract SecondaryRewarder is IRewarder {
         uint256 totalSupply = IERC20(NTOKEN_ADDRESS).totalSupply();
         uint256 nTokenBalance = IERC20(NTOKEN_ADDRESS).balanceOf(account);
 
-        _accumulateRewardPerNToken(blockTime, totalSupply);
-        rewardToClaim = _calculateRewardToClaim(account, nTokenBalance);
+        uint32 time = uint32(SafeInt256.min(blockTime, endTime));
+        uint128 rewardsPerNToken = _getAccumulatedRewardPerToken(time, totalSupply);
+        rewardToClaim = _calculateRewardToClaim(account, nTokenBalance, rewardsPerNToken);
     }
 
     /// @notice Get amount of reward still left for account to claim, only called after rewarder is detached
@@ -106,7 +108,7 @@ contract SecondaryRewarder is IRewarder {
 
         _checkProof(account, nTokenBalanceAtDetach, proof);
         // no need to accumulate, it was already accumulated when rewarder was detached
-        rewardToClaim = _calculateRewardToClaim(account, nTokenBalanceAtDetach);
+        rewardToClaim = _calculateRewardToClaim(account, nTokenBalanceAtDetach, accumulatedRewardPerNToken);
     }
 
     /// @notice Set incentive emission rate and incentive period end time, called only in case emission
@@ -197,7 +199,7 @@ contract SecondaryRewarder is IRewarder {
     }
 
     function _claimRewards(address account, uint256 nTokenBalanceBefore, uint256 nTokenBalanceAfter) private {
-        uint256 rewardToClaim = _calculateRewardToClaim(account, nTokenBalanceBefore);
+        uint256 rewardToClaim = _calculateRewardToClaim(account, nTokenBalanceBefore, accumulatedRewardPerNToken);
 
         // Precision here is:
         //  nTokenBalanceAfter (INTERNAL_TOKEN_PRECISION)
@@ -214,9 +216,8 @@ contract SecondaryRewarder is IRewarder {
         }
     }
 
-    function _accumulateRewardPerNToken(uint32 blockTime, uint256 totalSupply) private {
-        uint32 time = uint32(SafeInt256.min(blockTime, endTime));
-
+    function _getAccumulatedRewardPerToken(uint32 time, uint256 totalSupply) private view returns (uint128) {
+        uint256 additionalIncentiveAccumulatedPerNToken;
         if (lastAccumulatedTime < time && 0 < totalSupply) {
             // NOTE: no underflow, checked in if statement
             uint256 timeSinceLastAccumulation = time - lastAccumulatedTime;
@@ -231,19 +232,25 @@ contract SecondaryRewarder is IRewarder {
             // => 1e10
 
             // forgefmt: disable-next-item
-            uint256 additionalIncentiveAccumulatedPerNToken = timeSinceLastAccumulation
+            additionalIncentiveAccumulatedPerNToken = timeSinceLastAccumulation
                 .mul(Constants.INCENTIVE_ACCUMULATION_PRECISION)
                 .mul(emissionRatePerYear)
                 .div(Constants.YEAR)
                 .div(totalSupply);
-
-            accumulatedRewardPerNToken =
-                uint256(accumulatedRewardPerNToken).add(additionalIncentiveAccumulatedPerNToken).toUint128();
         }
+
+        return uint256(accumulatedRewardPerNToken).add(additionalIncentiveAccumulatedPerNToken).toUint128();
+    }
+
+    function _accumulateRewardPerNToken(uint32 blockTime, uint256 totalSupply) private {
+        uint32 time = uint32(SafeInt256.min(blockTime, endTime));
+
+        accumulatedRewardPerNToken = _getAccumulatedRewardPerToken(time, totalSupply);
+
         lastAccumulatedTime = uint32(block.timestamp);
     }
 
-    function _calculateRewardToClaim(address account, uint256 nTokenBalanceAtLastClaim)
+    function _calculateRewardToClaim(address account, uint256 nTokenBalanceAtLastClaim, uint128 rewardsPerNToken)
         private
         view
         returns (uint256)
@@ -260,7 +267,7 @@ contract SecondaryRewarder is IRewarder {
 
         // forgefmt: disable-next-item
         return uint256(nTokenBalanceAtLastClaim)
-            .mul(accumulatedRewardPerNToken)
+            .mul(rewardsPerNToken)
             .sub(rewardDebtPerAccount[account])
             .div(Constants.INCENTIVE_ACCUMULATION_PRECISION)
             .mul(10 ** REWARD_TOKEN_DECIMALS);
