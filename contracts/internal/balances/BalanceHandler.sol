@@ -142,6 +142,7 @@ library BalanceHandler {
         bool checkAllowPrimeBorrow
     ) private returns (int256 transferAmountExternal) {
         bool mustUpdate;
+        bool checkDebtCap;
 
         // Transfer amount is checked inside finalize transfers in case when converting to external we
         // round down to zero. This returns the actual net transfer in internal precision as well.
@@ -167,13 +168,15 @@ library BalanceHandler {
             
             // Accounts can still incur negative cash during fCash settlement, that will bypass this check.
             
-            // During liquidation, liquidated accounts never have negative total cash change figures except
-            // in the case of negative local fCash liquidation. In that situation, setBalanceStorageForfCashLiquidation
-            // will be called instead.
+            // During liquidation, liquidated accounts can have a negative cash balance during negative local fCash
+            // liquidation and a collateral liquidation and forces an interest rate swap. In the first case, 
+            // setBalanceStorageForfCashLiquidation is called instead of this method. In the second, this method
+            // is called but checkAllowPrimeBorrow is set to false.
 
             // During liquidation, liquidators may have negative net cash change a token has transfer fees, however, in
             // LiquidationHelpers.finalizeLiquidatorLocal they are not allowed to go into debt.
             require(accountContext.allowPrimeBorrow, "No Prime Borrow");
+            checkDebtCap = true;
         }
 
 
@@ -220,6 +223,8 @@ library BalanceHandler {
             // are examined
             accountContext.hasDebt = accountContext.hasDebt | Constants.HAS_CASH_DEBT;
         }
+
+        if (checkDebtCap) balanceState.primeRate.checkDebtCap(balanceState.currencyId);
     }
 
     /**

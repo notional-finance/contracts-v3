@@ -489,12 +489,20 @@ library PrimeRateLib {
         (
             uint256 maxUnderlyingSupply,
             uint256 totalUnderlyingSupply,
-            uint256 maxUnderlyingDebt,
-            uint256 totalUnderlyingDebt
+            /* */, /* */
         ) = getSupplyCap(pr, currencyId);
         if (maxUnderlyingSupply == 0) return;
 
         require(totalUnderlyingSupply <= maxUnderlyingSupply, "Over Supply Cap");
+    }
+
+    function checkDebtCap(PrimeRate memory pr, uint16 currencyId) internal view {
+        (
+            /* */, /* */,
+            uint256 maxUnderlyingDebt,
+            uint256 totalUnderlyingDebt
+        ) = getSupplyCap(pr, currencyId);
+
         require(totalUnderlyingDebt <= maxUnderlyingDebt, "Over Debt Cap");
     }
 
@@ -508,7 +516,6 @@ library PrimeRateLib {
         maxUnderlyingSupply = FloatingPoint.unpackFromBits(s.maxUnderlyingSupply);
 
         // If maxPrimeDebtUtilization is not set, then this is allowed to go up to maxUnderlyingSupply
-        // TODO: is this ideal?
         maxUnderlyingDebt = s.maxPrimeDebtUtilization == 0 ?
             maxUnderlyingSupply :
             maxUnderlyingSupply.mul(s.maxPrimeDebtUtilization).div(uint256(Constants.PERCENTAGE_DECIMALS));
