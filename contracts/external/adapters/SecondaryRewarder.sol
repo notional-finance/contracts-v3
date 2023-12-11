@@ -18,7 +18,7 @@ contract SecondaryRewarder is IRewarder {
     address public immutable NTOKEN_ADDRESS;
     address public immutable REWARD_TOKEN;
     uint8 public immutable REWARD_TOKEN_DECIMALS;
-    uint16 public immutable CURRENCY_ID;
+    uint16 public immutable override CURRENCY_ID;
 
     /// @notice When a rewarder is detached, it converts to an airdrop contract using the
     /// this merkleRoot that is set.
@@ -27,7 +27,7 @@ contract SecondaryRewarder is IRewarder {
 
     /* Rest of storage variables are packed into 232 bits (29 bytes, 3 left unused) */
     /// @notice When true user needs to call contract directly to claim any rewards left
-    bool public detached;
+    bool public override detached;
     /// @notice Marks the timestamp when incentives will end. Will always be less than block.timestamp
     /// if detached is true.
     uint32 public endTime;

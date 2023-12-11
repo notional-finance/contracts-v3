@@ -4,6 +4,10 @@ pragma solidity >=0.7.6;
 interface IRewarder {
     event RewardTransfer(address indexed rewardToken, address indexed account, uint256 amount);
 
+    function CURRENCY_ID() external returns(uint16);
+
+    function detached() external returns(bool);
+
     function claimRewards(
         address account,
         uint16 currencyId,
