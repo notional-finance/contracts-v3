@@ -9,6 +9,7 @@ import {
     PrimeRate
 } from "../../global/Types.sol";
 import {Constants} from "../../global/Constants.sol";
+import {LibStorage} from "../../global/LibStorage.sol";
 import {SafeInt256} from "../../math/SafeInt256.sol";
 
 import {Emitter} from "../../internal/Emitter.sol";
@@ -16,6 +17,7 @@ import {TransferAssets} from "../../internal/portfolio/TransferAssets.sol";
 import {BalanceHandler} from "../../internal/balances/BalanceHandler.sol";
 import {nTokenHandler} from "../../internal/nToken/nTokenHandler.sol";
 import {PrimeRateLib} from "../../internal/pCash/PrimeRateLib.sol";
+import {PrimeCashExchangeRate} from "../../internal/pCash/PrimeCashExchangeRate.sol";
 import {AccountContextHandler} from "../../internal/AccountContextHandler.sol";
 
 import {ActionGuards} from "./ActionGuards.sol";
@@ -89,7 +91,6 @@ contract AccountAction is ActionGuards {
     ) external payable nonReentrant returns (uint256) {
         require(msg.sender != address(this)); // dev: no internal call to deposit underlying
         // Only the account can deposit into its balance, donations are not allowed.
-        require(msg.sender == account); // dev: unauthorized
         requireValidAccount(account);
 
         AccountContext memory accountContext = AccountContextHandler.getAccountContext(account);
@@ -100,7 +101,7 @@ contract AccountAction is ActionGuards {
         // the specified account. This may be useful for on-demand collateral top ups from a
         // third party.
         int256 primeCashReceived = balanceState.depositUnderlyingToken(
-            account,
+            msg.sender,
             SafeInt256.toInt(amountExternalPrecision),
             false // there should never be excess ETH here by definition
         );
@@ -206,6 +207,51 @@ contract AccountAction is ActionGuards {
 
         if (accountContext.hasDebt != 0x00) {
             FreeCollateralExternal.checkFreeCollateralAndRevert(msg.sender);
+        }
+
+        require(underlyingWithdrawnExternal <= 0);
+
+        // No need to check supply caps
+        return underlyingWithdrawnExternal.neg().toUint();
+    }
+
+    function withdrawViaProxy(
+        uint16 currencyId,
+        address account,
+        address receiver,
+        address spender,
+        uint88 withdrawAmountPrimeCash
+    ) external nonReentrant returns (uint256) {
+        address pCashAddress = PrimeCashExchangeRate.getCashProxyAddress(currencyId);
+        require(msg.sender == pCashAddress);
+        requireValidAccount(owner);
+
+        if (owner != receiver) {
+            uint256 allowance = LibStorage.getPCashTransferAllowance()[owner][spender][currencyId];
+            require(allowance >= withdrawAmountPrimeCash, "Insufficient allowance");
+            LibStorage.getPCashTransferAllowance()[owner][spender][currencyId] = allowance - withdrawAmountPrimeCash;
+        }
+
+        // This happens before reading the balance state to get the most up to date cash balance
+        (AccountContext memory accountContext, /* didSettle */) = _settleAccountIfRequired(owner);
+
+        BalanceState memory balanceState;
+        balanceState.loadBalanceState(owner, currencyId, accountContext);
+        // Cannot withdraw more than existing balance via proxy.
+        require(withdrawAmountPrimeCash <= balanceState.storedCashBalance, "Insufficient Balance");
+        // Overflow is not possible due to uint88
+        balanceState.primeCashWithdraw = int256(withdrawAmountPrimeCash).neg();
+
+        // NOTE: withdraw wrapped is always set to true so that the receiver will receive WETH
+        // if ETH is being withdrawn
+        int256 underlyingWithdrawnExternal = balanceState.finalizeWithWithdrawReceiver(
+            owner, receiver, accountContext, true
+        );
+
+        accountContext.setAccountContext(owner);
+
+        if (accountContext.hasDebt != 0x00) {
+            FreeCollateralExternal.checkFreeCollateralAndRevert(owner);
         }
 
         require(underlyingWithdrawnExternal <= 0);
