@@ -147,7 +147,7 @@ contract MockTokenHandler is AbstractSettingsRouter {
         bool wrapETH
     ) external returns (int256 actualTransferExternal, PrimeRate memory pr) {
         pr = PrimeRateLib.buildPrimeRateStateful(currencyId);
-        actualTransferExternal = TokenHandler.withdrawPrimeCash(account, currencyId, primeCashToWithdraw, pr, wrapETH);
+        actualTransferExternal = TokenHandler.withdrawPrimeCash(account, account, currencyId, primeCashToWithdraw, pr, wrapETH);
         emit WithdrawPCash(actualTransferExternal, pr);
     }
 
