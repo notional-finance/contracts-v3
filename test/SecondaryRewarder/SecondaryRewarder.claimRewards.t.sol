@@ -30,7 +30,7 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
     }
 
     AccountsData[5] private accounts;
-    uint32 private emissionRatePerYear;
+    uint128 private emissionRatePerYear;
     uint256 private incentiveTokenDecimals;
     uint32 private endTime;
 
@@ -77,7 +77,7 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         _depositWithInitialAccounts();
 
         NTOKEN = NOTIONAL.nTokenAddress(currencyId);
-        emissionRatePerYear = 2e5;
+        emissionRatePerYear = 2e13;
         incentiveTokenDecimals = 10 ** IERC20(rewardToken).decimals();
         endTime = uint32(block.timestamp + Constants.YEAR);
         rewarder = new SecondaryRewarder(
@@ -87,7 +87,9 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
             emissionRatePerYear,
             endTime
         );
-        deal(REWARD_TOKEN, address(rewarder), emissionRatePerYear * incentiveTokenDecimals);
+        uint256 totalIncentives =
+            emissionRatePerYear * incentiveTokenDecimals / uint256(Constants.INTERNAL_TOKEN_PRECISION);
+        deal(REWARD_TOKEN, address(rewarder), totalIncentives);
         owner = NOTIONAL.owner();
 
         Router.DeployedContracts memory c = getDeployedContracts();
@@ -125,6 +127,7 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
             uint256 predictedReward = totalGeneratedIncentive
                 .mul(accounts[i].initialShare)
                 .div(100)
+                .div(uint256(Constants.INTERNAL_TOKEN_PRECISION))
                 .div(Constants.INCENTIVE_ACCUMULATION_PRECISION);
             uint256 reward = rewarder.getAccountRewardClaim(accounts[i].account, uint32(block.timestamp));
 
@@ -220,7 +223,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
                 .mul(accounts[i].initialShare)
                 .div(100)
                 .mul(rewardLeft)
-                .div(100);
+                .div(100)
+                .div(uint256(Constants.INTERNAL_TOKEN_PRECISION));
             assertTrue(reward != 0, "11");
 
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -245,7 +249,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
                 .mul(accounts[i].initialShare)
                 .div(100)
                 .mul(rewardLeft)
-                .div(100);
+                .div(100)
+                .div(uint256(Constants.INTERNAL_TOKEN_PRECISION));
             assertTrue(reward != 0, "21");
 
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -269,7 +274,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
                 .mul(accounts[i].initialShare)
                 .div(100)
                 .mul(rewardLeft)
-                .div(100);
+                .div(100)
+                .div(uint256(Constants.INTERNAL_TOKEN_PRECISION));
             assertTrue(reward != 0, "31");
 
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -295,7 +301,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
                 .mul(accounts[i].initialShare)
                 .div(100)
                 .mul(rewardLeft)
-                .div(100);
+                .div(100)
+                .div(uint256(Constants.INTERNAL_TOKEN_PRECISION));
             assertTrue(reward != 0, "l1");
 
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -337,7 +344,10 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         vm.warp(startTime + (incentivePeriod * incentiveTimePassed) / 100);
         for (uint256 i = 0; i < accounts.length; i++) {
             // forgefmt: disable-next-item
-            uint256 reward = totalIncentives.mul(accounts[i].initialShare).div(100).mul(rewardLeft).div(100);
+            uint256 reward = totalIncentives
+                .mul(accounts[i].initialShare)
+                .mul(rewardLeft)
+                .div(100 * 100 * uint256(Constants.INTERNAL_TOKEN_PRECISION));
             assertTrue(reward != 0, "1");
 
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -359,7 +369,10 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
 
         for (uint256 i = 0; i < accounts.length; i++) {
             // forgefmt: disable-next-item
-            uint256 reward = totalIncentives.mul(accounts[i].initialShare).div(100).mul(rewardLeft).div(100);
+            uint256 reward = totalIncentives
+                .mul(accounts[i].initialShare)
+                .mul(rewardLeft)
+                .div(100 * 100 * uint256(Constants.INTERNAL_TOKEN_PRECISION));
             assertTrue(reward != 0, "3");
 
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -388,7 +401,7 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         }
 
         // Change the incentive emission rate after the current endTime
-        emissionRatePerYear = 1e5;
+        emissionRatePerYear = 1e13;
         incentivePeriod = 2 weeks;
         startTime = uint32(block.timestamp);
         endTime = uint32(block.timestamp + incentivePeriod);
@@ -422,7 +435,10 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         vm.warp(startTime + (incentivePeriod * incentiveTimePassed) / 100);
         for (uint256 i = 0; i < accounts.length; i++) {
             // forgefmt: disable-next-item
-            uint256 reward = totalIncentives.mul(accounts[i].initialShare).div(100).mul(rewardLeft).div(100);
+            uint256 reward = totalIncentives
+                .mul(accounts[i].initialShare)
+                .mul(rewardLeft)
+                .div(100 * 100 * uint256(Constants.INTERNAL_TOKEN_PRECISION));
             assertTrue(reward != 0, "7");
 
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -443,7 +459,10 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
 
         for (uint256 i = 0; i < accounts.length; i++) {
             // forgefmt: disable-next-item
-            uint256 reward = totalIncentives.mul(accounts[i].initialShare).div(100).mul(rewardLeft).div(100);
+            uint256 reward = totalIncentives
+                .mul(accounts[i].initialShare)
+                .mul(rewardLeft)
+                .div(100 * 100 * uint256(Constants.INTERNAL_TOKEN_PRECISION));
             assertTrue(reward != 0, "9");
 
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -460,7 +479,7 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
 
         for (uint256 i = 0; i < accounts.length; i++) {
             uint256 reward = rewarder.getAccountRewardClaim(accounts[i].account, uint32(block.timestamp));
-            assertTrue(reward == 0, "5");
+            assertTrue(reward == 0, "11");
 
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
 
@@ -469,7 +488,7 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
 
             uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
 
-            assertEq(newBal, prevBal, "6");
+            assertEq(newBal, prevBal, "12");
         }
     }
 

@@ -28,7 +28,7 @@ interface IRewarder {
 
     function lastAccumulatedTime() external returns (uint32);
 
-    function emissionRatePerYear() external returns (uint32);
+    function emissionRatePerYear() external returns (uint128);
 
     function detach() external;
 }

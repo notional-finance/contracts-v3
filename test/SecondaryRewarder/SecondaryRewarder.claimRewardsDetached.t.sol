@@ -203,6 +203,7 @@ abstract contract ClaimRewardsDetached is SecondaryRewarderSetupTest {
             uint256 predictedReward = totalGeneratedIncentive
                 .mul(accounts[i].initialShare)
                 .div(100)
+                .div(uint256(Constants.INTERNAL_TOKEN_PRECISION))
                 .div(Constants.INCENTIVE_ACCUMULATION_PRECISION);
             uint256 ntTokenBalance = IERC20(NTOKEN).balanceOf(accounts[i].account);
             uint256 reward = rewarder.getAccountRewardClaim(accounts[i].account, ntTokenBalance, accountsProofs[i]);

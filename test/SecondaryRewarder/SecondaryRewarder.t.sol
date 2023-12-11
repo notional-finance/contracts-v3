@@ -48,13 +48,13 @@ contract SecondaryRewarderTest is SecondaryRewarderSetupTest {
     }
 
     function test_setIncentiveEmissionRate_OwnerCanSetEmissionRate() public {
-        uint32 emissionRate = rewarder.emissionRatePerYear();
+        uint128 emissionRate = rewarder.emissionRatePerYear();
         uint32 endTime = rewarder.endTime();
 
         assertTrue(0 < emissionRate, "1");
         assertTrue(0 < endTime, "2");
 
-        uint32 newEmissionRate = 2 * emissionRate;
+        uint128 newEmissionRate = 2 * emissionRate;
         uint32 newEndTime = 2 * endTime;
         vm.prank(owner);
         rewarder.setIncentiveEmissionRate(newEmissionRate, newEndTime);

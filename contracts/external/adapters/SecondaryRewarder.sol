@@ -25,21 +25,20 @@ contract SecondaryRewarder is IRewarder {
     /// @dev Uses a single storage slot
     bytes32 public merkleRoot;
 
-    /* Rest of storage variables are packed into 232 bits (29 bytes, 3 left unused) */
     /// @notice When true user needs to call contract directly to claim any rewards left
     bool public override detached;
     /// @notice Marks the timestamp when incentives will end. Will always be less than block.timestamp
     /// if detached is true.
     uint32 public endTime;
 
-    /// @notice The emission rate of REWARD_TOKEN in WHOLE token precision (i.e. token value without
-    /// any decimals).
-    uint32 public override emissionRatePerYear;
-
     /// @notice Last time the contract accumulated the reward
     uint32 public override lastAccumulatedTime;
 
-    /// @notice Aggregate tokens accumulated per nToken at `lastAccumulateTime`
+    /// @notice The emission rate of REWARD_TOKEN in INTERNAL_TOKEN_PRECISION
+    uint128 public override emissionRatePerYear;
+
+    /// @notice Aggregate tokens accumulated per nToken at `lastAccumulateTime` 
+    //  in INCENTIVE_ACCUMULATION_PRECISION
     uint128 public override accumulatedRewardPerNToken;
 
     /// @notice Reward debt per account stored in 18 decimals.
@@ -59,7 +58,7 @@ contract SecondaryRewarder is IRewarder {
         NotionalProxy notional,
         uint16 currencyId,
         IERC20 incentive_token,
-        uint32 _emissionRatePerYear,
+        uint128 _emissionRatePerYear, // in INTERNAL_TOKEN_PRECISION
         uint32 _endTime
     ) {
         NOTIONAL = notional;
@@ -114,9 +113,9 @@ contract SecondaryRewarder is IRewarder {
     /// @notice Set incentive emission rate and incentive period end time, called only in case emission
     /// rate or incentive period changes since it is already set at deploy time, only can be called before
     /// rewarder is detached
-    /// @param _emissionRatePerYear emission rate per year in WHOLE token precision
+    /// @param _emissionRatePerYear emission rate per year in INTERNAL_TOKEN_PRECISION
     /// @param _endTime time in seconds when incentive period will end
-    function setIncentiveEmissionRate(uint32 _emissionRatePerYear, uint32 _endTime) external onlyOwner {
+    function setIncentiveEmissionRate(uint128 _emissionRatePerYear, uint32 _endTime) external onlyOwner {
         require(!detached, "Detached");
         uint256 totalSupply = IERC20(NTOKEN_ADDRESS).totalSupply();
 
@@ -203,11 +202,14 @@ contract SecondaryRewarder is IRewarder {
 
         // Precision here is:
         //  nTokenBalanceAfter (INTERNAL_TOKEN_PRECISION)
-        //  accumulatedRewardPerNToken (INCENTIVE_ACCUMULATION_PRECISION - INTERNAL_TOKEN_PRECISION)
+        //  accumulatedRewardPerNToken (INCENTIVE_ACCUMULATION_PRECISION)
+        // DIVIDE BY
+        //  INTERNAL_TOKEN_PRECISION
         //  => INCENTIVE_ACCUMULATION_PRECISION (1e18)
         // forgefmt: disable-next-item
         rewardDebtPerAccount[account] = nTokenBalanceAfter
             .mul(accumulatedRewardPerNToken)
+            .div(uint256(Constants.INTERNAL_TOKEN_PRECISION))
             .toUint128();
 
         if (0 < rewardToClaim) {
@@ -224,12 +226,12 @@ contract SecondaryRewarder is IRewarder {
             // Precision here is:
             //  timeSinceLastAccumulation (SECONDS)
             //  INCENTIVE_ACCUMULATION_PRECISION (1e18)
-            //  WHOLE_TOKENS (?)
+            //  INTERNAL_TOKEN_PRECISION (1e8)
             // DIVIDE BY
             //  YEAR (SECONDS)
-            //  INTERNAL_TOKEN_PRECISION
-            // => Precision = 10 ** (INCENTIVE_ACCUMULATION_PRECISION - INTERNAL_TOKEN_PRECISION)
-            // => 1e10
+            //  INTERNAL_TOKEN_PRECISION (1e8)
+            // => Precision = INCENTIVE_ACCUMULATION_PRECISION * INTERNAL_TOKEN_PRECISION / INTERNAL_TOKEN_PRECISION
+            // => 1e18
 
             // forgefmt: disable-next-item
             additionalIncentiveAccumulatedPerNToken = timeSinceLastAccumulation
@@ -257,20 +259,22 @@ contract SecondaryRewarder is IRewarder {
     {
         // Precision here is:
         //   nTokenBalanceAtLastClaim (INTERNAL_TOKEN_PRECISION)
-        //   accumulatedRewardPerNToken (INCENTIVE_ACCUMULATION_PRECISION - INTERNAL_TOKEN_PRECISION)
+        //   mul rewardsPerNToken (INCENTIVE_ACCUMULATION_PRECISION)
+        //   div INTERNAL_TOKEN_PRECISION
         // => INCENTIVE_ACCUMULATION_PRECISION
         // SUB rewardDebtPerAccount (INCENTIVE_ACCUMULATION_PRECISION)
         //
-        // - div INCENTIVE_ACCUMULATION_PRECISION
         // - mul REWARD_TOKEN_DECIMALS
+        // - div INCENTIVE_ACCUMULATION_PRECISION
         // => REWARD_TOKEN_DECIMALS
 
         // forgefmt: disable-next-item
         return uint256(nTokenBalanceAtLastClaim)
             .mul(rewardsPerNToken)
+            .div(uint256(Constants.INTERNAL_TOKEN_PRECISION))
             .sub(rewardDebtPerAccount[account])
-            .div(Constants.INCENTIVE_ACCUMULATION_PRECISION)
-            .mul(10 ** REWARD_TOKEN_DECIMALS);
+            .mul(10 ** REWARD_TOKEN_DECIMALS)
+            .div(Constants.INCENTIVE_ACCUMULATION_PRECISION);
     }
 
     /// @notice Verify merkle proof, or revert if not in tree
