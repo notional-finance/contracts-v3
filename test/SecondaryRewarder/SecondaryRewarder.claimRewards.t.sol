@@ -116,14 +116,12 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
 
         skip(timeToSkip);
 
-        // forgefmt: disable-next-item
         uint256 totalGeneratedIncentive = uint256(SafeInt256.min(timeToSkip, endTime - starTime))
             .mul(emissionRatePerYear)
             .mul(Constants.INCENTIVE_ACCUMULATION_PRECISION)
             .div(Constants.YEAR);
 
         for (uint256 i = 0; i < accounts.length; i++) {
-            // forgefmt: disable-next-item
             uint256 predictedReward = totalGeneratedIncentive
                 .mul(accounts[i].initialShare)
                 .div(100)
@@ -207,7 +205,6 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
     function test_claimReward_ShouldClaimFullAmountAfterTheEnd() public {
         uint256 startTime = block.timestamp;
         uint32 incentivePeriod = endTime - uint32(block.timestamp);
-        // forgefmt: disable-next-item
         uint256 totalIncentives = (endTime - block.timestamp)
                 .mul(emissionRatePerYear)
                 .div(Constants.YEAR);
@@ -218,7 +215,6 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         uint8 rewardLeft = incentiveTimePassed - claimed;
         vm.warp(startTime + incentivePeriod * incentiveTimePassed/100);
         for (uint256 i = 0; i < accounts.length; i++) {
-            // forgefmt: disable-next-item
             uint256 reward = totalIncentives
                 .mul(accounts[i].initialShare)
                 .div(100)
@@ -244,7 +240,6 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         // should claim full amount
         vm.warp(startTime + incentivePeriod * incentiveTimePassed / 100);
         for (uint256 i = 0; i < accounts.length; i++) {
-            // forgefmt: disable-next-item
             uint256 reward = totalIncentives
                 .mul(accounts[i].initialShare)
                 .div(100)
@@ -269,7 +264,6 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         // should claim full amount
         vm.warp(startTime + incentivePeriod * incentiveTimePassed / 100);
         for (uint256 i = 0; i < accounts.length; i++) {
-            // forgefmt: disable-next-item
             uint256 reward = totalIncentives
                 .mul(accounts[i].initialShare)
                 .div(100)
@@ -296,7 +290,6 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         vm.warp(startTime + incentivePeriod * incentiveTimePassed / 100);
 
         for (uint256 i = 0; i < accounts.length; i++) {
-            // forgefmt: disable-next-item
             uint256 reward = totalIncentives
                 .mul(accounts[i].initialShare)
                 .div(100)
@@ -334,7 +327,6 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
     function test_claimReward_ShouldClaimCorrectAmountAfterEndTimeAndEmissionRateChange() public {
         uint256 startTime = block.timestamp;
         uint32 incentivePeriod = endTime - uint32(block.timestamp);
-        // forgefmt: disable-next-item
         uint256 totalIncentives = (endTime - block.timestamp).mul(emissionRatePerYear).div(Constants.YEAR);
 
         // skip 10% of incentive period, should be able to clam 10% of the total amount
@@ -343,7 +335,6 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         uint8 rewardLeft = incentiveTimePassed - claimed;
         vm.warp(startTime + (incentivePeriod * incentiveTimePassed) / 100);
         for (uint256 i = 0; i < accounts.length; i++) {
-            // forgefmt: disable-next-item
             uint256 reward = totalIncentives
                 .mul(accounts[i].initialShare)
                 .mul(rewardLeft)
@@ -368,7 +359,6 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         vm.warp(startTime + (incentivePeriod * incentiveTimePassed) / 100);
 
         for (uint256 i = 0; i < accounts.length; i++) {
-            // forgefmt: disable-next-item
             uint256 reward = totalIncentives
                 .mul(accounts[i].initialShare)
                 .mul(rewardLeft)
@@ -434,7 +424,6 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         rewardLeft = incentiveTimePassed - claimed;
         vm.warp(startTime + (incentivePeriod * incentiveTimePassed) / 100);
         for (uint256 i = 0; i < accounts.length; i++) {
-            // forgefmt: disable-next-item
             uint256 reward = totalIncentives
                 .mul(accounts[i].initialShare)
                 .mul(rewardLeft)
@@ -458,7 +447,6 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         vm.warp(startTime + (incentivePeriod * incentiveTimePassed) / 100);
 
         for (uint256 i = 0; i < accounts.length; i++) {
-            // forgefmt: disable-next-item
             uint256 reward = totalIncentives
                 .mul(accounts[i].initialShare)
                 .mul(rewardLeft)

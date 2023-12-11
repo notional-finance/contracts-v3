@@ -192,14 +192,12 @@ abstract contract ClaimRewardsDetached is SecondaryRewarderSetupTest {
         vm.prank(owner);
         rewarder.setMerkleRoot(merkleRoot);
 
-        // forgefmt: disable-next-item
         uint256 totalGeneratedIncentive = incentivePeriod
             .mul(emissionRatePerYear)
             .mul(Constants.INCENTIVE_ACCUMULATION_PRECISION)
             .div(Constants.YEAR);
 
         for (uint256 i = 0; i < accounts.length; i++) {
-            // forgefmt: disable-next-item
             uint256 predictedReward = totalGeneratedIncentive
                 .mul(accounts[i].initialShare)
                 .div(100)

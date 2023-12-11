@@ -214,7 +214,6 @@ contract SecondaryRewarder is IRewarder {
         // DIVIDE BY
         //  INTERNAL_TOKEN_PRECISION
         //  => INCENTIVE_ACCUMULATION_PRECISION (1e18)
-        // forgefmt: disable-next-item
         rewardDebtPerAccount[account] = nTokenBalanceAfter
             .mul(accumulatedRewardPerNToken)
             .div(uint256(Constants.INTERNAL_TOKEN_PRECISION))
@@ -240,8 +239,6 @@ contract SecondaryRewarder is IRewarder {
             //  INTERNAL_TOKEN_PRECISION (1e8)
             // => Precision = INCENTIVE_ACCUMULATION_PRECISION * INTERNAL_TOKEN_PRECISION / INTERNAL_TOKEN_PRECISION
             // => 1e18
-
-            // forgefmt: disable-next-item
             additionalIncentiveAccumulatedPerNToken = timeSinceLastAccumulation
                 .mul(Constants.INCENTIVE_ACCUMULATION_PRECISION)
                 .mul(emissionRatePerYear())
@@ -275,8 +272,6 @@ contract SecondaryRewarder is IRewarder {
         // - mul REWARD_TOKEN_DECIMALS
         // - div INCENTIVE_ACCUMULATION_PRECISION
         // => REWARD_TOKEN_DECIMALS
-
-        // forgefmt: disable-next-item
         return uint256(nTokenBalanceAtLastClaim)
             .mul(rewardsPerNToken)
             .div(uint256(Constants.INTERNAL_TOKEN_PRECISION))
