@@ -77,7 +77,10 @@ library AssetHandler {
         int256 discountFactor = getDiscountFactor(timeToMaturity, oracleRate);
 
         require(discountFactor <= Constants.RATE_PRECISION); // dev: get present value invalid discount factor
-        return notional.mulInRatePrecision(discountFactor);
+
+        int256 pv = notional.mulInRatePrecision(discountFactor);
+        // Ensure that any debt balance always returns a -1 value.
+        return notional < 0 ?  SafeInt256.min(pv, -1) : pv;
     }
 
     function getRiskAdjustedfCashDiscount(
