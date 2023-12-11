@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity >=0.7.6;
+pragma solidity =0.7.6;
 
 import {GenericToken} from "../../internal/balances/protocols/GenericToken.sol";
 import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";

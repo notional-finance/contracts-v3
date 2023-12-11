@@ -45,7 +45,6 @@ contract SecondaryRewarderTest is SecondaryRewarderSetupTest {
     function test_setIncentiveEmissionRate_ShouldFailIfNotOwner() public {
         vm.expectRevert("Only owner");
         rewarder.setIncentiveEmissionRate(10e4, uint32(block.timestamp));
-
     }
 
     function test_setIncentiveEmissionRate_OwnerCanSetEmissionRate() public {
@@ -62,7 +61,6 @@ contract SecondaryRewarderTest is SecondaryRewarderSetupTest {
 
         assertTrue(rewarder.emissionRatePerYear() == newEmissionRate, "3");
         assertTrue(rewarder.endTime() == newEndTime, "4");
-
     }
 
     function test_recover_ShouldFailIfNotOwner() public {
@@ -149,5 +147,14 @@ contract SecondaryRewarderTest is SecondaryRewarderSetupTest {
     function test_detach_ShouldSetEmissionToZeroAndEndTime() public {
         vm.prank(address(NOTIONAL));
         rewarder.detach();
+    }
+
+    function test_setSecondaryIncentiveRewarder_OwnerShouldBeAbleToTurnOffRewarder() public {
+        vm.prank(owner);
+        NOTIONAL.setSecondaryIncentiveRewarder(CURRENCY_ID, SecondaryRewarder(address(0)));
+
+        // previous rewarder should be detached
+        assertEq(uint256(rewarder.emissionRatePerYear()), 0);
+        assertEq(uint256(rewarder.endTime()), block.timestamp);
     }
 }
