@@ -245,8 +245,11 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         return convertToShares(assets);
     }
 
-    /// @notice Deposits assets into nToken for the receiver's account. Requires that the ERC4626 token has
-    /// approval to transfer assets from the msg.sender directly to Notional.
+    /// @notice Deposits assets into Notional and mints either prime cash or nTokens. Unlike the wrapped fCash
+    /// proxy this will not hold prime cash assets on the contract and wrap them, the assets will be deposited
+    /// directly into the user's account and may be used as collateral.
+    /// @dev The proxy contract will first transfer the assets to the contract and then transfer them
+    /// to Notional.
     function deposit(uint256 assets, address receiver) external override returns (uint256 shares) {
         uint256 msgValue;
         (assets, msgValue) = _transferAssets(assets);
@@ -256,8 +259,7 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
-    /// @notice Deposits assets into nToken for the receiver's account. Requires that the ERC4626 token has
-    /// approval to transfer assets from the msg.sender directly to Notional.
+    /// @notice Similar to deposit, however the amount of shares are specified instead.
     function mint(uint256 shares, address receiver) external override returns (uint256 assets) {
         uint256 msgValue;
         assets = previewMint(shares);
@@ -288,8 +290,7 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         }
     }
 
-    /// @notice Redeems assets from the owner and sends them to the receiver. WARNING: the assets provided as a value here
-    /// will not be what the method actually redeems due to estimation issues.
+    /// @notice Withdraws the asset from Notional and they will be transferred to the receiver.
     function withdraw(uint256 assets, address receiver, address owner) external override returns (uint256 shares) {
         // NOTE: this will return an under-estimated amount for assets so the end amount of assets redeemed will
         // be less than specified.
@@ -297,7 +298,7 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         uint256 balance = _balanceOf(owner);
         if (shares > balance) shares = balance;
 
-        // NOTE: if msg.sender != owner allowance checks must be done in_redeem
+        // Allowance checks when receiver != owner are done on the Notional proxy
         uint256 assetsFinal = _redeem(shares, receiver, owner);
         emit Transfer(owner, address(0), shares);
 
@@ -305,9 +306,9 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         emit Withdraw(msg.sender, receiver, owner, assetsFinal, shares);
     }
 
-    /// @notice Redeems the specified amount of nTokens (shares) for some amount of assets.
+    /// @notice Redeems the asset from Notional and they will be transferred to the receiver.
     function redeem(uint256 shares, address receiver, address owner) external override returns (uint256 assets) {
-        // NOTE: if msg.sender != owner allowance checks must be done in_redeem
+        // Allowance checks when receiver != owner are done on the Notional proxy
         uint256 assetsFinal = _redeem(shares, receiver, owner);
         emit Transfer(owner, address(0), shares);
         emit Withdraw(msg.sender, receiver, owner, assetsFinal, shares);

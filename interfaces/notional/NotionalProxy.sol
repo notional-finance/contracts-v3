@@ -136,6 +136,14 @@ interface NotionalProxy is
         bool redeemToUnderlying
     ) external returns (uint256);
 
+    function withdrawViaProxy(
+        uint16 currencyId,
+        address owner,
+        address receiver,
+        address spender,
+        uint88 withdrawAmountPrimeCash
+    ) external returns (uint256);
+
     /** Batch Action */
     function batchBalanceAction(address account, BalanceAction[] calldata actions) external payable;
 

@@ -109,7 +109,7 @@ library BalanceHandler {
         AccountContext memory accountContext
     ) internal {
         require(balanceState.primeCashWithdraw == 0);
-        _finalize(balanceState, account, accountContext, false, false);
+        _finalize(balanceState, account, account, accountContext, false, false);
     }
 
     /// @notice Calls finalize without any withdraws. Allows the withdrawWrapped flag to be hardcoded to false.
@@ -119,7 +119,7 @@ library BalanceHandler {
         AccountContext memory accountContext
     ) internal {
         require(balanceState.primeCashWithdraw == 0);
-        _finalize(balanceState, account, accountContext, false, true);
+        _finalize(balanceState, account, account, accountContext, false, true);
     }
 
     /// @notice Finalizes an account's balances with withdraws, returns the actual amount of underlying tokens transferred
@@ -130,7 +130,19 @@ library BalanceHandler {
         AccountContext memory accountContext,
         bool withdrawWrapped
     ) internal returns (int256 transferAmountExternal) {
-        return _finalize(balanceState, account, accountContext, withdrawWrapped, true);
+        return _finalize(balanceState, account, account, accountContext, withdrawWrapped, true);
+    }
+
+    /// @notice Finalizes an account's balances with withdraws, returns the actual amount of underlying tokens transferred
+    /// back to the account
+    function finalizeWithWithdrawReceiver(
+        BalanceState memory balanceState,
+        address account,
+        address receiver,
+        AccountContext memory accountContext,
+        bool withdrawWrapped
+    ) internal returns (int256 transferAmountExternal) {
+        return _finalize(balanceState, account, receiver, accountContext, withdrawWrapped, true);
     }
 
     /// @notice Finalizes an account's balances, handling any transfer logic required
@@ -139,6 +151,7 @@ library BalanceHandler {
     function  _finalize(
         BalanceState memory balanceState,
         address account,
+        address receiver,
         AccountContext memory accountContext,
         bool withdrawWrapped,
         bool checkAllowPrimeBorrow
@@ -150,6 +163,7 @@ library BalanceHandler {
         // round down to zero. This returns the actual net transfer in internal precision as well.
         transferAmountExternal = TokenHandler.withdrawPrimeCash(
             account,
+            receiver,
             balanceState.currencyId,
             balanceState.primeCashWithdraw,
             balanceState.primeRate,
