@@ -257,6 +257,30 @@ abstract contract ClaimRewardsDetached is SecondaryRewarderSetupTest {
             assertEq(IERC20(REWARD_TOKEN).balanceOf(accounts[i].account), prevBalance);
         }
     }
+    function test_claimRewardsDirect_ShouldFailWithInvalidMerkleRoot() public {
+        vm.warp(endTime + 1);
+
+        // detach current rewarder
+        vm.startPrank(owner);
+        NOTIONAL.setSecondaryIncentiveRewarder(CURRENCY_ID, SecondaryRewarder(address(0)));
+        vm.stopPrank();
+
+        vm.prank(owner);
+        // invalid merkle root
+        rewarder.setMerkleRoot(0x71011f1abc031fd85071453fd542c8c4164104c646c274887866794f00000000);
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            address account = accounts[i].account;
+            uint256 nTokenBalance = IERC20(NTOKEN).balanceOf(account);
+
+            vm.expectRevert("NotInMerkle");
+            rewarder.getAccountRewardClaim(account, nTokenBalance, accountsProofs[i]);
+
+            vm.prank(accounts[i].account);
+            vm.expectRevert("NotInMerkle");
+            rewarder.claimRewardsDirect(account, nTokenBalance, accountsProofs[i]);
+        }
+    }
 }
 
 contract ClaimRewardsDetachedARB is ClaimRewardsDetached {

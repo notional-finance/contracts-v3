@@ -112,6 +112,8 @@ contract SecondaryRewarder is IRewarder {
     /// @notice Set incentive emission rate and incentive period end time, called only in case emission
     /// rate or incentive period changes since it is already set at deploy time, only can be called before
     /// rewarder is detached
+    /// @param _emissionRatePerYear emission rate per year in WHOLE token precision
+    /// @param _endTime time in seconds when incentive period will end
     function setIncentiveEmissionRate(uint32 _emissionRatePerYear, uint32 _endTime) external onlyOwner {
         require(!detached, "Detached");
         uint256 totalSupply = IERC20(NTOKEN_ADDRESS).totalSupply();
