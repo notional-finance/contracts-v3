@@ -111,9 +111,9 @@ contract SecondaryRewarder is IRewarder {
 
     /// @notice Set incentive emission rate and incentive period end time, called only in case emission
     /// rate or incentive period changes since it is already set at deploy time, only can be called before
-    /// rewarder is detached and block.timestamp < endTime
+    /// rewarder is detached
     function setIncentiveEmissionRate(uint32 _emissionRatePerYear, uint32 _endTime) external onlyOwner {
-        require(!detached && block.timestamp < endTime, "Detached");
+        require(!detached, "Detached");
         uint256 totalSupply = IERC20(NTOKEN_ADDRESS).totalSupply();
 
         _accumulateRewardPerNToken(uint32(block.timestamp), totalSupply);
@@ -237,8 +237,8 @@ contract SecondaryRewarder is IRewarder {
 
             accumulatedRewardPerNToken =
                 uint256(accumulatedRewardPerNToken).add(additionalIncentiveAccumulatedPerNToken).toUint128();
-            lastAccumulatedTime = time;
         }
+        lastAccumulatedTime = uint32(block.timestamp);
     }
 
     function _calculateRewardToClaim(address account, uint256 nTokenBalanceAtLastClaim)

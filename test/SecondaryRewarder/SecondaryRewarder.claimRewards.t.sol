@@ -324,6 +324,155 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         }
     }
 
+    function test_claimReward_ShouldClaimCorrectAmountAfterEndTimeAndEmissionRateChange() public {
+        uint256 startTime = block.timestamp;
+        uint32 incentivePeriod = endTime - uint32(block.timestamp);
+        // forgefmt: disable-next-item
+        uint256 totalIncentives = (endTime - block.timestamp).mul(emissionRatePerYear).div(Constants.YEAR);
+
+        // skip 10% of incentive period, should be able to clam 10% of the total amount
+        uint8 incentiveTimePassed = 10; // percentage
+        uint8 claimed = 0;
+        uint8 rewardLeft = incentiveTimePassed - claimed;
+        vm.warp(startTime + (incentivePeriod * incentiveTimePassed) / 100);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            // forgefmt: disable-next-item
+            uint256 reward = totalIncentives.mul(accounts[i].initialShare).div(100).mul(rewardLeft).div(100);
+            assertTrue(reward != 0, "1");
+
+            uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+            assertEq(prevBal, 0);
+
+            vm.prank(accounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+            assertApproxEqAbs(newBal.div(incentiveTokenDecimals), reward, 1, "2");
+        }
+        claimed = incentiveTimePassed;
+
+        // skip 100% of incentive period
+        incentiveTimePassed = 100;
+        rewardLeft = incentiveTimePassed - claimed;
+        // should claim full amount
+        vm.warp(startTime + (incentivePeriod * incentiveTimePassed) / 100);
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            // forgefmt: disable-next-item
+            uint256 reward = totalIncentives.mul(accounts[i].initialShare).div(100).mul(rewardLeft).div(100);
+            assertTrue(reward != 0, "3");
+
+            uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+
+            vm.prank(accounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+            assertApproxEqAbs(newBal.sub(prevBal).div(incentiveTokenDecimals), reward, 1, "4");
+        }
+        // another skip after everything is claimed, should claim 0
+        skip(1 weeks);
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            uint256 reward = rewarder.getAccountRewardClaim(accounts[i].account, uint32(block.timestamp));
+            assertTrue(reward == 0, "5");
+
+            uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+
+            vm.prank(accounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+
+            assertEq(newBal, prevBal, "6");
+        }
+
+        // Change the incentive emission rate after the current endTime
+        emissionRatePerYear = 1e5;
+        incentivePeriod = 2 weeks;
+        startTime = uint32(block.timestamp);
+        endTime = uint32(block.timestamp + incentivePeriod);
+        totalIncentives = uint256(incentivePeriod).mul(emissionRatePerYear).div(Constants.YEAR);
+        deal(REWARD_TOKEN, address(rewarder), totalIncentives * incentiveTokenDecimals);
+
+        vm.prank(owner);
+        rewarder.setIncentiveEmissionRate(emissionRatePerYear, endTime);
+
+        // Have the nTokens earn zero incentives between the old endTime and the time we change the emission rate
+        // should claim zero right after start of new incentives
+        for (uint256 i = 0; i < accounts.length; i++) {
+            uint256 reward = rewarder.getAccountRewardClaim(accounts[i].account, uint32(block.timestamp));
+            assertTrue(reward == 0);
+
+            uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+
+            vm.prank(accounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+
+            assertEq(newBal, prevBal);
+        }
+
+        // Have the nTokens start earning incentives at the new emission rate from the time we change the emission rate
+        // skip 30% of incentive period, should be able to clam 30% of the total amount
+        incentiveTimePassed = 30; // percentage
+        claimed = 0;
+        rewardLeft = incentiveTimePassed - claimed;
+        vm.warp(startTime + (incentivePeriod * incentiveTimePassed) / 100);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            // forgefmt: disable-next-item
+            uint256 reward = totalIncentives.mul(accounts[i].initialShare).div(100).mul(rewardLeft).div(100);
+            assertTrue(reward != 0, "7");
+
+            uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+
+            vm.prank(accounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+            assertApproxEqAbs(newBal.sub(prevBal).div(incentiveTokenDecimals), reward, 1, "8");
+        }
+        claimed = incentiveTimePassed;
+
+        // skip 100% of incentive period
+        incentiveTimePassed = 100;
+        rewardLeft = incentiveTimePassed - claimed;
+        // should claim full amount
+        vm.warp(startTime + (incentivePeriod * incentiveTimePassed) / 100);
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            // forgefmt: disable-next-item
+            uint256 reward = totalIncentives.mul(accounts[i].initialShare).div(100).mul(rewardLeft).div(100);
+            assertTrue(reward != 0, "9");
+
+            uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+
+            vm.prank(accounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+            assertApproxEqAbs(newBal.sub(prevBal).div(incentiveTokenDecimals), reward, 1, "10");
+        }
+
+        // another skip after everything is claimed, should claim 0
+        skip(1 days);
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            uint256 reward = rewarder.getAccountRewardClaim(accounts[i].account, uint32(block.timestamp));
+            assertTrue(reward == 0, "5");
+
+            uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+
+            vm.prank(accounts[i].account);
+            NOTIONAL.nTokenClaimIncentives();
+
+            uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
+
+            assertEq(newBal, prevBal, "6");
+        }
+    }
+
     function testFuzz_claimReward_RedeemOfNTokenShouldTriggerClaim(uint32 timeToSkip) public {
         // set upper bond to 6 weeks to avoid need for settlement
         timeToSkip = uint32(bound(timeToSkip, 0, uint256(6 weeks)));
