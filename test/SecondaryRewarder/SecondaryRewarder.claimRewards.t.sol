@@ -9,7 +9,7 @@ import {nTokenAction} from "../../contracts/external/actions/nTokenAction.sol";
 import {TreasuryAction} from "../../contracts/external/actions/TreasuryAction.sol";
 import {AccountAction} from "../../contracts/external/actions/AccountAction.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
-import {SecondaryRewarder} from "../../contracts/internal/balances/SecondaryRewarder.sol";
+import {SecondaryRewarder} from "../../contracts/external/adapters/SecondaryRewarder.sol";
 import {Constants} from "../../contracts/global/Constants.sol";
 import {SafeInt256} from "../../contracts/math/SafeInt256.sol";
 import {SafeUint256} from "../../contracts/math/SafeUint256.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.7.6;
 
-import {GenericToken} from "./protocols/GenericToken.sol";
+import {GenericToken} from "../../internal/balances/protocols/GenericToken.sol";
 import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";

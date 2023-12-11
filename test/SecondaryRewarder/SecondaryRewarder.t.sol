@@ -6,7 +6,7 @@ import {SecondaryRewarderSetupTest} from "./SecondaryRewarderSetupTest.sol";
 import {Router} from "../../contracts/external/Router.sol";
 import {TreasuryAction} from "../../contracts/external/actions/TreasuryAction.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
-import {SecondaryRewarder} from "../../contracts/internal/balances/SecondaryRewarder.sol";
+import {SecondaryRewarder} from "../../contracts/external/adapters/SecondaryRewarder.sol";
 import {Constants} from "../../contracts/global/Constants.sol";
 
 contract SecondaryRewarderTest is SecondaryRewarderSetupTest {
