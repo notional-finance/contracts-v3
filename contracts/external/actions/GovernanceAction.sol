@@ -372,13 +372,15 @@ contract GovernanceAction is StorageLayoutV2, NotionalGovernance, UUPSUpgradeabl
     /// be withheld at for this purpose.
     /// @param liquidationHaircutPercentage a percentage of nToken present value (> pvHaircutPercentage and <= 100) at which
     /// liquidators will purchase nTokens during liquidation
+    /// @param maxMintDeviationLimit a limit on the deviation from the oracle rate valuation of the nToken during minting
     function updateTokenCollateralParameters(
         uint16 currencyId,
         uint8 residualPurchaseIncentive10BPS,
         uint8 pvHaircutPercentage,
         uint8 residualPurchaseTimeBufferHours,
         uint8 cashWithholdingBuffer10BPS,
-        uint8 liquidationHaircutPercentage
+        uint8 liquidationHaircutPercentage,
+        uint8 maxMintDeviationLimit
     ) external override onlyOwner {
         _checkValidCurrency(currencyId);
         address nTokenAddress = nTokenHandler.nTokenAddress(currencyId);
@@ -390,7 +392,8 @@ contract GovernanceAction is StorageLayoutV2, NotionalGovernance, UUPSUpgradeabl
             pvHaircutPercentage,
             residualPurchaseTimeBufferHours,
             cashWithholdingBuffer10BPS,
-            liquidationHaircutPercentage
+            liquidationHaircutPercentage,
+            maxMintDeviationLimit
         );
         emit UpdateTokenCollateralParameters(currencyId);
     }

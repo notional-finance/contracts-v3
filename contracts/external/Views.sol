@@ -418,7 +418,8 @@ contract Views is StorageLayoutV2, NotionalViews {
             uint256 totalSupply,
             uint256 incentiveAnnualEmissionRate,
             uint256 lastInitializedTime,
-            bytes5 nTokenParameters,
+            // TODO: this will break some subgraph decoding stuff
+            bytes6 nTokenParameters,
             int256 cashBalance,
             uint256 accumulatedNOTEPerNToken,
             uint256 lastAccumulatedTime

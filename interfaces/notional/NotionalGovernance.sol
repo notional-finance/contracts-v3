@@ -72,7 +72,8 @@ interface NotionalGovernance {
         uint8 pvHaircutPercentage,
         uint8 residualPurchaseTimeBufferHours,
         uint8 cashWithholdingBuffer10BPS,
-        uint8 liquidationHaircutPercentage
+        uint8 liquidationHaircutPercentage,
+        uint8 maxMintDeviationLimit
     ) external;
 
     function updateCashGroup(uint16 currencyId, CashGroupSettings calldata cashGroup) external;

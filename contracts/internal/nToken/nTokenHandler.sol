@@ -35,7 +35,7 @@ library nTokenHandler {
             uint256 incentiveAnnualEmissionRate,
             uint256 lastInitializedTime,
             uint8 assetArrayLength,
-            bytes5 parameters
+            bytes6 parameters
         )
     {
         mapping(address => nTokenContext) storage store = LibStorage.getNTokenContextStorage();
@@ -76,7 +76,8 @@ library nTokenHandler {
         uint8 pvHaircutPercentage,
         uint8 residualPurchaseTimeBufferHours,
         uint8 cashWithholdingBuffer10BPS,
-        uint8 liquidationHaircutPercentage
+        uint8 liquidationHaircutPercentage,
+        uint8 maxMintDeviationLimit10BPS
     ) internal {
         mapping(address => nTokenContext) storage store = LibStorage.getNTokenContextStorage();
         nTokenContext storage context = store[tokenAddress];
@@ -89,12 +90,15 @@ library nTokenHandler {
         // the nToken may not have enough cash to pay accounts to buy its negative ifCash
         require(residualPurchaseIncentive10BPS <= cashWithholdingBuffer10BPS, "Invalid discounts");
 
-        bytes5 parameters =
+        bytes6 parameters =
             (bytes5(uint40(residualPurchaseIncentive10BPS)) |
             (bytes5(uint40(pvHaircutPercentage)) << 8) |
             (bytes5(uint40(residualPurchaseTimeBufferHours)) << 16) |
             (bytes5(uint40(cashWithholdingBuffer10BPS)) << 24) |
-            (bytes5(uint40(liquidationHaircutPercentage)) << 32));
+            (bytes5(uint40(liquidationHaircutPercentage)) << 32) |
+            // TODO: this must be less than the haircut percentage
+            (bytes5(uint40(maxMintDeviationLimit10BPS)) << 40)
+        );
 
         // Set the parameters
         context.nTokenParameters = parameters;
@@ -266,7 +270,7 @@ library nTokenHandler {
             /* incentiveRate */,
             uint256 lastInitializedTime,
             uint8 assetArrayLength,
-            bytes5 parameters
+            bytes6 parameters
         ) = getNTokenContext(nToken.tokenAddress);
 
         // prettier-ignore
