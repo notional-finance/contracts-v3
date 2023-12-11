@@ -8,6 +8,7 @@ import {IERC20} from "../../../interfaces/IERC20.sol";
 import {Constants} from "../../global/Constants.sol";
 import {SafeInt256} from "../../math/SafeInt256.sol";
 import {SafeUint256} from "../../math/SafeUint256.sol";
+import {FloatingPoint} from "../../math/FloatingPoint.sol";
 import {MerkleProof} from "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 
 contract SecondaryRewarder is IRewarder {
@@ -25,8 +26,10 @@ contract SecondaryRewarder is IRewarder {
     /// @dev Uses a single storage slot
     bytes32 public merkleRoot;
 
+    /* Rest of storage variables are packed into 256 bits */
     /// @notice When true user needs to call contract directly to claim any rewards left
     bool public override detached;
+
     /// @notice Marks the timestamp when incentives will end. Will always be less than block.timestamp
     /// if detached is true.
     uint32 public endTime;
@@ -34,8 +37,8 @@ contract SecondaryRewarder is IRewarder {
     /// @notice Last time the contract accumulated the reward
     uint32 public override lastAccumulatedTime;
 
-    /// @notice The emission rate of REWARD_TOKEN in INTERNAL_TOKEN_PRECISION
-    uint128 public override emissionRatePerYear;
+    // The emission rate of REWARD_TOKEN in INTERNAL_TOKEN_PRECISION packed to uint56
+    uint56 private packedEmissionRatePerYear;
 
     /// @notice Aggregate tokens accumulated per nToken at `lastAccumulateTime` 
     //  in INCENTIVE_ACCUMULATION_PRECISION
@@ -67,9 +70,14 @@ contract SecondaryRewarder is IRewarder {
         REWARD_TOKEN = address(incentive_token);
         REWARD_TOKEN_DECIMALS = IERC20(address(incentive_token)).decimals();
 
-        emissionRatePerYear = _emissionRatePerYear;
+        packedEmissionRatePerYear = FloatingPoint.packTo56Bits(_emissionRatePerYear);
         lastAccumulatedTime = uint32(block.timestamp);
         endTime = _endTime;
+    }
+
+    /// @notice The emission rate of REWARD_TOKEN in INTERNAL_TOKEN_PRECISION
+    function emissionRatePerYear() public view override returns(uint128) {
+        return uint128(FloatingPoint.unpackFromBits(packedEmissionRatePerYear));
     }
 
     /// @notice Get amount of reward account can claim at specified block time, only called before rewarder is detached
@@ -121,7 +129,7 @@ contract SecondaryRewarder is IRewarder {
 
         _accumulateRewardPerNToken(uint32(block.timestamp), totalSupply);
 
-        emissionRatePerYear = _emissionRatePerYear;
+        packedEmissionRatePerYear = FloatingPoint.packTo56Bits(_emissionRatePerYear);
         endTime = _endTime;
     }
 
@@ -155,7 +163,7 @@ contract SecondaryRewarder is IRewarder {
         _accumulateRewardPerNToken(uint32(block.timestamp), totalSupply);
 
         detached = true;
-        emissionRatePerYear = 0;
+        packedEmissionRatePerYear = 0;
 
         if (block.timestamp < endTime) {
             endTime = uint32(block.timestamp);
@@ -236,7 +244,7 @@ contract SecondaryRewarder is IRewarder {
             // forgefmt: disable-next-item
             additionalIncentiveAccumulatedPerNToken = timeSinceLastAccumulation
                 .mul(Constants.INCENTIVE_ACCUMULATION_PRECISION)
-                .mul(emissionRatePerYear)
+                .mul(emissionRatePerYear())
                 .div(Constants.YEAR)
                 .div(totalSupply);
         }
