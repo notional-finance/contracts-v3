@@ -38,13 +38,18 @@ contract MigrationSettings {
     using SafeUint256 for uint256;
     using SafeInt256 for int256;
 
-    NotionalProxy internal constant NOTIONAL = NotionalProxy(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
-    address internal constant NOTIONAL_MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
+    NotionalProxy public immutable NOTIONAL;
+    address public immutable NOTIONAL_MANAGER;
 
     // @todo reduce this kink diff once we have more proper values for the tests
     uint256 internal constant MAX_KINK_DIFF = 250 * uint256(1e9 / 10000); // 250 * Constants.BASIS_POINT
 
     mapping(uint256 => CurrencySettings) internal currencySettings;
+
+    constructor(address _notional, address _manager) {
+        NOTIONAL = NotionalProxy(_notional);
+        NOTIONAL_MANAGER = _manager;
+    }
 
     function getCurrencySettings(uint256 currencyId) external view returns (CurrencySettings memory) {
         return currencySettings[currencyId];

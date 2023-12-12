@@ -76,6 +76,10 @@ contract Router is StorageLayoutV1 {
             require(Deployments.NOTE_TOKEN_ADDRESS == 0x019bE259BC299F3F653688c7655C87F998Bc7bC1, "NOTE");
             require(address(Deployments.WETH) == 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1, "WETH");
             require(address(Deployments.SEQUENCER_UPTIME_ORACLE) == 0xFdB631F5EE196F0ed6FAa767959853A9F217697D, "SEQUENCER");
+        } else if (chainId == Deployments.GOERLI) {
+            require(Deployments.NOTE_TOKEN_ADDRESS == 0xC5e91B01F9B23952821410Be7Aa3c45B6429C670, "NOTE");
+            require(address(Deployments.WETH) == 0x04B9c40dF01bdc99dd2c31Ae4B232f20F4BBaC5B, "WETH");
+            require(address(Deployments.SEQUENCER_UPTIME_ORACLE) == address(0), "SEQUENCER");
         } else {
             revert("Invalid Chain");
         }

@@ -49,21 +49,27 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
     using TokenHandler for Token;
 
     uint256 private constant MAX_PORTFOLIO_ASSETS = 8;
-    address internal constant NOTIONAL_MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
 
     MigrationSettings public immutable MIGRATION_SETTINGS;
     address public immutable FINAL_ROUTER;
     address public immutable PAUSE_ROUTER;
+    address public immutable NOTIONAL_MANAGER;
 
     event UpdateCashGroup(uint16 currencyId);
     event MigratedToV3();
     event StartV3AccountEvents();
     event EndV3AccountEvents();
 
-    constructor(MigrationSettings settings, address finalRouter, address _pauseRouter) {
+    constructor(
+        MigrationSettings settings,
+        address finalRouter,
+        address _pauseRouter,
+        address _manager
+    ) {
         MIGRATION_SETTINGS = settings;
         FINAL_ROUTER = finalRouter;
         PAUSE_ROUTER = _pauseRouter;
+        NOTIONAL_MANAGER = _manager;
     }
 
     fallback() external { _delegate(PAUSE_ROUTER); }
