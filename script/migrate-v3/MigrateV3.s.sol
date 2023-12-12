@@ -163,9 +163,14 @@ contract MigrateV3 is UpgradeRouter, Test {
 
         (finalRouter, pauseRouter) = deployRouter(libs, actions);
 
-        settings = new MigrationSettings();
+        settings = new MigrationSettings(address(NOTIONAL), MANAGER);
         console.log("Final Router %s", address(finalRouter));
-        migrateRouter = new MigratePrimeCash(settings, address(finalRouter), address(pauseRouter));
+        migrateRouter = new MigratePrimeCash(
+            settings,
+            address(finalRouter),
+            address(pauseRouter),
+            MANAGER
+        );
     }
 
     function deployPrimeCashOracles() internal usingAccount(DEPLOYER) returns (
