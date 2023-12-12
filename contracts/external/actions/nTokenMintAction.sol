@@ -143,13 +143,13 @@ library nTokenMintAction {
         require(nTokenOracleValue >= 0);
         require(nTokenSpotValue >= 0);
 
-        int256 maxValueDeviation = int256(
+        int256 maxValueDeviationPercent = int256(
             uint256(uint8(nToken.parameters[Constants.MAX_MINT_DEVIATION_LIMIT]))
-        ) * int256(Constants.TEN_BASIS_POINTS);
+        );
         // Check deviation limit here
         int256 deviationInRatePrecision = nTokenOracleValue.sub(nTokenSpotValue).abs()
-            .divInRatePrecision(nTokenOracleValue);
-        require(deviationInRatePrecision <= maxValueDeviation, "Over Deviation Limit");
+            .mul(Constants.PERCENTAGE_DECIMALS).div(nTokenOracleValue);
+        require(deviationInRatePrecision <= maxValueDeviationPercent, "Over Deviation Limit");
 
         // Allow for the first deposit
         if (nToken.totalSupply == 0) {

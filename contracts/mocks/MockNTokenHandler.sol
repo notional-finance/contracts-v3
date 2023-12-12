@@ -142,7 +142,7 @@ contract MockNTokenHandler is StorageLayoutV1 {
         uint8 residualPurchaseTimeBufferHours,
         uint8 cashWithholdingBuffer10BPS,
         uint8 liquidationHaircutPercentage,
-        uint8 maxMintDeviationLimit
+        uint8 maxMintDeviationPercentage
     ) external {
         address tokenAddress = nTokenHandler.nTokenAddress(currencyId);
         require(tokenAddress != address(0), "Invalid currency");
@@ -154,7 +154,7 @@ contract MockNTokenHandler is StorageLayoutV1 {
             residualPurchaseTimeBufferHours,
             cashWithholdingBuffer10BPS,
             liquidationHaircutPercentage,
-            maxMintDeviationLimit
+            maxMintDeviationPercentage
         );
     }
 }

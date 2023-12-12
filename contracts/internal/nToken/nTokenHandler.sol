@@ -77,7 +77,7 @@ library nTokenHandler {
         uint8 residualPurchaseTimeBufferHours,
         uint8 cashWithholdingBuffer10BPS,
         uint8 liquidationHaircutPercentage,
-        uint8 maxMintDeviationLimit10BPS
+        uint8 maxMintDeviationPercentage
     ) internal {
         mapping(address => nTokenContext) storage store = LibStorage.getNTokenContextStorage();
         nTokenContext storage context = store[tokenAddress];
@@ -86,6 +86,9 @@ library nTokenHandler {
         // The pv haircut percentage must be less than the liquidation percentage or else liquidators will not
         // get profit for liquidating nToken.
         require(pvHaircutPercentage < liquidationHaircutPercentage, "Invalid pv haircut");
+        // The mint deviation percentage cannot be greater than the difference between the liquidation haircut
+        // percentage and the pv haircut percentage.
+        require(maxMintDeviationPercentage <= liquidationHaircutPercentage - pvHaircutPercentage);
         // Ensure that the cash withholding buffer is greater than the residual purchase incentive or
         // the nToken may not have enough cash to pay accounts to buy its negative ifCash
         require(residualPurchaseIncentive10BPS <= cashWithholdingBuffer10BPS, "Invalid discounts");
@@ -96,8 +99,7 @@ library nTokenHandler {
             (bytes5(uint40(residualPurchaseTimeBufferHours)) << 16) |
             (bytes5(uint40(cashWithholdingBuffer10BPS)) << 24) |
             (bytes5(uint40(liquidationHaircutPercentage)) << 32) |
-            // TODO: this must be less than the haircut percentage
-            (bytes5(uint40(maxMintDeviationLimit10BPS)) << 40)
+            (bytes5(uint40(maxMintDeviationPercentage)) << 40)
         );
 
         // Set the parameters
