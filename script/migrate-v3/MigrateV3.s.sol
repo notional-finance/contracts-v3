@@ -76,7 +76,9 @@ contract MigrateV3 is UpgradeRouter, Test {
 
     address BEACON_DEPLOYER = 0x0D251Bd6c14e02d34f68BFCB02c54cBa3D108122;
     address DEPLOYER = 0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3;
-    address MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
+    // address MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
+    // On Goerli:
+    address MANAGER = 0xf862895976F693907f0AF8421Fe9264e559c2f6b;
 
     uint16 internal constant ETH = 1;
     uint16 internal constant DAI = 2;
@@ -257,6 +259,8 @@ contract MigrateV3 is UpgradeRouter, Test {
             }
         }
 
+        // TODO: add emits here?
+
         require(totalSupply == uint256(nTokenSupply[currencyId]), "nToken supply");
     }
 
@@ -378,6 +382,7 @@ contract MigrateV3 is UpgradeRouter, Test {
     function checkfCashCurve(MigrationSettings settings, uint16 currencyId) internal view {
         MarketParameters[] memory markets = NOTIONAL.getActiveMarkets(currencyId);
         CurrencySettings memory s = settings.getCurrencySettings(currencyId);
+        // NOTE: this fails and then we get a revert and etherscan blows up
         (InterestRateCurveSettings[] memory finalCurves, uint256[] memory finalRates) = 
             settings.getfCashCurveUpdate(currencyId, false);
 
@@ -525,21 +530,31 @@ contract MigrateV3 is UpgradeRouter, Test {
     }
 
     function setUp() public {
-        // TODO: mark down reserves
-        // TODO: push out vault user profits
         // deployWrappedFCash();
 
         // Set fork
-        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), vm.envUint("FORK_BLOCK"));
+        vm.createSelectFork(vm.envString("GOERLI_RPC_URL"), vm.envUint("FORK_BLOCK"));
 
-        deployBeacons();
-        (
-            MigrationSettings settings,
-            MigratePrimeCash migratePrimeCash,
-            PauseRouter pauseRouter,
-            Router finalRouter
-        ) = deployMigratePrimeCash();
-        CompoundV2HoldingsOracle[] memory oracles = deployPrimeCashOracles();
+        // deployBeacons();
+        // (
+        //     MigrationSettings settings,
+        //     MigratePrimeCash migratePrimeCash,
+        //     PauseRouter pauseRouter,
+        //     Router finalRouter
+        // ) = deployMigratePrimeCash();
+        // CompoundV2HoldingsOracle[] memory oracles = deployPrimeCashOracles();
+
+        // New Router 0x6b986A60216ACA687457782aDFA0B002aD392Ce7
+        // New Pause Router 0xFFd7531ED937F703B269815950cB75bdAAA341c9
+        // Settings 0x5fbf4539A89fBd1E5d784DB3f7Ba6c394AC450fC
+        // Migrate 0x6F4C6dC0340051EBFc1583Ca6A0c3ef5b94c50e0
+        MigrationSettings settings = MigrationSettings(0x5fbf4539A89fBd1E5d784DB3f7Ba6c394AC450fC);
+        MigratePrimeCash migratePrimeCash = MigratePrimeCash(0x6F4C6dC0340051EBFc1583Ca6A0c3ef5b94c50e0);
+        CompoundV2HoldingsOracle[] memory oracles = new CompoundV2HoldingsOracle[](4);
+        oracles[0] = CompoundV2HoldingsOracle(0xB12b08045c2FB403Fcae579641D0a011AAd8ED70);
+        oracles[1] = CompoundV2HoldingsOracle(0xbe401d7e76bb71bf7fa5a4aed7F3b650C6E0bd25);
+        oracles[2] = CompoundV2HoldingsOracle(0x123fCA954EA894305b684F56A0d043169a5aA7E4);
+        oracles[3] = CompoundV2HoldingsOracle(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
 
         setMigrationSettings(settings, oracles);
         checkAllAccounts();

@@ -31,7 +31,9 @@ import { Views } from "@notional-v3/external/Views.sol";
 import { NotionalProxy } from "@notional-v3/interfaces/NotionalProxy.sol";
 
 contract UpgradeRouter is Script {
-    NotionalProxy constant NOTIONAL = NotionalProxy(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
+    // NotionalProxy constant NOTIONAL = NotionalProxy(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
+    // On Goerli:
+    NotionalProxy constant NOTIONAL = NotionalProxy(0xD8229B55bD73c61D840d339491219ec6Fa667B0a);
     uint256 NUM_LIBS = 6;
 
     enum ExternalLib {
