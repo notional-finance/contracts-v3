@@ -1,7 +1,7 @@
 #!/bin/bash
 source .env
 
-export FORK_BLOCK=10206915
+export FORK_BLOCK=10207902
 
 python script/migrate-v3/fetchAccounts.py --block_number $FORK_BLOCK
 
