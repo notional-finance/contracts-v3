@@ -34,11 +34,9 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
     }
 
     function _holdingValuesInUnderlying() internal view virtual override returns (uint256[] memory) {
-        uint256[] memory result = new uint256[](1);
         address[] memory tokens = new address[](1);
         tokens[0] = ASSET_TOKEN;
-        result[0] = NOTIONAL.getStoredTokenBalances(tokens)[0];
-        return result;
+        return NOTIONAL.getStoredTokenBalances(tokens);
     }
 
     function _getTotalUnderlyingValueView() internal view virtual override returns (uint256) {

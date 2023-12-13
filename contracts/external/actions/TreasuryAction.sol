@@ -95,11 +95,13 @@ library TargetHelper {
             uint256 forRedemption = oracleData.currentExternalUnderlyingLend - targetAmount;
             if (oracleData.externalUnderlyingAvailableForWithdraw < forRedemption) {
                 // increase target amount so that redemptions amount match externalUnderlyingAvailableForWithdraw
-                targetAmount += forRedemption - oracleData.externalUnderlyingAvailableForWithdraw;
+                targetAmount = targetAmount.add(
+                    // unchecked - is safe here, overflow is not possible due to above if conditional
+                    forRedemption - oracleData.externalUnderlyingAvailableForWithdraw
+                );
             }
         }
     }
-
 }
 
 contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
@@ -194,7 +196,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
         // Rebalance the currency immediately after we set targets. This allows the owner to immediately exit money
         // markets by setting all the targets to zero. The cooldown check is skipped in this case.
-        _rebalanceCurrency({currencyId: currencyId, skipCooldownCheck: true});
+        _rebalanceCurrency({currencyId: currencyId, useCooldownCheck: false});
     }
 
     /// @notice Sets the time between calls to the rebalance method by the rebalancing bot.
@@ -357,7 +359,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
 
             // Rebalance each of the currencies provided. The gelato bot cannot skip the cooldown check.
-            _rebalanceCurrency({currencyId: currencyIds[i], skipCooldownCheck: false});
+            _rebalanceCurrency({currencyId: currencyIds[i], useCooldownCheck: true});
         }
     }
 
@@ -368,9 +370,9 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     }
 
     /// @notice Executes the rebalancing of a single currency and updates the oracle supply rate.
-    function _rebalanceCurrency(uint16 currencyId, bool skipCooldownCheck) private {
+    function _rebalanceCurrency(uint16 currencyId, bool useCooldownCheck) private {
         RebalancingContextStorage memory context = LibStorage.getRebalancingContext()[currencyId];
-        if (!skipCooldownCheck) {
+        if (useCooldownCheck) {
             require(
                 _hasCooldownPassed(context) ||
                 _isExternalLendingUnhealthy(currencyId,  PrimeCashExchangeRate.getPrimeCashHoldingsOracle(currencyId))
@@ -458,7 +460,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     }
 
     function _isExternalLendingUnhealthy(uint16 currencyId, IPrimeCashHoldingsOracle oracle) internal view
-        returns (bool isHealthy)
+        returns (bool)
     {
         OracleData memory oracleData = oracle.getOracleData();
 
@@ -487,7 +489,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
         // prevent rebalance if change is not greater than 1%, important for health check and avoiding triggering
         // rebalance shortly after rebalance on minimum change
-        return (oracleData.currentExternalUnderlyingLend > targetAmount) && (offTargetPercentage > 0);
+        return (targetAmount > oracleData.currentExternalUnderlyingLend) && (offTargetPercentage > 0);
     }
 
     function _calculateRebalance(
@@ -498,20 +500,19 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         address holding = oracleData.holding;
         uint256 currentAmount = oracleData.currentExternalUnderlyingLend;
 
-        address[] memory redeemHoldings = new address[](1);
-        uint256[] memory redeemAmounts = new uint256[](1);
-        address[] memory depositHoldings = new address[](1);
-        uint256[] memory depositAmounts = new uint256[](1);
-
-        redeemHoldings[0] = holding;
-        depositHoldings[0] = holding;
+        address[] memory holdings = new address[](1);
+        holdings[0] = holding;
 
         if (targetAmount < currentAmount) {
+            uint256[] memory redeemAmounts = new uint256[](1);
             redeemAmounts[0] = currentAmount - targetAmount;
-            rebalancingData.redeemData = oracle.getRedemptionCalldataForRebalancing(redeemHoldings, redeemAmounts);
+
+            rebalancingData.redeemData = oracle.getRedemptionCalldataForRebalancing(holdings, redeemAmounts);
         } else if (currentAmount < targetAmount) {
+            uint256[] memory depositAmounts = new uint256[](1);
             depositAmounts[0] = targetAmount - currentAmount;
-            rebalancingData.depositData = oracle.getDepositCalldataForRebalancing(depositHoldings, depositAmounts);
+
+            rebalancingData.depositData = oracle.getDepositCalldataForRebalancing(holdings, depositAmounts);
         }
     }
 
