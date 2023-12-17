@@ -155,12 +155,12 @@ library nTokenMintAction {
         if (nToken.totalSupply == 0) {
             return primeCashToDeposit;
         } else {
-            // nTokenOracleValuePost = nTokenOracleValue + amountToDeposit
-            // (tokenSupply + tokensToMint) / tokenSupply == (nTokenOracleValue + amountToDeposit) / nTokenOracleValue
-            // (tokenSupply + tokensToMint) == (nTokenOracleValue + amountToDeposit) * tokenSupply / nTokenOracleValue
-            // (tokenSupply + tokensToMint) == tokenSupply + (amountToDeposit * tokenSupply) / nTokenOracleValue
-            // tokensToMint == (amountToDeposit * tokenSupply) / nTokenOracleValue
-            return primeCashToDeposit.mul(nToken.totalSupply).div(nTokenOracleValue);
+            // nTokenSpotValuePost = nTokenOracleValue + amountToDeposit
+            // (tokenSupply + tokensToMint) / tokenSupply == (nTokenSpotValue + amountToDeposit) / nTokenOracleValue
+            // (tokenSupply + tokensToMint) == (nTokenSpotValue + amountToDeposit) * tokenSupply / nTokenOracleValue
+            // (tokenSupply + tokensToMint) == tokenSupply + (amountToDeposit * tokenSupply) / nTokenSpotValue
+            // tokensToMint == (amountToDeposit * tokenSupply) / nTokenSpotValue
+            return primeCashToDeposit.mul(nToken.totalSupply).div(nTokenSpotValue);
         }
     }
 
