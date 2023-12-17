@@ -319,7 +319,8 @@ contract MockSettingsLib {
             pvHaircutPercentage,
             0,
             0,
-            liquidationHaircutPercentage
+            liquidationHaircutPercentage,
+            255
         );
     }
 
