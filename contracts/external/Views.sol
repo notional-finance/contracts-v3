@@ -38,6 +38,7 @@ import {DeprecatedAssetRate} from "../internal/markets/DeprecatedAssetRate.sol";
 import {nTokenHandler} from "../internal/nToken/nTokenHandler.sol";
 import {nTokenSupply} from "../internal/nToken/nTokenSupply.sol";
 import {PrimeRateLib} from "../internal/pCash/PrimeRateLib.sol";
+import {PrimeSupplyCap} from "../internal/pCash/PrimeSupplyCap.sol";
 import {PrimeCashExchangeRate} from "../internal/pCash/PrimeCashExchangeRate.sol";
 import {TokenHandler} from "../internal/balances/TokenHandler.sol";
 import {BalanceHandler} from "../internal/balances/BalanceHandler.sol";
@@ -55,6 +56,7 @@ contract Views is StorageLayoutV2, NotionalViews {
     using TokenHandler for Token;
     using Market for MarketParameters;
     using PrimeRateLib for PrimeRate;
+    using PrimeSupplyCap for PrimeRate;
     using SafeInt256 for int256;
     using SafeUint256 for uint256;
     using BalanceHandler for BalanceState;
@@ -257,7 +259,8 @@ contract Views is StorageLayoutV2, NotionalViews {
         uint256 totalUnderlyingSupply
     ) {
         (pr, factors) = PrimeCashExchangeRate.getPrimeCashRateView(currencyId, blockTime);
-        (maxUnderlyingSupply, totalUnderlyingSupply) = pr.getSupplyCap(currencyId);
+        // TODO: need to return additional values
+        (maxUnderlyingSupply, totalUnderlyingSupply, /* */, /* */) = pr.getSupplyCap(currencyId);
     }
 
     function getPrimeFactorsStored(
