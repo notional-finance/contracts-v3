@@ -18,11 +18,11 @@ import {Emitter} from "../Emitter.sol";
 import {PrimeCashExchangeRate} from "../pCash/PrimeCashExchangeRate.sol";
 import {PrimeRateLib} from "../pCash/PrimeRateLib.sol";
 
+import {ExternalLending} from "./ExternalLending.sol";
 import {CompoundHandler} from "./protocols/CompoundHandler.sol";
 import {GenericToken} from "./protocols/GenericToken.sol";
 
 import {IERC20} from "../../../interfaces/IERC20.sol";
-import {IPrimeCashHoldingsOracle, RedeemData} from "../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 
 /// @notice Handles all external token transfers and events
 library TokenHandler {
@@ -240,7 +240,7 @@ library TokenHandler {
 
         // Overflow not possible due to int256
         uint256 withdrawAmount = uint256(netTransferExternal.neg());
-        _redeemMoneyMarketIfRequired(currencyId, underlying, withdrawAmount);
+        ExternalLending.redeemMoneyMarketIfRequired(currencyId, underlying, withdrawAmount);
 
         if (underlying.tokenType == TokenType.Ether) {
             GenericToken.transferNativeTokenOut(account, withdrawAmount, withdrawWrappedNativeToken);
@@ -249,37 +249,6 @@ library TokenHandler {
         }
 
         _postTransferPrimeCashUpdate(account, currencyId, netTransferExternal, underlying, primeRate);
-    }
-
-    /// @notice Prime cash holdings may be in underlying tokens or they may be held in other money market
-    /// protocols like Compound, Aave or Euler. If there is insufficient underlying tokens to withdraw on
-    /// the contract, this method will redeem money market tokens in order to gain sufficient underlying
-    /// to withdraw from the contract.
-    /// @param currencyId associated currency id
-    /// @param underlying underlying token information
-    /// @param withdrawAmountExternal amount of underlying to withdraw in external token precision
-    function _redeemMoneyMarketIfRequired(
-        uint16 currencyId,
-        Token memory underlying,
-        uint256 withdrawAmountExternal
-    ) private {
-        // If there is sufficient balance of the underlying to withdraw from the contract
-        // immediately, just return.
-        mapping(address => uint256) storage store = LibStorage.getStoredTokenBalances();
-        uint256 currentBalance = store[underlying.tokenAddress];
-        if (withdrawAmountExternal <= currentBalance) return;
-
-        IPrimeCashHoldingsOracle oracle = PrimeCashExchangeRate.getPrimeCashHoldingsOracle(currencyId);
-        // Redemption data returns an array of contract calls to make from the Notional proxy (which
-        // is holding all of the money market tokens).
-        (RedeemData[] memory data) = oracle.getRedemptionCalldata(withdrawAmountExternal - currentBalance);
-
-        // This is the total expected underlying that we should redeem after all redemption calls
-        // are executed.
-        uint256 totalUnderlyingRedeemed = executeMoneyMarketRedemptions(underlying, data);
-
-        // Ensure that we have sufficient funds before we exit
-        require(withdrawAmountExternal <= currentBalance.add(totalUnderlyingRedeemed)); // dev: insufficient redeem
     }
 
     /// @notice Every time tokens are transferred into or out of the protocol, the prime supply
@@ -353,55 +322,6 @@ library TokenHandler {
 
     function transferIncentive(address account, uint256 tokensToTransfer) internal {
         GenericToken.safeTransferOut(Deployments.NOTE_TOKEN_ADDRESS, account, tokensToTransfer);
-    }
-
-    /// @notice It is critical that this method measures and records the balanceOf changes before and after
-    /// every token change. If not, then external donations can affect the valuation of pCash and pDebt
-    /// tokens which may be exploitable.
-    /// @param redeemData parameters from the prime cash holding oracle
-    function executeMoneyMarketRedemptions(
-        Token memory underlyingToken,
-        RedeemData[] memory redeemData
-    ) internal returns (uint256 totalUnderlyingRedeemed) {
-        for (uint256 i; i < redeemData.length; i++) {
-            RedeemData memory data = redeemData[i];
-            // Measure the token balance change if the `assetToken` value is set in the
-            // current redemption data struct. 
-            uint256 oldAssetBalance = IERC20(data.assetToken).balanceOf(address(this));
-
-            // Measure the underlying balance change before and after the call.
-            uint256 oldUnderlyingBalance = balanceOf(underlyingToken, address(this));
-
-            // Some asset tokens may require multiple calls to redeem if there is an unstake
-            // or redemption from WETH involved. We only measure the asset token balance change
-            // on the final redemption call, as dictated by the prime cash holdings oracle.
-            for (uint256 j; j < data.targets.length; j++) {
-                GenericToken.executeLowLevelCall(data.targets[j], 0, data.callData[j]);
-            }
-
-            // Ensure that we get sufficient underlying on every redemption
-            uint256 newUnderlyingBalance = balanceOf(underlyingToken, address(this));
-            uint256 underlyingBalanceChange = newUnderlyingBalance.sub(oldUnderlyingBalance);
-            // If the call is not the final redemption, then expectedUnderlying should
-            // be set to zero.
-            require(data.expectedUnderlying <= underlyingBalanceChange);
-
-            // Measure and update the asset token
-            uint256 newAssetBalance = IERC20(data.assetToken).balanceOf(address(this));
-            require(newAssetBalance <= oldAssetBalance);
-
-            if (underlyingBalanceChange != oldAssetBalance.sub(newAssetBalance)) {
-                newAssetBalance = newAssetBalance.add(data.assetTokenBalanceAdjustment);
-            }
-
-            updateStoredTokenBalance(data.assetToken, oldAssetBalance, newAssetBalance);
-
-            // Update the total value with the net change
-            totalUnderlyingRedeemed = totalUnderlyingRedeemed.add(underlyingBalanceChange);
-
-            // totalUnderlyingRedeemed is always positive or zero.
-            updateStoredTokenBalance(underlyingToken.tokenAddress, oldUnderlyingBalance, newUnderlyingBalance);
-        }
     }
 
     function updateStoredTokenBalance(address token, uint256 oldBalance, uint256 newBalance) internal {
