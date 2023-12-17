@@ -27,6 +27,54 @@ library nTokenCalculations {
     using PrimeRateLib for PrimeRate;
     using CashGroup for CashGroupParameters;
 
+    /// @notice Calculates the tokens to mint to the account as a ratio of the nToken
+    /// present value denominated in asset cash terms.
+    /// @return the amount of tokens to mint, the ifCash bitmap
+    function calculateTokensToMint(
+        nTokenPortfolio memory nToken,
+        int256 primeCashToDeposit,
+        uint256 blockTime
+    ) internal view returns (int256) {
+        require(primeCashToDeposit >= 0); // dev: deposit amount negative
+        if (primeCashToDeposit == 0) return 0;
+
+        if (nToken.lastInitializedTime != 0) {
+            // For the sake of simplicity, nTokens cannot be minted if they have assets
+            // that need to be settled. This is only done during market initialization.
+            uint256 nextSettleTime = nTokenHandler.getNextSettleTime(nToken);
+            // If next settle time <= blockTime then the token can be settled
+            require(nextSettleTime > blockTime, "Requires settlement");
+        }
+
+        (int256 nTokenOracleValue, int256 nTokenSpotValue) = nTokenCalculations.getNTokenPrimePVForMinting(
+            nToken, blockTime
+        );
+
+        // Defensive check to ensure PV remains positive
+        require(nTokenOracleValue >= 0);
+        require(nTokenSpotValue >= 0);
+
+        int256 maxValueDeviationPercent = int256(
+            uint256(uint8(nToken.parameters[Constants.MAX_MINT_DEVIATION_LIMIT]))
+        );
+        // Check deviation limit here
+        int256 deviationInRatePrecision = nTokenOracleValue.sub(nTokenSpotValue).abs()
+            .mul(Constants.PERCENTAGE_DECIMALS).div(nTokenOracleValue);
+        require(deviationInRatePrecision <= maxValueDeviationPercent, "Over Deviation Limit");
+
+        // Allow for the first deposit
+        if (nToken.totalSupply == 0) {
+            return primeCashToDeposit;
+        } else {
+            // nTokenSpotValuePost = nTokenOracleValue + amountToDeposit
+            // (tokenSupply + tokensToMint) / tokenSupply == (nTokenSpotValue + amountToDeposit) / nTokenOracleValue
+            // (tokenSupply + tokensToMint) == (nTokenSpotValue + amountToDeposit) * tokenSupply / nTokenOracleValue
+            // (tokenSupply + tokensToMint) == tokenSupply + (amountToDeposit * tokenSupply) / nTokenSpotValue
+            // tokensToMint == (amountToDeposit * tokenSupply) / nTokenSpotValue
+            return primeCashToDeposit.mul(nToken.totalSupply).div(nTokenSpotValue);
+        }
+    }
+
     function getNTokenPrimePVForMinting(nTokenPortfolio memory nToken, uint256 blockTime)
         internal view returns (int256 nTokenOracleValue, int256 nTokenSpotValue) {
         // Skip the "nextSettleTime" check in this method. nTokens are not mintable when markets
