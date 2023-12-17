@@ -418,7 +418,9 @@ contract Views is StorageLayoutV2, NotionalViews {
             uint256 totalSupply,
             uint256 incentiveAnnualEmissionRate,
             uint256 lastInitializedTime,
-            // TODO: this will break some subgraph decoding stuff
+            // NOTE: changing the number of bytes returned by nTokenParameters will not break ABI
+            // decoding since abi encoding is not packed. This method will always return bytes32
+            // and the calling function will truncate that down to the number of bytes specified here.
             bytes6 nTokenParameters,
             int256 cashBalance,
             uint256 accumulatedNOTEPerNToken,
