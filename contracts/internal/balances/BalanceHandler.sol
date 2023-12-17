@@ -21,6 +21,7 @@ import {Emitter} from "../Emitter.sol";
 import {nTokenHandler} from "../nToken/nTokenHandler.sol";
 import {AccountContextHandler} from "../AccountContextHandler.sol";
 import {PrimeRateLib} from "../pCash/PrimeRateLib.sol";
+import {PrimeSupplyCap} from "../pCash/PrimeSupplyCap.sol";
 import {PrimeCashExchangeRate} from "../pCash/PrimeCashExchangeRate.sol";
 
 import {TokenHandler} from "./TokenHandler.sol";
@@ -32,6 +33,7 @@ library BalanceHandler {
     using TokenHandler for Token;
     using AccountContextHandler for AccountContext;
     using PrimeRateLib for PrimeRate;
+    using PrimeSupplyCap for PrimeRate;
 
     /// @notice Emitted when reserve balance is updated
     event ReserveBalanceUpdated(uint16 indexed currencyId, int256 newBalance);
