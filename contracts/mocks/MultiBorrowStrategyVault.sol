@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: BSUL-1.1
-pragma solidity =0.8.11;
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity >=0.7.6;
 pragma abicoder v2;
 
 import "../global/Constants.sol";

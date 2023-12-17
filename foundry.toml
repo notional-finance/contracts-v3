@@ -8,13 +8,14 @@ remappings = [
     "hardhat/=node_modules/hardhat/",
 ]
 verbosity = 3
-fs_permissions = [{access="read",path="./v3.arbitrum-one.json"}, {access="read",path="./artifacts"}, {access="read",path="./script/merkleConfig.json"}, {access="write",path="./script/merkleProofs.json"}]
+fs_permissions = [{access="read",path="./v3.arbitrum-one.json"}, {access="read",path="./artifacts"}]
+solc_version = '0.7.6'
 
 [rpc_endpoints]
 arbitrum = "${ARBITRUM_RPC_URL}"
 
 [fuzz]
-runs = 50
+runs = 100
 seed='0x5792875'
 # [etherscan]
 # goerli = { key = "${ETHERSCAN_API_KEY}" }

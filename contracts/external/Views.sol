@@ -21,6 +21,7 @@ import {
     BalanceStorage,
     Deprecated_AssetRateParameters,
     RebalancingContextStorage,
+    RebalancingTargetData,
     TotalfCashDebtStorage
 } from "../global/Types.sol";
 import {SafeUint256} from "../math/SafeUint256.sol";
@@ -48,6 +49,8 @@ import {AccountContextHandler} from "../internal/AccountContextHandler.sol";
 import {Emitter} from "../internal/Emitter.sol";
 
 import {NotionalViews} from "../../interfaces/notional/NotionalViews.sol";
+import {NotionalTreasury} from "../../interfaces/notional/NotionalTreasury.sol";
+import {IPrimeCashHoldingsOracle} from "../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 import {FreeCollateralExternal} from "./FreeCollateralExternal.sol";
 import {MigrateIncentives} from "./MigrateIncentives.sol";
 
@@ -167,6 +170,8 @@ contract Views is StorageLayoutV2, NotionalViews {
             currencyId,
             maxMarketIndex
         );
+
+        return (deprecated_annualizedAnchorRates, proportions);
     }
 
     /// @notice Returns nToken deposit parameters for a given currency
@@ -603,14 +608,20 @@ contract Views is StorageLayoutV2, NotionalViews {
         return reserveBuffer[currencyId];
     }
 
-    function getRebalancingTarget(uint16 currencyId, address holding) external view override returns (uint8) {
-        mapping(address => uint8) storage rebalancingTargets = LibStorage.getRebalancingTargets()[currencyId];
-        return rebalancingTargets[holding];
-    }
+    function getRebalancingFactors(uint16 currencyId)
+        external
+        view
+        override
+        returns (address holding, uint8 target, uint16 externalWithdrawThreshold, RebalancingContextStorage memory context)
+    {
+        IPrimeCashHoldingsOracle oracle = PrimeCashExchangeRate.getPrimeCashHoldingsOracle(currencyId);
 
-    function getRebalancingCooldown(uint16 currencyId) external view override returns (uint40) {
-        mapping(uint16 => RebalancingContextStorage) storage store = LibStorage.getRebalancingContext();
-        return store[currencyId].rebalancingCooldownInSeconds;
+        holding = oracle.holdings()[0];
+        context = LibStorage.getRebalancingContext()[currencyId];
+
+        RebalancingTargetData storage rebalancingTargetData = LibStorage.getRebalancingTargets()[currencyId][holding];
+        target = rebalancingTargetData.targetUtilization;
+        externalWithdrawThreshold = rebalancingTargetData.externalWithdrawThreshold;
     }
 
     function getStoredTokenBalances(address[] calldata tokens) external view override returns (uint256[] memory balances) {
@@ -621,7 +632,7 @@ contract Views is StorageLayoutV2, NotionalViews {
         }
     }
 
-    function decodeERC1155Id(uint256 id) external view override returns (
+    function decodeERC1155Id(uint256 id) external pure override returns (
         uint16 currencyId,
         uint256 maturity,
         uint256 assetType,

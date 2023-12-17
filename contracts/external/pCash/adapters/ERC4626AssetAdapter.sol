@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSUL-1.1
-pragma solidity =0.8.17;
+pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import {Deployments} from "../../../global/Deployments.sol";
 import {DepositData, RedeemData} from "../../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
@@ -34,7 +35,7 @@ library ERC4626AssetAdapter {
         }
 
         data = new RedeemData[](1);
-        data[0] = RedeemData(targets, callData, redeemUnderlyingAmount, assetToken);
+        data[0] = RedeemData(targets, callData, redeemUnderlyingAmount, assetToken, 0);
     }
 
     function getDepositCalldata(
@@ -79,7 +80,7 @@ library ERC4626AssetAdapter {
         }
 
         data = new DepositData[](1);
-        data[0] = DepositData(targets, callData, msgValue, depositUnderlyingAmount, assetToken);
+        data[0] = DepositData(targets, callData, msgValue, depositUnderlyingAmount, assetToken, 0);
     }
 
     function getUnderlyingValue(address assetToken, uint256 assetBalance) internal view returns (uint256) {
