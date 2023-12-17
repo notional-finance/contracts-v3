@@ -2,8 +2,11 @@
 pragma solidity >=0.7.6;
 pragma abicoder v2;
 
+import {IRewarder} from "./IRewarder.sol";
+
 interface NotionalTreasury {
     event UpdateIncentiveEmissionRate(uint16 currencyId, uint32 newEmissionRate);
+    event UpdateSecondaryIncentiveRewarder(uint16 indexed currencyId, address rewarder);
 
     struct RebalancingTargetConfig {
         address holding;
@@ -44,4 +47,6 @@ interface NotionalTreasury {
     function rebalance(uint16[] calldata currencyId) external;
 
     function updateIncentiveEmissionRate(uint16 currencyId, uint32 newEmissionRate) external;
+
+    function setSecondaryIncentiveRewarder(uint16 currencyId, IRewarder rewarder) external;
 }
