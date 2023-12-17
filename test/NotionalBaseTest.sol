@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.6;
+pragma solidity =0.7.6;
 pragma abicoder v2;
 
 import {Test} from "forge-std/Test.sol";
@@ -19,7 +19,7 @@ import {
 } from "../contracts/global/Types.sol";
 import {Views} from "../contracts/external/Views.sol";
 import {AccountAction} from "../contracts/external/actions/AccountAction.sol";
-import {TargetHelper} from "../contracts/external/actions/TreasuryAction.sol";
+import {ExternalLending} from "../contracts/internal/balances/ExternalLending.sol";
 import {CalculationViews} from "../contracts/external/CalculationViews.sol";
 import {IRouter} from "../interfaces/notional/IRouter.sol";
 import {NotionalTreasury} from "../interfaces/notional/NotionalTreasury.sol";
@@ -125,7 +125,7 @@ contract NotionalBaseTest is Test {
 
         OracleData memory oracleData = oracle.getOracleData();
         RebalancingTargetData memory rebalancingTargetData = RebalancingTargetData(target, 120);
-        uint256 targetAmount = TargetHelper.getTargetExternalLendingAmount(
+        uint256 targetAmount = ExternalLending.getTargetExternalLendingAmount(
             token,
             factors,
             rebalancingTargetData,

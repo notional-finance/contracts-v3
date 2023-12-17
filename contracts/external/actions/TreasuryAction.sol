@@ -20,6 +20,7 @@ import {Emitter} from "../../internal/Emitter.sol";
 import {BalanceHandler} from "../../internal/balances/BalanceHandler.sol";
 import {PrimeRateLib} from "../../internal/pCash/PrimeRateLib.sol";
 import {TokenHandler} from "../../internal/balances/TokenHandler.sol";
+import {ExternalLending} from "../../internal/balances/ExternalLending.sol";
 import {nTokenHandler} from "../../internal/nToken/nTokenHandler.sol";
 import {nTokenSupply} from "../../internal/nToken/nTokenSupply.sol";
 import {PrimeCashExchangeRate} from "../../internal/pCash/PrimeCashExchangeRate.sol";
@@ -31,7 +32,6 @@ import {Comptroller} from "../../../interfaces/compound/ComptrollerInterface.sol
 import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IPrimeCashHoldingsOracle, DepositData, RedeemData, OracleData}
     from "../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 
@@ -374,7 +374,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
         Token memory underlyingToken = TokenHandler.getUnderlyingToken(currencyId);
 
-        uint256 targetAmount = TargetHelper.getTargetExternalLendingAmount(
+        uint256 targetAmount = ExternalLending.getTargetExternalLendingAmount(
             underlyingToken,
             factors,
             rebalancingTargetData,
@@ -387,8 +387,8 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
             uint256(underlyingToken.convertToExternal(int256(factors.lastTotalUnderlyingValue)));
 
         // Process redemptions first
-        TokenHandler.executeMoneyMarketRedemptions(underlyingToken, data.redeemData);
-        _executeDeposits(underlyingToken, data.depositData);
+        ExternalLending.executeMoneyMarketRedemptions(underlyingToken, data.redeemData);
+        ExternalLending.executeDeposits(underlyingToken, data.depositData);
 
         (uint256 totalUnderlyingValueAfter, /* */) = oracle.getTotalUnderlyingValueStateful();
 
@@ -408,7 +408,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
         Token memory underlyingToken = TokenHandler.getUnderlyingToken(currencyId);
 
-        uint256 targetAmount = TargetHelper.getTargetExternalLendingAmount(
+        uint256 targetAmount = ExternalLending.getTargetExternalLendingAmount(
             underlyingToken,
             factors,
             rebalancingTargetData,
@@ -461,44 +461,6 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         mapping(uint16 => RebalancingContextStorage) storage store = LibStorage.getRebalancingContext();
         store[currencyId].lastRebalanceTimestampInSeconds = block.timestamp.toUint40();
         store[currencyId].previousSupplyFactorAtRebalance = supplyFactor;
-    }
-
-    function _calculateRebalance(
-        IPrimeCashHoldingsOracle oracle,
-        address[] memory holdings,
-        uint8[] memory rebalancingTargets
-    ) private view returns (RebalancingData memory rebalancingData) {
-        uint256[] memory values = oracle.holdingValuesInUnderlying();
-
-        (
-            uint256 totalValue,
-            /* uint256 internalPrecision */
-        ) = oracle.getTotalUnderlyingValueView();
-
-        address[] memory redeemHoldings = new address[](holdings.length);
-        uint256[] memory redeemAmounts = new uint256[](holdings.length);
-        address[] memory depositHoldings = new address[](holdings.length);
-        uint256[] memory depositAmounts = new uint256[](holdings.length);
-
-        for (uint256 i; i < holdings.length; i++) {
-            address holding = holdings[i];
-            uint256 targetAmount = totalValue.mul(rebalancingTargets[i]).div(
-                uint256(Constants.PERCENTAGE_DECIMALS)
-            );
-            uint256 currentAmount = values[i];
-
-            redeemHoldings[i] = holding;
-            depositHoldings[i] = holding;
-
-            if (targetAmount < currentAmount) {
-                redeemAmounts[i] = currentAmount - targetAmount;
-            } else if (currentAmount < targetAmount) {
-                depositAmounts[i] = targetAmount - currentAmount;
-            }
-        }
-
-        rebalancingData.redeemData = oracle.getRedemptionCalldataForRebalancing(redeemHoldings, redeemAmounts);
-        rebalancingData.depositData = oracle.getDepositCalldataForRebalancing(depositHoldings, depositAmounts);
     }
 
     /// @notice Sets a secondary incentive rewarder for a currency. This contract will
