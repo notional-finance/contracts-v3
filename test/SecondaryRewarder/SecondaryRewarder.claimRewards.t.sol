@@ -95,7 +95,7 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
         Router.DeployedContracts memory c = getDeployedContracts();
         c.batchAction = address(new BatchAction());
         c.accountAction = address(new AccountAction());
-        c.treasury = address(new TreasuryAction(TreasuryAction(c.treasury).COMPTROLLER()));
+        c.treasury = address(new TreasuryAction());
         c.nTokenActions = address(new nTokenAction());
         upgradeTo(c);
 
