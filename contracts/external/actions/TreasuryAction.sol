@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSUL-1.1
+// SPDX-License-Identifier: BSL-1.1
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
@@ -8,7 +8,7 @@ import {
     PrimeCashFactorsStorage,
     PrimeCashFactors,
     RebalancingTargetData,
-    RebalancingContextStorage,
+    RebalancingContextStorage
 } from "../../global/Types.sol";
 import {StorageLayoutV2} from "../../global/StorageLayoutV2.sol";
 import {LibStorage} from "../../global/LibStorage.sol";
@@ -534,7 +534,6 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     }
 
     function _executeDeposits(Token memory underlyingToken, DepositData[] memory deposits) private {
-        uint256 totalUnderlyingDepositAmount;
         for (uint256 i; i < deposits.length; i++) {
             DepositData memory depositData = deposits[i];
             // Measure the token balance change if the `assetToken` value is set in the
@@ -562,17 +561,14 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
             uint256 newAssetBalance = IERC20(depositData.assetToken).balanceOf(address(this));
             require(oldAssetBalance <= newAssetBalance);
 
-            if (underlyingBalanceChange != newAssetBalance.sub(oldAssetBalance)) {
-                newAssetBalance = newAssetBalance.add(depositData.assetTokenBalanceAdjustment);
+            if (
+                (depositData.rebasingTokenBalanceAdjustment != 0) &&
+                (underlyingBalanceChange != newAssetBalance.sub(oldAssetBalance))
+            ) {
+                newAssetBalance = newAssetBalance.add(depositData.rebasingTokenBalanceAdjustment);
             }
 
-
             TokenHandler.updateStoredTokenBalance(depositData.assetToken, oldAssetBalance, newAssetBalance);
-
-            // Update the total value with the net change
-            totalUnderlyingDepositAmount = totalUnderlyingDepositAmount.add(underlyingBalanceChange);
-            // totalUnderlyingDepositAmount needs to be subtracted from the underlying balance because
-            // we are trading underlying cash for asset cash
             TokenHandler.updateStoredTokenBalance(underlyingToken.tokenAddress, oldUnderlyingBalance, newUnderlyingBalance);
         }
     }

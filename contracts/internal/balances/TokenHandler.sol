@@ -390,8 +390,11 @@ library TokenHandler {
             uint256 newAssetBalance = IERC20(data.assetToken).balanceOf(address(this));
             require(newAssetBalance <= oldAssetBalance);
 
-            if (underlyingBalanceChange != oldAssetBalance.sub(newAssetBalance)) {
-                newAssetBalance = newAssetBalance.add(data.assetTokenBalanceAdjustment);
+            if (
+                (data.rebasingTokenBalanceAdjustment != 0) &&
+                (underlyingBalanceChange != oldAssetBalance.sub(newAssetBalance))
+            ) {
+                newAssetBalance = newAssetBalance.add(data.rebasingTokenBalanceAdjustment);
             }
 
             updateStoredTokenBalance(data.assetToken, oldAssetBalance, newAssetBalance);
