@@ -8,7 +8,7 @@ struct DepositData {
     uint256[] msgValue;
     uint256 underlyingDepositAmount;
     address assetToken;
-    uint8 assetTokenBalanceAdjustment;
+    uint8 rebasingTokenBalanceAdjustment;
 }
 
 struct RedeemData {
@@ -16,7 +16,7 @@ struct RedeemData {
     bytes[] callData;
     uint256 expectedUnderlying;
     address assetToken;
-    uint8 assetTokenBalanceAdjustment;
+    uint8 rebasingTokenBalanceAdjustment;
 }
 
 struct OracleData {

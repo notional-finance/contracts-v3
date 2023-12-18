@@ -77,8 +77,8 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
         data = new RedeemData[](1);
         // fix for issue with Aave returning 1 less unit of asset token than expected
         // this fix relies on the Aave 1 : 1 exchange rate between underlying and asset token
-        uint8 assetTokenBalanceAdjustment = UNDERLYING_DECIMALS <= 8 ? 1 : 0;
-        data[0] = RedeemData(targets, callData, withdrawAmount, ASSET_TOKEN,assetTokenBalanceAdjustment);
+        uint8 rebasingTokenBalanceAdjustment = UNDERLYING_DECIMALS <= 8 ? 1 : 0;
+        data[0] = RedeemData(targets, callData, withdrawAmount, ASSET_TOKEN,rebasingTokenBalanceAdjustment);
 
     }
 
@@ -146,14 +146,14 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
 
         // fix for issue with Aave returning 1 less unit of asset token than expected
         // this fix relies on the Aave 1 : 1 exchange rate between underlying and asset token
-        uint8 assetTokenBalanceAdjustment = UNDERLYING_DECIMALS <= 8 ? 1 : 0;
+        uint8 rebasingTokenBalanceAdjustment = UNDERLYING_DECIMALS <= 8 ? 1 : 0;
         data[0] = DepositData(
             targets,
             callData,
             msgValue,
             depositUnderlyingAmount,
             ASSET_TOKEN,
-            assetTokenBalanceAdjustment
+            rebasingTokenBalanceAdjustment
         );
     }
 
