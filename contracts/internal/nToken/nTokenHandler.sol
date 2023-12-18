@@ -94,12 +94,12 @@ library nTokenHandler {
         require(residualPurchaseIncentive10BPS <= cashWithholdingBuffer10BPS, "Invalid discounts");
 
         bytes6 parameters =
-            (bytes5(uint40(residualPurchaseIncentive10BPS)) |
-            (bytes5(uint40(pvHaircutPercentage)) << 8) |
-            (bytes5(uint40(residualPurchaseTimeBufferHours)) << 16) |
-            (bytes5(uint40(cashWithholdingBuffer10BPS)) << 24) |
-            (bytes5(uint40(liquidationHaircutPercentage)) << 32) |
-            (bytes5(uint40(maxMintDeviationPercentage)) << 40)
+            (bytes6(uint48(residualPurchaseIncentive10BPS)) |
+            (bytes6(uint48(pvHaircutPercentage)) << 8) |
+            (bytes6(uint48(residualPurchaseTimeBufferHours)) << 16) |
+            (bytes6(uint48(cashWithholdingBuffer10BPS)) << 24) |
+            (bytes6(uint48(liquidationHaircutPercentage)) << 32) |
+            (bytes6(uint48(maxMintDeviationPercentage)) << 40)
         );
 
         // Set the parameters
