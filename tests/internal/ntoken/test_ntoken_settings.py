@@ -40,7 +40,7 @@ class TestNTokenSettings:
         assert parameters == "0x00000000000000"
 
         nToken.setIncentiveEmissionRate(tokenAddress, 100_000, START_TIME)
-        nToken.updateNTokenCollateralParameters(currencyId, 40, 90, 96, 50, 95)
+        nToken.updateNTokenCollateralParameters(currencyId, 40, 90, 96, 50, 95, 5)
 
         (
             currencyIdStored,
@@ -78,7 +78,7 @@ class TestNTokenSettings:
         assert bytearray(parameters)[4] == 40
         assert arrayLength == 5
 
-        nToken.updateNTokenCollateralParameters(currencyId, 41, 91, 97, 51, 96)
+        nToken.updateNTokenCollateralParameters(currencyId, 41, 91, 97, 51, 96, 5)
         (
             currencyIdStored,
             incentives,

@@ -46,26 +46,26 @@ library nTokenCalculations {
             require(nextSettleTime > blockTime, "Requires settlement");
         }
 
-        (int256 nTokenOracleValue, int256 nTokenSpotValue) = nTokenCalculations.getNTokenPrimePVForMinting(
-            nToken, blockTime
-        );
-
-        // Defensive check to ensure PV remains positive
-        require(nTokenOracleValue >= 0);
-        require(nTokenSpotValue >= 0);
-
-        int256 maxValueDeviationPercent = int256(
-            uint256(uint8(nToken.parameters[Constants.MAX_MINT_DEVIATION_LIMIT]))
-        );
-        // Check deviation limit here
-        int256 deviationInRatePrecision = nTokenOracleValue.sub(nTokenSpotValue).abs()
-            .mul(Constants.PERCENTAGE_DECIMALS).div(nTokenOracleValue);
-        require(deviationInRatePrecision <= maxValueDeviationPercent, "Over Deviation Limit");
-
-        // Allow for the first deposit
         if (nToken.totalSupply == 0) {
+            // Allow for the first deposit and bypass all the PV valuation
             return primeCashToDeposit;
         } else {
+            (int256 nTokenOracleValue, int256 nTokenSpotValue) = nTokenCalculations.getNTokenPrimePVForMinting(
+                nToken, blockTime
+            );
+
+            // Defensive check to ensure PV remains positive
+            require(nTokenOracleValue >= 0);
+            require(nTokenSpotValue >= 0);
+
+            int256 maxValueDeviationPercent = int256(
+                uint256(uint8(nToken.parameters[Constants.MAX_MINT_DEVIATION_LIMIT]))
+            );
+            // Check deviation limit here
+            int256 deviationInRatePrecision = nTokenOracleValue.sub(nTokenSpotValue).abs()
+                .mul(Constants.PERCENTAGE_DECIMALS).div(nTokenOracleValue);
+            require(deviationInRatePrecision <= maxValueDeviationPercent, "Over Deviation Limit");
+
             // nTokenSpotValuePost = nTokenOracleValue + amountToDeposit
             // (tokenSupply + tokensToMint) / tokenSupply == (nTokenSpotValue + amountToDeposit) / nTokenOracleValue
             // (tokenSupply + tokensToMint) == (nTokenSpotValue + amountToDeposit) * tokenSupply / nTokenOracleValue
