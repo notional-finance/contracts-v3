@@ -62,9 +62,9 @@ library nTokenCalculations {
                 uint256(uint8(nToken.parameters[Constants.MAX_MINT_DEVIATION_LIMIT]))
             );
             // Check deviation limit here
-            int256 deviationInRatePrecision = nTokenOracleValue.sub(nTokenSpotValue).abs()
+            int256 deviationInPercentage = nTokenOracleValue.sub(nTokenSpotValue).abs()
                 .mul(Constants.PERCENTAGE_DECIMALS).div(nTokenOracleValue);
-            require(deviationInRatePrecision <= maxValueDeviationPercent, "Over Deviation Limit");
+            require(deviationInPercentage <= maxValueDeviationPercent, "Over Deviation Limit");
 
             // nTokenSpotValuePost = nTokenOracleValue + amountToDeposit
             // (tokenSupply + tokensToMint) / tokenSupply == (nTokenSpotValue + amountToDeposit) / nTokenOracleValue
