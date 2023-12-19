@@ -74,8 +74,24 @@ library TargetHelper {
         // all above the target.
         if (targetExternalUnderlyingLend < 0) targetExternalUnderlyingLend = 0;
 
-        // this limit should ensures we can always withdraw deposited underlying, can be increased/decreased by 
-        // setting externalWithdrawThreshold
+        // To ensure redeemability of Notional’s funds on external lending markets,
+        // Notional requires there to be redeemable funds on the external lending market
+        // that are a multiple of the funds that Notional has lent on that market itself.
+        //
+        // The max amount that Notional can lend on that market is a function
+        // of the excess redeemable funds on that market
+        // (funds that are redeemable in excess of Notional’s own funds on that market)
+        // and the externalWithdrawThreshold.
+        //
+        // excessFunds = externalUnderlyingAvailableForWithdraw - currentExternalUnderlyingLend
+        //
+        // maxExternalUnderlyingLend * (externalWithdrawThreshold + 1) = maxExternalUnderlyingLend + excessFunds
+        //
+        // maxExternalUnderlyingLend * (externalWithdrawThreshold + 1) - maxExternalUnderlyingLend = excessFunds
+        //
+        // maxExternalUnderlyingLend * externalWithdrawThreshold = excessFunds
+        //
+        // maxExternalUnderlyingLend = excessFunds / externalWithdrawThreshold
         uint256 maxExternalUnderlyingLend;
         if (oracleData.currentExternalUnderlyingLend < oracleData.externalUnderlyingAvailableForWithdraw) {
             maxExternalUnderlyingLend =
