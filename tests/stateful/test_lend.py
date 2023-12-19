@@ -425,7 +425,7 @@ def test_lend_fails_on_supply_cap(environment, accounts, useBitmap):
         environment.notional.enableBitmapCurrency(2, {"from": accounts[1]})
 
     factors = environment.notional.getPrimeFactorsStored(currencyId)
-    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 1e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 1e8, 100)
 
     action = get_balance_trade_action(
         2,
@@ -441,7 +441,7 @@ def test_lend_fails_on_supply_cap(environment, accounts, useBitmap):
         )
 
     # Increase supply cap
-    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 100e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 100e8, 100)
 
     environment.notional.batchBalanceAndTradeAction(
         accounts[1], [action], {"from": accounts[1]}

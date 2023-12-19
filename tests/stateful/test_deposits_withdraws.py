@@ -310,7 +310,7 @@ def test_withdraw_asset_token_fail_fc(environment, accounts):
 def test_fail_on_deposits_exceeding_supply_cap(environment, accounts):
     currencyId = 2
     factors = environment.notional.getPrimeFactorsStored(currencyId)
-    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 125e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 125e8, 100)
     (_, _, maxUnderlyingSupply, totalUnderlyingSupply) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
     # This is approximately equal
     assert pytest.approx(maxUnderlyingSupply - totalUnderlyingSupply, rel=1e8) == 125e8
@@ -335,7 +335,7 @@ def test_fail_on_deposits_exceeding_supply_cap(environment, accounts):
 
     # increase amount
     factors = environment.notional.getPrimeFactorsStored(currencyId)
-    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 125e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 125e8, 100)
     (_, _, maxUnderlyingSupply, totalUnderlyingSupply) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
     assert pytest.approx(maxUnderlyingSupply - totalUnderlyingSupply, rel=1e8) == 200e8
 
@@ -348,7 +348,7 @@ def test_fail_on_deposits_exceeding_supply_cap(environment, accounts):
     )
 
     # decrease amount
-    environment.notional.setMaxUnderlyingSupply(currencyId, 1e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, 1e8, 100)
     (_, _, maxUnderlyingSupply, totalUnderlyingSupply) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
     assert maxUnderlyingSupply < totalUnderlyingSupply
 

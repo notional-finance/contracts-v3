@@ -712,7 +712,8 @@ def test_mint_and_redeem_with_supply_caps(environment, accounts, useBitmap):
     factors = environment.notional.getPrimeFactorsStored(currencyId)
     environment.notional.setMaxUnderlyingSupply(
         currencyId,
-        factors['lastTotalUnderlyingValue'] + 1_050e8
+        factors['lastTotalUnderlyingValue'] + 1_050e8,
+        100
     )
     
     environment.notional.batchBalanceAction(
@@ -725,7 +726,7 @@ def test_mint_and_redeem_with_supply_caps(environment, accounts, useBitmap):
         {"from": accounts[0]},
     )
 
-    environment.notional.setMaxUnderlyingSupply(currencyId, 1e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, 1e8, 100)
 
     # In this edge condition, the account cannot redeem nTokens via the batch action. They
     # have to use account action
