@@ -508,9 +508,9 @@ def test_borrow_fixed_withdraw_amount_with_prime_cash_debt(environment, accounts
 
 def test_borrow_fails_on_supply_cap(environment, accounts):
     factors = environment.notional.getPrimeFactorsStored(2)
-    environment.notional.setMaxUnderlyingSupply(2, factors['lastTotalUnderlyingValue'] + 1e8)
+    environment.notional.setMaxUnderlyingSupply(2, factors['lastTotalUnderlyingValue'] + 1e8, 100)
     factors = environment.notional.getPrimeFactorsStored(3)
-    environment.notional.setMaxUnderlyingSupply(3, factors['lastTotalUnderlyingValue'] + 1e8)
+    environment.notional.setMaxUnderlyingSupply(3, factors['lastTotalUnderlyingValue'] + 1e8, 100)
 
     deposit = get_balance_trade_action(
         2,
@@ -532,7 +532,7 @@ def test_borrow_fails_on_supply_cap(environment, accounts):
         )
 
     # Increase supply cap on DAI only, borrows still have a cap.
-    environment.notional.setMaxUnderlyingSupply(2, factors['lastTotalUnderlyingValue'] + 105e8)
+    environment.notional.setMaxUnderlyingSupply(2, factors['lastTotalUnderlyingValue'] + 105e8, 100)
 
     environment.notional.batchBalanceAndTradeAction(
         accounts[1], [deposit, borrow], {"from": accounts[1]}
