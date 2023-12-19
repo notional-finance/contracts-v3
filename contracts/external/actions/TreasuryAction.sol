@@ -493,9 +493,10 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
             .mul(uint256(Constants.PERCENTAGE_DECIMALS))
             .div(targetAmount.add(oracleData.currentExternalUnderlyingLend));
 
+            // TODO: write test for this
         // prevent rebalance if change is not greater than 1%, important for health check and avoiding triggering
         // rebalance shortly after rebalance on minimum change
-        return (targetAmount > oracleData.currentExternalUnderlyingLend) && (offTargetPercentage > 0);
+        return (targetAmount < oracleData.currentExternalUnderlyingLend) && (offTargetPercentage > 0);
     }
 
     function _calculateRebalance(
