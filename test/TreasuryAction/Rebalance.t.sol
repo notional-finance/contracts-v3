@@ -112,6 +112,65 @@ abstract contract RebalanceDefaultTest is NotionalBaseTest {
         assertFalse(canExec, "Rebalance should not be ready");
     }
 
+    function testFork_checkRebalance_ShouldBeAbleToRebalanceIfLendingIsUnhealthy() public {
+        uint40 cooldown = 5 hours;
+        uint16 maxCurrency = NOTIONAL.getMaxCurrencyId();
+
+        for (uint16 i = 1; i <= maxCurrency; i++) {
+            vm.prank(owner);
+            NOTIONAL.setRebalancingCooldown(i, cooldown);
+            _setSingleTargetRateAndRebalance(CURRENCY_ID, ATOKEN, 80);
+        }
+
+        (bool canExec, bytes memory execPayload) = NOTIONAL.checkRebalance();
+        assertFalse(canExec, "Rebalance should not be ready");
+
+        // force external lending into unhealthy state
+        address underlying = UNDERLYING;
+        uint256 underlyingNotionalBalance;
+        if (CURRENCY_ID == 1) {
+            underlying = address(Deployments.WETH);
+            underlyingNotionalBalance = address(NOTIONAL).balance;
+        } else {
+            underlyingNotionalBalance = IERC20(underlying).balanceOf(address(NOTIONAL));
+        }
+        vm.startPrank(ATOKEN);
+        uint256 externalLend = IERC20(ATOKEN).balanceOf(address(NOTIONAL));
+        uint256 availableForWithdrawOnAave = IERC20(underlying).balanceOf(ATOKEN);
+        // leave half of what we lend on Aave available for withdraw
+        IERC20(underlying).transfer(
+            makeAddr("burn"),
+            availableForWithdrawOnAave - externalLend / 2
+        );
+        vm.stopPrank();
+
+        (canExec, execPayload) = NOTIONAL.checkRebalance();
+        assertTrue(canExec, "Rebalance should be ready");
+
+        vm.startPrank(REBALANCE_BOT);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = address(NOTIONAL).call(execPayload);
+        assertTrue(success, "Rebalance should be executed successfully");
+
+        uint256 externalLendAfter = IERC20(ATOKEN).balanceOf(address(NOTIONAL));
+        assertApproxEqAbs(externalLendAfter * 2, externalLend, externalLend / 10000, "1");
+        uint256 underlyingNotionalBalanceAfter;
+        if (CURRENCY_ID == 1) {
+            underlyingNotionalBalanceAfter = address(NOTIONAL).balance;
+        } else {
+            underlyingNotionalBalanceAfter = IERC20(underlying).balanceOf(address(NOTIONAL));
+        }
+        assertApproxEqAbs(
+            underlyingNotionalBalance + externalLend / 2,
+            underlyingNotionalBalanceAfter,
+            underlyingNotionalBalanceAfter / 10000,
+            "2"
+        );
+
+        (canExec, execPayload) = NOTIONAL.checkRebalance();
+        assertFalse(canExec, "Rebalance should not be ready");
+    }
+
     function testFork_RebalanceShouldNotRevertWhenRedemptionFails() public {
         uint40 cooldown = 4 hours;
         vm.prank(owner);
@@ -121,11 +180,10 @@ abstract contract RebalanceDefaultTest is NotionalBaseTest {
         skip(1 days);
         uint256 startBalance = _actualBalanceOf(UNDERLYING, address(NOTIONAL));
         // prevent redemption
-        address burnAddress = vm.addr(1111); // transfer to address(0) will fail
         address underlying = CURRENCY_ID == 1 ? address(Deployments.WETH) : UNDERLYING;
         vm.startPrank(ATOKEN);
         uint256 onlyLeft = 100;
-        IERC20(underlying).transfer(burnAddress, IERC20(underlying).balanceOf(ATOKEN) - onlyLeft);
+        IERC20(underlying).transfer(makeAddr("burn"), IERC20(underlying).balanceOf(ATOKEN) - onlyLeft);
         vm.stopPrank();
 
         _setSingleTargetRateAndRebalance(CURRENCY_ID, ATOKEN, 40);
