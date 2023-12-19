@@ -423,9 +423,9 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         uint256 previousSupplyFactorAtRebalance,
         uint256 lastRebalanceTimestampInSeconds
     ) private returns (uint256 oracleSupplyRate) {
-        // If previous underlying scalar at rebalance == 0, then it is the first rebalance and the
-        // oracle supply rate will be left as zero. The previous underlying scalar will
-        // be set to the new factors.underlyingScalar in the code below.
+        // If previous supply factor at rebalance == 0, then it is the first rebalance and the
+        // oracle supply rate will be left as zero. The previous supply factor will
+        // be set to the new factors.supplyFactor in the code below.
         if (previousSupplyFactorAtRebalance != 0) {
             // The interest rate is the rate of increase of the supply factor scaled up to a
             // year time period. Therefore the calculation is:
