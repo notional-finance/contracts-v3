@@ -136,7 +136,7 @@ def ntoken_asserts(environment, currencyId, isFirstInit, accounts, wasInit=True)
     )
 
     (cashGroup, _) = environment.notional.getCashGroupAndAssetRate(currencyId)
-    (primeRate, _, _, _) = environment.notional.getPrimeFactors(currencyId, blockTime + 1)
+    (primeRate, _, _, _, _, _) = environment.notional.getPrimeFactors(currencyId, blockTime + 1)
     (portfolio, ifCashAssets) = environment.notional.getNTokenPortfolio(nTokenAddress)
     (depositShares, leverageThresholds) = environment.notional.getDepositParameters(currencyId)
     (_, proportions) = environment.notional.getInitializationParameters(currencyId)

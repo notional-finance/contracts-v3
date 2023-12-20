@@ -33,7 +33,7 @@ def isolation(fn_isolation):
 
 def get_market_proportion(currencyId, environment):
     proportions = []
-    (primeRate, _, _, _) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+    (primeRate, _, _, _, _, _) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
     markets = environment.notional.getActiveMarkets(currencyId)
     for (i, market) in enumerate(markets):
         totalCashUnderlying = (market[3] * primeRate["supplyFactor"]) / Wei(1e36)
