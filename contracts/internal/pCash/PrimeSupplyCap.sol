@@ -38,6 +38,7 @@ library PrimeSupplyCap {
             uint256 maxUnderlyingDebt,
             uint256 totalUnderlyingDebt
         ) = getSupplyCap(pr, currencyId);
+        if (maxUnderlyingDebt == 0) return;
 
         require(totalUnderlyingDebt <= maxUnderlyingDebt, "Over Debt Cap");
     }
@@ -51,15 +52,17 @@ library PrimeSupplyCap {
         PrimeCashFactorsStorage storage s = LibStorage.getPrimeCashFactors()[currencyId];
         maxUnderlyingSupply = FloatingPoint.unpackFromBits(s.maxUnderlyingSupply);
 
-        // If maxPrimeDebtUtilization is not set, then this is allowed to go up to maxUnderlyingSupply
-        maxUnderlyingDebt = s.maxPrimeDebtUtilization == 0 ?
-            maxUnderlyingSupply :
-            maxUnderlyingSupply.mul(s.maxPrimeDebtUtilization).div(uint256(Constants.PERCENTAGE_DECIMALS));
+        // If maxUnderlyingSupply or maxPrimeDebtUtilization is set to zero, there is no debt cap. The
+        // debt cap is applied to prevent the supply cap from being locked up by extremely high utilization
+        maxUnderlyingDebt = maxUnderlyingSupply
+            .mul(s.maxPrimeDebtUtilization).div(uint256(Constants.PERCENTAGE_DECIMALS));
 
         // No potential for overflow due to storage size
         int256 totalPrimeSupply = int256(uint256(s.totalPrimeSupply));
         totalUnderlyingSupply = pr.convertToUnderlying(totalPrimeSupply).toUint();
-        int256 totalPrimeDebt = int256(uint256(s.totalPrimeDebt));
-        totalUnderlyingDebt = pr.convertDebtStorageToUnderlying(totalPrimeDebt).toUint();
+
+        // totalPrimeDebt is stored as a uint88 so the negation here will never underflow
+        int256 totalPrimeDebt = -int256(uint256(s.totalPrimeDebt));
+        totalUnderlyingDebt = pr.convertDebtStorageToUnderlying(totalPrimeDebt).neg().toUint();
     }
 }
