@@ -256,11 +256,13 @@ contract Views is StorageLayoutV2, NotionalViews {
         PrimeRate memory pr,
         PrimeCashFactors memory factors,
         uint256 maxUnderlyingSupply,
-        uint256 totalUnderlyingSupply
+        uint256 totalUnderlyingSupply,
+        uint256 maxUnderlyingDebt,
+        uint256 totalUnderlyingDebt
     ) {
         (pr, factors) = PrimeCashExchangeRate.getPrimeCashRateView(currencyId, blockTime);
         // TODO: need to return additional values
-        (maxUnderlyingSupply, totalUnderlyingSupply, /* */, /* */) = pr.getSupplyCap(currencyId);
+        (maxUnderlyingSupply, totalUnderlyingSupply, maxUnderlyingDebt, maxUnderlyingSupply) = pr.getSupplyCap(currencyId);
     }
 
     function getPrimeFactorsStored(
