@@ -296,7 +296,7 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         // be less than specified.
         shares = previewWithdraw(assets);
         uint256 balance = _balanceOf(owner);
-        if (shares > balance) shares = balance;
+        if (shares > balance) revert("Insufficient Balance");
 
         // Allowance checks when receiver != owner are done on the Notional proxy
         uint256 assetsFinal = _redeem(shares, receiver, owner);

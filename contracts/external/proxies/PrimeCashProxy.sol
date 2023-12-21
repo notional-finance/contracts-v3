@@ -82,7 +82,6 @@ contract PrimeCashProxy is BaseERC4626Proxy {
 
     function _redeem(uint256 shares, address receiver, address owner) internal override returns (uint256 assets) {
         return NOTIONAL.withdrawViaProxy(currencyId, owner, receiver, msg.sender, shares.toUint88());
-        revert("Not Implemented");
     }
 
 }
