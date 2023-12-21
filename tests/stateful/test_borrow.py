@@ -162,7 +162,6 @@ def test_deposit_underlying_and_borrow_specify_fcash(environment, accounts):
     check_system_invariants(environment, accounts)
 
 
-@pytest.mark.only
 def test_mint_ntokens_and_borrow_specify_fcash(environment, accounts):
     fCashAmount = 100e8
     borrowAction = get_balance_trade_action(
@@ -543,5 +542,37 @@ def test_borrow_fails_on_supply_cap(environment, accounts):
     assert portfolio[0][0] == 3
     assert portfolio[0][2] == 1
     assert portfolio[0][3] == -25e8
+
+    check_system_invariants(environment, accounts)
+
+def test_borrow_variable_fails_debt_cap(environment, accounts):
+    factors = environment.notional.getPrimeFactors(3, chain.time() + 1)
+    # Have to buffer the max supply a bit to ensure that interest accrual does not
+    # push this over the cap immediately
+    maxSupply = factors['factors']['lastTotalUnderlyingValue'] * 1.10
+    environment.notional.setMaxUnderlyingSupply(3, maxSupply, 70)
+    factors = environment.notional.getPrimeFactors(3, chain.time() + 1)
+
+    environment.notional.enablePrimeBorrow(True, {"from": accounts[0]})
+
+    # Can borrow up to debt cap
+    maxPrimeCash = environment.notional.convertUnderlyingToPrimeCash(3, factors['maxUnderlyingDebt'] / 100)
+    environment.notional.withdraw(3, maxPrimeCash, True, {"from": accounts[0]})
+
+    with brownie.reverts("Over Debt Cap"):
+        environment.notional.withdraw(3, 1e8, True, {"from": accounts[0]})
+
+    # Decrease debt cap, cannot borrow over it
+    environment.notional.setMaxUnderlyingSupply(3, maxSupply, 50)
+
+    with brownie.reverts("Over Debt Cap"):
+        environment.notional.withdraw(3, 1e8, True, {"from": accounts[0]})
+
+    # Put the debt cap back to where it was
+    environment.notional.setMaxUnderlyingSupply(3, maxSupply, 70)
+    chain.mine(1, timedelta=86400)
+
+    # Can repay debt while the user is over the debt cap
+    environment.notional.depositUnderlyingToken(accounts[0], 3, 100_000e6, {"from": accounts[0]})
 
     check_system_invariants(environment, accounts)
