@@ -170,35 +170,37 @@ library BalanceHandler {
             withdrawWrapped // if true, withdraws ETH as WETH
         );
 
-        // No changes to total cash after this point
-        int256 totalCashChange = balanceState.netCashChange.add(balanceState.primeCashWithdraw);
+        {
+            // No changes to total cash after this point
+            int256 totalCashChange = balanceState.netCashChange.add(balanceState.primeCashWithdraw);
 
-        if (
-            checkAllowPrimeBorrow &&
-            totalCashChange < 0 &&
-            balanceState.storedCashBalance.add(totalCashChange) < 0
-        ) {
-            // If the total cash change is negative and it causes the stored cash balance to become negative,
-            // the account must allow prime debt. This is a safety check to ensure that accounts do not
-            // accidentally borrow variable through a withdraw or a batch transaction.
-            
-            // Accounts can still incur negative cash during fCash settlement, that will bypass this check.
-            
-            // During liquidation, liquidated accounts can have a negative cash balance during negative local fCash
-            // liquidation and a collateral liquidation and forces an interest rate swap. In the first case, 
-            // setBalanceStorageForfCashLiquidation is called instead of this method. In the second, this method
-            // is called but checkAllowPrimeBorrow is set to false.
+            if (
+                checkAllowPrimeBorrow &&
+                totalCashChange < 0 &&
+                balanceState.storedCashBalance.add(totalCashChange) < 0
+            ) {
+                // If the total cash change is negative and it causes the stored cash balance to become negative,
+                // the account must allow prime debt. This is a safety check to ensure that accounts do not
+                // accidentally borrow variable through a withdraw or a batch transaction.
+                
+                // Accounts can still incur negative cash during fCash settlement, that will bypass this check.
+                
+                // During liquidation, liquidated accounts can have a negative cash balance during negative local fCash
+                // liquidation and a collateral liquidation and forces an interest rate swap. In the first case, 
+                // setBalanceStorageForfCashLiquidation is called instead of this method. In the second, this method
+                // is called but checkAllowPrimeBorrow is set to false.
 
-            // During liquidation, liquidators may have negative net cash change a token has transfer fees, however, in
-            // LiquidationHelpers.finalizeLiquidatorLocal they are not allowed to go into debt.
-            require(accountContext.allowPrimeBorrow, "No Prime Borrow");
-            checkDebtCap = true;
-        }
+                // During liquidation, liquidators may have negative net cash change a token has transfer fees, however, in
+                // LiquidationHelpers.finalizeLiquidatorLocal they are not allowed to go into debt.
+                require(accountContext.allowPrimeBorrow, "No Prime Borrow");
+                checkDebtCap = true;
+            }
 
 
-        if (totalCashChange != 0) {
-            balanceState.storedCashBalance = balanceState.storedCashBalance.add(totalCashChange);
-            mustUpdate = true;
+            if (totalCashChange != 0) {
+                balanceState.storedCashBalance = balanceState.storedCashBalance.add(totalCashChange);
+                mustUpdate = true;
+            }
         }
 
         if (balanceState.netNTokenTransfer != 0 || balanceState.netNTokenSupplyChange != 0) {

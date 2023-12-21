@@ -226,19 +226,19 @@ contract AccountAction is ActionGuards {
     ) external nonReentrant returns (uint256) {
         address pCashAddress = PrimeCashExchangeRate.getCashProxyAddress(currencyId);
         require(msg.sender == pCashAddress);
-        requireValidAccount(owner);
+        requireValidAccount(account);
 
-        if (owner != receiver) {
-            uint256 allowance = LibStorage.getPCashTransferAllowance()[owner][spender][currencyId];
+        if (account != spender) {
+            uint256 allowance = LibStorage.getPCashTransferAllowance()[account][spender][currencyId];
             require(allowance >= withdrawAmountPrimeCash, "Insufficient allowance");
-            LibStorage.getPCashTransferAllowance()[owner][spender][currencyId] = allowance - withdrawAmountPrimeCash;
+            LibStorage.getPCashTransferAllowance()[account][spender][currencyId] = allowance - withdrawAmountPrimeCash;
         }
 
         // This happens before reading the balance state to get the most up to date cash balance
-        (AccountContext memory accountContext, /* didSettle */) = _settleAccountIfRequired(owner);
+        (AccountContext memory accountContext, /* didSettle */) = _settleAccountIfRequired(account);
 
         BalanceState memory balanceState;
-        balanceState.loadBalanceState(owner, currencyId, accountContext);
+        balanceState.loadBalanceState(account, currencyId, accountContext);
         // Cannot withdraw more than existing balance via proxy.
         require(withdrawAmountPrimeCash <= balanceState.storedCashBalance, "Insufficient Balance");
         // Overflow is not possible due to uint88
@@ -247,13 +247,13 @@ contract AccountAction is ActionGuards {
         // NOTE: withdraw wrapped is always set to true so that the receiver will receive WETH
         // if ETH is being withdrawn
         int256 underlyingWithdrawnExternal = balanceState.finalizeWithWithdrawReceiver(
-            owner, receiver, accountContext, true
+            account, receiver, accountContext, true
         );
 
-        accountContext.setAccountContext(owner);
+        accountContext.setAccountContext(account);
 
         if (accountContext.hasDebt != 0x00) {
-            FreeCollateralExternal.checkFreeCollateralAndRevert(owner);
+            FreeCollateralExternal.checkFreeCollateralAndRevert(account);
         }
 
         require(underlyingWithdrawnExternal <= 0);
