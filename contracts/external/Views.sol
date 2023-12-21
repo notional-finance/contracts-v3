@@ -261,8 +261,12 @@ contract Views is StorageLayoutV2, NotionalViews {
         uint256 totalUnderlyingDebt
     ) {
         (pr, factors) = PrimeCashExchangeRate.getPrimeCashRateView(currencyId, blockTime);
-        // TODO: need to return additional values
-        (maxUnderlyingSupply, totalUnderlyingSupply, maxUnderlyingDebt, maxUnderlyingSupply) = pr.getSupplyCap(currencyId);
+        (
+            maxUnderlyingSupply,
+            totalUnderlyingSupply,
+            maxUnderlyingDebt,
+            totalUnderlyingDebt
+        ) = pr.getSupplyCap(currencyId);
     }
 
     function getPrimeFactorsStored(
