@@ -318,19 +318,22 @@ def test_mint(environment, accounts, currencyId, useReceiver):
 
     erc20.approve(proxy, 2 ** 255 - 1, {"from": accounts[1]})
     depositAmount = 10 ** decimals
-    assets = proxy.previewDeposit(depositAmount)
+    shares = proxy.previewDeposit(depositAmount)
 
     receiver = accounts[2] if useReceiver else accounts[1]
 
     balanceBefore = erc20.balanceOf(accounts[1])
-    proxy.mint(assets, receiver, {"from": accounts[1]})
+    proxy.mint(shares, receiver, {"from": accounts[1]})
     balanceAfter = erc20.balanceOf(accounts[1])
 
     minted = proxy.balanceOf(receiver)
-    assert pytest.approx(assets, rel=1e-5) == minted
+    assert pytest.approx(shares, rel=1e-5) == minted
+    assert shares >= minted
+
     (cashBalance, _, _) = environment.notional.getAccountBalance(currencyId, receiver)
     assert cashBalance == minted
     assert pytest.approx(balanceBefore - balanceAfter, rel=1e-6, abs=100) == depositAmount
+    # assert (balanceBefore - balanceAfter) >= depositAmount
 
     check_system_invariants(environment, accounts)
 
@@ -379,7 +382,7 @@ def test_redeem(environment, accounts, currencyId, useSender, useReceiver):
 
     receiver = accounts[1] if useReceiver else accounts[0]
     sender = accounts[2] if useSender else accounts[0]
-    withdrawAmount = proxy.convertToAssets(redeemAmount)
+    withdrawAmount = proxy.previewRedeem(redeemAmount)
 
     if useSender:
         with brownie.reverts("Insufficient allowance"):
@@ -422,7 +425,7 @@ def test_withdraw(environment, accounts, currencyId, useSender, useReceiver):
 
     receiver = accounts[1] if useReceiver else accounts[0]
     sender = accounts[2] if useSender else accounts[0]
-    withdrawAmount = proxy.convertToAssets(redeemAmount)
+    withdrawAmount = proxy.previewRedeem(redeemAmount)
 
     if useSender:
         with brownie.reverts("Insufficient allowance"):
