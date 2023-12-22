@@ -219,11 +219,13 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
 
     /// @notice Deposits are based on the conversion rate assets to shares
     function previewDeposit(uint256 assets) external override view returns (uint256 shares) {
+        // TODO: round down
         return convertToShares(assets);
     }
 
     /// @notice Mints are based on the conversion rate from shares to assets
     function previewMint(uint256 shares) public override view returns (uint256 assets) {
+        // TODO: round up
         return convertToAssets(shares);
     }
 
@@ -235,6 +237,7 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
     /// to be redeemed purely via the ERC4626 method and would require the account to call nTokenRedeem on
     /// AccountAction and take on illiquid fCash residuals.
     function previewRedeem(uint256 shares) external view override returns (uint256 assets) {
+        // TODO: round down
         return convertToAssets(shares);
     }
 
@@ -242,6 +245,7 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
     /// this method does not account for slippage and potential illiquid residuals. This method is not completely
     /// ERC4626 compliant in that sense.
     function previewWithdraw(uint256 assets) public view override returns (uint256 shares) {
+        // TODO: round up
         return convertToShares(assets);
     }
 
