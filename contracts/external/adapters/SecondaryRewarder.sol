@@ -16,7 +16,7 @@ contract SecondaryRewarder is IRewarder {
     using SafeInt256 for int256;
 
     NotionalProxy public immutable NOTIONAL;
-    address public immutable NTOKEN_ADDRESS;
+    address public immutable override NTOKEN_ADDRESS;
     address public immutable REWARD_TOKEN;
     uint8 public immutable REWARD_TOKEN_DECIMALS;
     uint16 public immutable override CURRENCY_ID;

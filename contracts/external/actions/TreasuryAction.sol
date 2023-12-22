@@ -404,12 +404,15 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     /// @param rewarder rewarder contract
     function setSecondaryIncentiveRewarder(uint16 currencyId, IRewarder rewarder) external override onlyOwner {
         _checkValidCurrency(currencyId);
+
+        address nTokenAddress= nTokenHandler.nTokenAddress(currencyId);
         if (address(rewarder) != address(0)) {
             require(currencyId == rewarder.CURRENCY_ID());
+            require(nTokenAddress == rewarder.NTOKEN_ADDRESS());
             require(!rewarder.detached());
         }
 
-        IRewarder currentRewarder = nTokenHandler.getSecondaryRewarder(nTokenHandler.nTokenAddress(currencyId));
+        IRewarder currentRewarder = nTokenHandler.getSecondaryRewarder(nTokenAddress);
         require(address(rewarder) != address(currentRewarder));
         if (address(currentRewarder) != address(0)) {
             currentRewarder.detach();
