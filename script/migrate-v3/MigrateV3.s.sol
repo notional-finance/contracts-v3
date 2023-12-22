@@ -500,12 +500,6 @@ contract MigrateV3 is UpgradeRouter, Test {
         console.log("Total Emit Events", emitEvents.length);
         for (uint256 i; i < emitEvents.length; i++) {
             ExpectEmit memory e = emitEvents[i];
-            // // TODO: need to emit for nTokens, fee reserve
-            // if (e.account == 0xabc07BF91469C5450D6941dD0770E6E6761B90d6) continue;
-            // if (e.account == 0x6EbcE2453398af200c688C7c4eBD479171231818) continue;
-            // if (e.account == 0x18b0Fc5A233acF1586Da7C199Ca9E3f486305A29) continue;
-            // if (e.account == 0x0Ace2DC3995aCD739aE5e0599E71A5524b93b886) continue;
-
             if (e.currencyId == ETH) {
                 vm.expectEmit(true, true, true, true, pETH);
                 emit Transfer(address(0), e.account, e.value);
@@ -551,9 +545,8 @@ contract MigrateV3 is UpgradeRouter, Test {
         // New Pause Router 0xFFd7531ED937F703B269815950cB75bdAAA341c9
         // Settings 0x5fbf4539A89fBd1E5d784DB3f7Ba6c394AC450fC
         // Migrate 0x6F4C6dC0340051EBFc1583Ca6A0c3ef5b94c50e0
-        // MigrationSettings settings = MigrationSettings(0x5fbf4539A89fBd1E5d784DB3f7Ba6c394AC450fC);
+        MigrationSettings settings = MigrationSettings(0x5fbf4539A89fBd1E5d784DB3f7Ba6c394AC450fC);
         // MigratePrimeCash migratePrimeCash = MigratePrimeCash(0x6F4C6dC0340051EBFc1583Ca6A0c3ef5b94c50e0);
-        MigrationSettings settings = new MigrationSettings(address(NOTIONAL), MANAGER);
         MigratePrimeCash migratePrimeCash = new MigratePrimeCash(
             settings,
             0x6b986A60216ACA687457782aDFA0B002aD392Ce7,
