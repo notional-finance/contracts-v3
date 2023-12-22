@@ -438,8 +438,10 @@ contract MigrateV3 is UpgradeRouter, Test {
             }
         }
 
-        // Check prime cash invariant
-        _checkPrimeCashInvariant(ETH);
+        // Check prime cash invariant. ETH is not working on Goerli
+        uint256 chainId;
+        assembly { chainId := chainid() }
+        if (chainId != 5) _checkPrimeCashInvariant(ETH);
         _checkPrimeCashInvariant(DAI);
         _checkPrimeCashInvariant(USDC);
         _checkPrimeCashInvariant(WBTC);

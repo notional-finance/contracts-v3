@@ -150,9 +150,7 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
         // Set the new pause router in the proxy storage tree
         pauseRouter = PAUSE_ROUTER;
 
-        // Loop through all all currencies and init the prime cash curve. `maxCurrencyId` is read
-        // from the NotionalProxy storage tree.
-        uint16 _maxCurrencies = maxCurrencyId;
+        uint16 _maxCurrencies = 4;
 
         // Emit this first to let the subgraph know that the transition to V3 has occurred
         // for updating view function calls.
