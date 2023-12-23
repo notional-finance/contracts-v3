@@ -716,3 +716,54 @@ def test_settle_vault(environment, accounts, currencyId, enablefCashDiscount):
 
     # the second account will be settled in invariants
     check_system_invariants(environment, accounts, [vault])
+
+@pytest.mark.only
+def test_settle_vault_below_minimum_borrow(environment, accounts):
+    currencyId = 1
+    (vault, maturity, _, _) = get_vault_account(
+        environment, accounts, 1, False, False
+    )
+
+    vaultAccountBefore = environment.notional.getVaultAccount(accounts[1], vault)
+
+    environment.notional.updateVault(
+        vault.address,
+        get_vault_config(
+            currencyId=currencyId,
+            flags=set_flags(
+                0, ENABLED=True, ALLOW_ROLL_POSITION=True, ENABLE_FCASH_DISCOUNT=False
+            ),
+            # Increase the account borrow size above the current account's borrow
+            minAccountBorrowSize=150e8,
+        ),
+        100_000_000e8,
+    )
+
+    chain.mine(1, timestamp=maturity)
+
+    environment.notional.initializeMarkets(currencyId, False)
+
+    (healthBefore, _, _) = environment.notional.getVaultAccountHealthFactors(accounts[1], vault)
+    with EventChecker(environment, 'Vault Settle', vaults=[vault],
+        vault=vault,
+        account=accounts[1]
+    ) as e:
+        txn = environment.notional.settleVaultAccount(accounts[1], vault)
+        e['txn'] = txn
+
+    (healthAfter, _, _) = environment.notional.getVaultAccountHealthFactors(accounts[1], vault)
+    vaultAccountAfter = environment.notional.getVaultAccount(accounts[1], vault)
+
+    assert (
+        pytest.approx(vaultAccountAfter["accountDebtUnderlying"], rel=1e-6)
+        == vaultAccountBefore["accountDebtUnderlying"]
+    )
+    assert (
+        pytest.approx(healthBefore["collateralRatio"], abs=100) == healthAfter["collateralRatio"]
+    )
+
+    assert vaultAccountAfter["maturity"] == PRIME_CASH_VAULT_MATURITY
+    assert vaultAccountAfter["lastUpdateBlockTime"] == txn.timestamp
+
+    # the second account will be settled in invariants
+    check_system_invariants(environment, accounts, [vault])
