@@ -258,6 +258,7 @@ contract Router is StorageLayoutV1 {
             sig == NotionalTreasury.setReserveCashBalance.selector ||
             sig == NotionalTreasury.setRebalancingTargets.selector ||
             sig == NotionalTreasury.setRebalancingCooldown.selector ||
+            sig == NotionalTreasury.setSecondaryIncentiveRewarder.selector ||
             sig == NotionalTreasury.rebalance.selector
         ) {
             return TREASURY;

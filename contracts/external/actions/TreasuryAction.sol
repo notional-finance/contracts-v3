@@ -27,11 +27,13 @@ import {GenericToken} from "../../internal/balances/protocols/GenericToken.sol";
 import {ActionGuards} from "./ActionGuards.sol";
 import {NotionalTreasury} from "../../../interfaces/notional/NotionalTreasury.sol";
 import {Comptroller} from "../../../interfaces/compound/ComptrollerInterface.sol";
+import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";
 import {CErc20Interface} from "../../../interfaces/compound/CErc20Interface.sol";
 import {IPrimeCashHoldingsOracle, DepositData, RedeemData} from "../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 import {IRebalancingStrategy, RebalancingData} from "../../../interfaces/notional/IRebalancingStrategy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     using SafeUint256 for uint256;
@@ -391,5 +393,31 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
         rebalancingData.redeemData = oracle.getRedemptionCalldataForRebalancing(redeemHoldings, redeemAmounts);
         rebalancingData.depositData = oracle.getDepositCalldataForRebalancing(depositHoldings, depositAmounts);
+    }
+
+    /// @notice Sets a secondary incentive rewarder for a currency. This contract will
+    /// be called whenever an nToken balance changes and allows a secondary contract to
+    /// mint incentives to the account. This will override any previous rewarder, if set.
+    /// Will have no effect if there is no nToken corresponding to the currency id.
+    /// @dev emit:UpdateSecondaryIncentiveRewarder
+    /// @param currencyId currency id of the nToken
+    /// @param rewarder rewarder contract
+    function setSecondaryIncentiveRewarder(uint16 currencyId, IRewarder rewarder) external override onlyOwner {
+        _checkValidCurrency(currencyId);
+
+        address nTokenAddress= nTokenHandler.nTokenAddress(currencyId);
+        if (address(rewarder) != address(0)) {
+            require(currencyId == rewarder.CURRENCY_ID());
+            require(nTokenAddress == rewarder.NTOKEN_ADDRESS());
+            require(!rewarder.detached());
+        }
+
+        IRewarder currentRewarder = nTokenHandler.getSecondaryRewarder(nTokenAddress);
+        require(address(rewarder) != address(currentRewarder));
+        if (address(currentRewarder) != address(0)) {
+            currentRewarder.detach();
+        }
+        nTokenHandler.setSecondaryRewarder(currencyId, rewarder);
+        emit UpdateSecondaryIncentiveRewarder(currencyId, address(rewarder));
     }
 }
