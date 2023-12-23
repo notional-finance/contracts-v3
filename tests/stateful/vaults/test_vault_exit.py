@@ -717,7 +717,6 @@ def test_settle_vault(environment, accounts, currencyId, enablefCashDiscount):
     # the second account will be settled in invariants
     check_system_invariants(environment, accounts, [vault])
 
-@pytest.mark.only
 def test_settle_vault_below_minimum_borrow(environment, accounts):
     currencyId = 1
     (vault, maturity, _, _) = get_vault_account(
