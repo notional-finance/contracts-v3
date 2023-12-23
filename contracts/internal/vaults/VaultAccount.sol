@@ -80,8 +80,14 @@ library VaultAccountLib {
         // Clear temp cash balance, it is not updated during liquidation
         vaultAccount.tempCashBalance = 0;
 
-        // No events emitted
-        _setVaultAccount(vaultAccount, vaultConfig, s, checkMinBorrow, false);
+        // No events emitted for liquidation, custom events are emitted in each of the methods
+        _setVaultAccount({
+            vaultAccount: vaultAccount,
+            vaultConfig: vaultConfig,
+            s: s,
+            checkMinBorrow: checkMinBorrow,
+            emitEvents: false
+        });
     }
 
     function setVaultAccountInSettlement(VaultAccount memory vaultAccount, VaultConfig memory vaultConfig) internal {
@@ -92,7 +98,15 @@ library VaultAccountLib {
             .getVaultAccount();
         VaultAccountStorage storage s = store[vaultAccount.account][vaultConfig.vault];
         
-        _setVaultAccount(vaultAccount, vaultConfig, s, true, true);
+        // Do not check minimum borrow on settlement so that all accounts may be settled regardless of their
+        // minimum borrow status.
+        _setVaultAccount({
+            vaultAccount: vaultAccount,
+            vaultConfig: vaultConfig,
+            s: s,
+            checkMinBorrow: false,
+            emitEvents: true
+        });
 
         // Allow vault accounts that settle to retain excess cash balances. This occurs after set vault account
         // so that event emission remains correct (since it relies on the prior stored value).
