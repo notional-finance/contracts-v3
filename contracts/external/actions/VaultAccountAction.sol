@@ -108,7 +108,9 @@ contract VaultAccountAction is ActionGuards, IVaultAccountAction {
             vaultConfig, maturity, borrowAmount, maxBorrowRate, vaultData, 0
         );
 
-        IVaultAccountHealth(address(this)).checkVaultAccountCollateralRatio(vault, account);
+        IVaultAccountHealth(address(this)).checkVaultAccountCollateralRatio(
+            {vault: vault, account: account, checkDebtCap: true}
+        );
     }
 
     /// @notice Re-enters the vault at a different maturity. The account's existing borrow position will be closed
@@ -193,8 +195,9 @@ contract VaultAccountAction is ActionGuards, IVaultAccountAction {
             vaultSharesAdded
         );
 
-        // emit VaultRollPosition(vault, account, maturity, newBorrowAmount);
-        IVaultAccountHealth(address(this)).checkVaultAccountCollateralRatio(vault, account);
+        IVaultAccountHealth(address(this)).checkVaultAccountCollateralRatio(
+            {vault: vault, account: account, checkDebtCap: true}
+        );
     }
 
     /// @notice Allows an account to withdraw their position from the vault at any time. Will
@@ -276,9 +279,12 @@ contract VaultAccountAction is ActionGuards, IVaultAccountAction {
 
         // It's possible that the user redeems more vault shares than they lend (it is not always the case
         // that they will be increasing their collateral ratio here, so we check that this is the case). No
-        // need to check if the account has exited in full (maturity == 0).
+        // need to check if the account has exited in full (maturity == 0). Also, do not check the debt cap
+        // when accounts are exiting the vault.
         if (vaultAccount.maturity != 0) {
-            IVaultAccountHealth(address(this)).checkVaultAccountCollateralRatio(vault, account);
+            IVaultAccountHealth(address(this)).checkVaultAccountCollateralRatio(
+                {vault: vault, account: account, checkDebtCap: false}
+            );
         }
     }
 

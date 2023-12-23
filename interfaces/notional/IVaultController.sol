@@ -244,7 +244,7 @@ interface IVaultAccountHealth {
         int256 vaultAccountCashBalance
     ) external view returns (int256 fCashRequired, int256 discountFactor);
 
-    function checkVaultAccountCollateralRatio(address vault, address account) external;
+    function checkVaultAccountCollateralRatio(address vault, address account, bool checkDebtCap) external;
 
     function getVaultAccount(address account, address vault) external view returns (VaultAccount memory);
     function getVaultAccountWithFeeAccrual(
