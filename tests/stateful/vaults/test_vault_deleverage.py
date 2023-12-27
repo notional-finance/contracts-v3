@@ -249,7 +249,7 @@ def setup_deleverage_conditions(
             ),
             minAccountBorrowSize=50 * multiple * 1e8,
             # Setting fees causes the snapshot tests to fail on prime vaults
-            feeRate5BPS = 0 if TEST_SNAPSHOT else 2000
+            feeRate5BPS = 0 if TEST_SNAPSHOT else 20
         ),
         100_000_000e8,
     )
