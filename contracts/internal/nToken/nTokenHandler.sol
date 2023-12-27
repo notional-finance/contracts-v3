@@ -93,13 +93,13 @@ library nTokenHandler {
         // the nToken may not have enough cash to pay accounts to buy its negative ifCash
         require(residualPurchaseIncentive10BPS <= cashWithholdingBuffer10BPS, "Invalid discounts");
 
-        bytes6 parameters =
-            (bytes6(uint48(residualPurchaseIncentive10BPS)) |
-            (bytes6(uint48(pvHaircutPercentage)) << 8) |
-            (bytes6(uint48(residualPurchaseTimeBufferHours)) << 16) |
-            (bytes6(uint48(cashWithholdingBuffer10BPS)) << 24) |
-            (bytes6(uint48(liquidationHaircutPercentage)) << 32) |
-            (bytes6(uint48(maxMintDeviationPercentage)) << 40)
+        bytes6 parameters = (
+            (bytes6(uint48(liquidationHaircutPercentage)) << 40) |
+            (bytes6(uint48(cashWithholdingBuffer10BPS)) << 32) |
+            (bytes6(uint48(residualPurchaseTimeBufferHours)) << 24) |
+            (bytes6(uint48(pvHaircutPercentage)) << 16) |
+            (bytes6(uint48(residualPurchaseIncentive10BPS)) << 8) |
+            (bytes6(uint48(maxMintDeviationPercentage)))
         );
 
         // Set the parameters

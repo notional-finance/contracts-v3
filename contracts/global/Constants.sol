@@ -129,12 +129,12 @@ library Constants {
 
     // nToken Parameters: there are offsets in the nTokenParameters bytes6 variable returned
     // in nTokenHandler. Each constant represents a position in the byte array.
-    uint8 internal constant MAX_MINT_DEVIATION_LIMIT = 0;
-    uint8 internal constant LIQUIDATION_HAIRCUT_PERCENTAGE = 1;
-    uint8 internal constant CASH_WITHHOLDING_BUFFER = 2;
-    uint8 internal constant RESIDUAL_PURCHASE_TIME_BUFFER = 3;
-    uint8 internal constant PV_HAIRCUT_PERCENTAGE = 4;
-    uint8 internal constant RESIDUAL_PURCHASE_INCENTIVE = 5;
+    uint8 internal constant LIQUIDATION_HAIRCUT_PERCENTAGE = 0;
+    uint8 internal constant CASH_WITHHOLDING_BUFFER = 1;
+    uint8 internal constant RESIDUAL_PURCHASE_TIME_BUFFER = 2;
+    uint8 internal constant PV_HAIRCUT_PERCENTAGE = 3;
+    uint8 internal constant RESIDUAL_PURCHASE_INCENTIVE = 4;
+    uint8 internal constant MAX_MINT_DEVIATION_LIMIT = 5;
 
     // Liquidation parameters
     // Default percentage of collateral that a liquidator is allowed to liquidate, will be higher if the account
