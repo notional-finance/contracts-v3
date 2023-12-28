@@ -172,24 +172,25 @@ class NotionalDeployer:
             print("{} deployed at {}".format(contract._name, self.routers[contract._name]))
             return
 
+        if contract._name == "Router":
+            printArgs = {
+                n["name"]: args[0][i]
+                for (i, n) in enumerate(contract.deploy.abi["inputs"][0]["components"])
+            }
+        else:
+            printArgs = {
+                n["name"]: args[i]
+                for (i, n) in enumerate(contract.deploy.abi["inputs"])
+            }
+
         if self.dryRun:
             print("Will deploy {} with args:".format(contract._name))
             # Print this for hardhat verification
-            print(
-                {
-                    n["name"]: args[0][i]
-                    for (i, n) in enumerate(contract.deploy.abi["inputs"][0]["components"])
-                }
-            )
+            print(printArgs)
         else:
             deployed = deployer.deploy(contract, args, "", True)
             print("Deployed {} with args:".format(contract._name))
-            print(
-                {
-                    n["name"]: args[0][i]
-                    for (i, n) in enumerate(contract.deploy.abi["inputs"][0]["components"])
-                }
-            )
+            print(printArgs)
 
             self.routers[contract._name] = deployed.address
             self._save()
@@ -258,8 +259,8 @@ class NotionalDeployer:
         self._deployBeaconImplementation(deployer, PrimeDebtProxy)
 
     def _deployCallback(self, deployer, contract, args):
-        if contract._name in self.beacons:
-            print("{} deployed at {}".format(contract._name, self.beacons[contract._name]))
+        if contract._name in self.callbacks:
+            print("{} deployed at {}".format(contract._name, self.callbacks[contract._name]))
             return
 
         if self.dryRun:
