@@ -156,7 +156,7 @@ abstract contract ClaimRewardsDetached is SecondaryRewarderSetupTest {
             CURRENCY_ID,
             IERC20(REWARD_TOKEN),
             emissionRatePerYear,
-            endTime
+            uint32(endTime + Constants.YEAR)
         );
     }
 

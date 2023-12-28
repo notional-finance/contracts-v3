@@ -3,6 +3,7 @@ pragma solidity >=0.7.6;
 
 interface IRewarder {
     event RewardTransfer(address indexed rewardToken, address indexed account, uint256 amount);
+    event RewardEmissionUpdate(uint256 emissionRatePerYear, uint256 endTime);
 
     function NTOKEN_ADDRESS() external returns(address);
 

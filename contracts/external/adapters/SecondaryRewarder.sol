@@ -72,6 +72,7 @@ contract SecondaryRewarder is IRewarder {
 
         packedEmissionRatePerYear = FloatingPoint.packTo56Bits(_emissionRatePerYear);
         lastAccumulatedTime = uint32(block.timestamp);
+        require(lastAccumulatedTime < _endTime, "Invalid End Time");
         endTime = _endTime;
     }
 
@@ -130,7 +131,12 @@ contract SecondaryRewarder is IRewarder {
         _accumulateRewardPerNToken(uint32(block.timestamp), totalSupply);
 
         packedEmissionRatePerYear = FloatingPoint.packTo56Bits(_emissionRatePerYear);
+        // lastAccumulatedTime is at block.timestamp here, ensure that the end time is always
+        // further in the future.
+        require(lastAccumulatedTime < _endTime, "Invalid End Time");
         endTime = _endTime;
+
+        emit RewardEmissionUpdate(FloatingPoint.unpackFromBits(packedEmissionRatePerYear), _endTime);
     }
 
     /// @notice Set merkle root, only called after rewarder is detached
@@ -168,6 +174,8 @@ contract SecondaryRewarder is IRewarder {
         if (block.timestamp < endTime) {
             endTime = uint32(block.timestamp);
         }
+
+        emit RewardEmissionUpdate(0, endTime);
     }
 
     /// @notice Allows claiming rewards after rewarder has been detached
@@ -250,6 +258,8 @@ contract SecondaryRewarder is IRewarder {
     }
 
     function _accumulateRewardPerNToken(uint32 blockTime, uint256 totalSupply) private {
+        // Ensure that end time is set to some value
+        require(0 < endTime);
         uint32 time = uint32(SafeInt256.min(blockTime, endTime));
 
         accumulatedRewardPerNToken = _getAccumulatedRewardPerToken(time, totalSupply);
