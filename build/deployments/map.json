@@ -292,6 +292,9 @@
     "MigrateIncentives": [
       "0xF3101e69B3D14B611037F47CD169ad60991c64f2"
     ],
+    "MigrateUSDC_AddressToCurrencyId": [
+      "0xbaA748fc864Ece66Fd958027F1A07b346C2aB387"
+    ],
     "NoteERC20": [
       "0x019bE259BC299F3F653688c7655C87F998Bc7bC1"
     ],
@@ -316,6 +319,9 @@
       "0xB12b08045c2FB403Fcae579641D0a011AAd8ED70",
       "0x99d6fA3e7675B92c72Fb7dD860578624f143a093",
       "0x762F2e0743bce7bb55C622504D88D471B230A84a"
+    ],
+    "SecondaryRewarder": [
+      "0xe670942CE88d0ac8E655d30E5EF0229e969de26C"
     ],
     "SettleAssetsExternal": [
       "0x65BA68d83F74D60c9e2270b05A2627a7C34F4bC4"
