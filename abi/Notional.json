@@ -3974,9 +3974,9 @@
                 "type": "uint256"
             },
             {
-                "internalType": "bytes5",
+                "internalType": "bytes6",
                 "name": "nTokenParameters",
-                "type": "bytes5"
+                "type": "bytes6"
             },
             {
                 "internalType": "int256",
@@ -6693,6 +6693,24 @@
     {
         "inputs": [
             {
+                "internalType": "uint16",
+                "name": "currencyId",
+                "type": "uint16"
+            },
+            {
+                "internalType": "contract IRewarder",
+                "name": "rewarder",
+                "type": "address"
+            }
+        ],
+        "name": "setSecondaryIncentiveRewarder",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "address",
                 "name": "manager",
                 "type": "address"
@@ -7315,6 +7333,11 @@
             {
                 "internalType": "uint8",
                 "name": "liquidationHaircutPercentage",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint8",
+                "name": "maxMintDeviationPercentage",
                 "type": "uint8"
             }
         ],
