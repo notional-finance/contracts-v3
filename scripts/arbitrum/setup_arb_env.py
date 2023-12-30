@@ -85,6 +85,16 @@ def main():
         {"from": notional.owner()}
     )
 
+    # Ensure we can settle these vault accounts
+    notional.settleVaultAccount(
+        '0xe31ac8c8c5b2f51abe13ef3afd3e2a552c1165b2', '0xdb08f663e5d765949054785f2ed1b2aa1e9c22cf',
+        {"from": notional.owner()}
+    )
+    notional.settleVaultAccount(
+        '0xf5c4e22e63F1eb3451cBE41Bd906229DCf9dba15', '0x8ae7a8789a81a43566d0ee70264252c0db826940',
+        {"from": notional.owner()}
+    )
+
     test_secondary_rewarder(notional)
 
 
@@ -94,7 +104,7 @@ def test_secondary_rewarder(notional):
     chain.mine(1, timedelta=43200)
     arb = MockERC20.at(REWARDER.REWARD_TOKEN())
     nUSDT = MockERC20.at(REWARDER.NTOKEN_ADDRESS())
-    arb.transfer(REWARDER, 1e18, {"from": "0xf3fc178157fb3c87548baa86f9d24ba38e649b58"})
+    arb.transfer(REWARDER, 1.01e18, {"from": "0xf3fc178157fb3c87548baa86f9d24ba38e649b58"})
 
     arbIncentives = REWARDER.getAccountRewardClaim(nUSDTHolder, chain.time())
     balanceBefore = arb.balanceOf(nUSDTHolder)
