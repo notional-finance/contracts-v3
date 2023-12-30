@@ -4,6 +4,7 @@ from brownie.network.state import Chain
 from brownie.test import given, strategy
 from tests.helpers import (
     active_currencies_to_list,
+    borrow_to_debt_cap,
     get_balance_action,
     get_balance_trade_action,
     initialize_environment,
@@ -358,21 +359,7 @@ def test_fail_on_deposits_exceeding_supply_cap(environment, accounts):
     check_system_invariants(environment, accounts)
 
 def test_can_deposit_withdraw_when_debt_cap_exceeded(environment, accounts):
-    factors = environment.notional.getPrimeFactors(3, chain.time() + 1)
-    # Have to buffer the max supply a bit to ensure that interest accrual does not
-    # push this over the cap immediately
-    maxSupply = factors['factors']['lastTotalUnderlyingValue'] * 1.10
-    environment.notional.setMaxUnderlyingSupply(3, maxSupply, 70)
-    factors = environment.notional.getPrimeFactors(3, chain.time() + 1)
-
-    environment.notional.enablePrimeBorrow(True, {"from": accounts[0]})
-
-    # Can borrow up to debt cap
-    maxPrimeCash = environment.notional.convertUnderlyingToPrimeCash(3, factors['maxUnderlyingDebt'] / 100)
-    environment.notional.withdraw(3, maxPrimeCash, True, {"from": accounts[0]})
-
-    with brownie.reverts("Over Debt Cap"):
-        environment.notional.withdraw(3, 1e8, True, {"from": accounts[0]})
+    borrow_to_debt_cap(environment, 3, 1.10)
 
     # Ensure that other accounts without debt can deposit and withdraw
     environment.notional.depositUnderlyingToken(accounts[1], 3, 100e6, {"from": accounts[1]})

@@ -1,6 +1,7 @@
 import math
 import random
 
+import brownie
 from brownie import (
     UnderlyingHoldingsOracle,
     MockAggregator,
@@ -725,3 +726,22 @@ def simulate_init_markets(mock, currencyId, additionalfCash=0):
     # Clear the nToken fCash from total debt
     mock.setTotalfCashDebtOutstanding(currencyId, tref, totalDebt + 100_000e8)
     mock.setMarket(currencyId, tref, market)
+
+def borrow_to_debt_cap(environment, currencyId, supplyBuffer):
+    factors = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+    # Have to buffer the max supply a bit to ensure that interest accrual does not
+    # push this over the cap immediately
+    maxSupply = factors['factors']['lastTotalUnderlyingValue'] * supplyBuffer
+    environment.notional.setMaxUnderlyingSupply(currencyId, maxSupply, 70)
+    factors = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+
+    environment.notional.enablePrimeBorrow(True, {"from": accounts[0]})
+
+    # Can borrow up to debt cap
+    maxUnderlying = factors['maxUnderlyingDebt'] - factors['totalUnderlyingDebt']
+    maxUnderlying = math.floor(maxUnderlying / 100) if currencyId == 3 else maxUnderlying * 1e10
+    maxPrimeCash = environment.notional.convertUnderlyingToPrimeCash(currencyId, maxUnderlying)
+    environment.notional.withdraw(currencyId, maxPrimeCash - 1, True, {"from": accounts[0]})
+
+    with brownie.reverts("Over Debt Cap"):
+        environment.notional.withdraw(currencyId, 1e8, True, {"from": accounts[0]})
