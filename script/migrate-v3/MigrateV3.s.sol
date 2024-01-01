@@ -76,7 +76,9 @@ contract MigrateV3 is UpgradeRouter, Test {
 
     address BEACON_DEPLOYER = 0x0D251Bd6c14e02d34f68BFCB02c54cBa3D108122;
     address DEPLOYER = 0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3;
-    address MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
+    // address MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
+    // On Goerli:
+    address MANAGER = 0xf862895976F693907f0AF8421Fe9264e559c2f6b;
 
     uint16 internal constant ETH = 1;
     uint16 internal constant DAI = 2;
@@ -163,9 +165,14 @@ contract MigrateV3 is UpgradeRouter, Test {
 
         (finalRouter, pauseRouter) = deployRouter(libs, actions);
 
-        settings = new MigrationSettings();
+        settings = new MigrationSettings(address(NOTIONAL), MANAGER);
         console.log("Final Router %s", address(finalRouter));
-        migrateRouter = new MigratePrimeCash(settings, address(finalRouter), address(pauseRouter));
+        migrateRouter = new MigratePrimeCash(
+            settings,
+            address(finalRouter),
+            address(pauseRouter),
+            MANAGER
+        );
     }
 
     function deployPrimeCashOracles() internal usingAccount(DEPLOYER) returns (
@@ -252,6 +259,8 @@ contract MigrateV3 is UpgradeRouter, Test {
             }
         }
 
+        // TODO: add emits here?
+
         require(totalSupply == uint256(nTokenSupply[currencyId]), "nToken supply");
     }
 
@@ -275,6 +284,8 @@ contract MigrateV3 is UpgradeRouter, Test {
 
         for (uint256 i; i < accountBalances.length; i++) {
             if (accountBalances[i].currencyId == 0) break;
+            // On Goerli, skip currency id 4+
+            if (accountBalances[i].currencyId > 4) continue;
             nTokenSupply[accountBalances[i].currencyId] += accountBalances[i].nTokenBalance;
 
             if (accountBalances[i].cashBalance < 0) {
@@ -373,6 +384,7 @@ contract MigrateV3 is UpgradeRouter, Test {
     function checkfCashCurve(MigrationSettings settings, uint16 currencyId) internal view {
         MarketParameters[] memory markets = NOTIONAL.getActiveMarkets(currencyId);
         CurrencySettings memory s = settings.getCurrencySettings(currencyId);
+        // NOTE: this fails and then we get a revert and etherscan blows up
         (InterestRateCurveSettings[] memory finalCurves, uint256[] memory finalRates) = 
             settings.getfCashCurveUpdate(currencyId, false);
 
@@ -428,8 +440,10 @@ contract MigrateV3 is UpgradeRouter, Test {
             }
         }
 
-        // Check prime cash invariant
-        _checkPrimeCashInvariant(ETH);
+        // Check prime cash invariant. ETH is not working on Goerli
+        uint256 chainId;
+        assembly { chainId := chainid() }
+        if (chainId != 5) _checkPrimeCashInvariant(ETH);
         _checkPrimeCashInvariant(DAI);
         _checkPrimeCashInvariant(USDC);
         _checkPrimeCashInvariant(WBTC);
@@ -486,13 +500,6 @@ contract MigrateV3 is UpgradeRouter, Test {
         console.log("Total Emit Events", emitEvents.length);
         for (uint256 i; i < emitEvents.length; i++) {
             ExpectEmit memory e = emitEvents[i];
-            if (e.account == 0x60dE7F647dF2448eF17b9E0123411724De6e373D) continue;
-            // // TODO: need to emit for nTokens as well...
-            // if (e.account == 0xabc07BF91469C5450D6941dD0770E6E6761B90d6) continue;
-            // if (e.account == 0x6EbcE2453398af200c688C7c4eBD479171231818) continue;
-            // if (e.account == 0x18b0Fc5A233acF1586Da7C199Ca9E3f486305A29) continue;
-            // if (e.account == 0x0Ace2DC3995aCD739aE5e0599E71A5524b93b886) continue;
-
             if (e.currencyId == ETH) {
                 vm.expectEmit(true, true, true, true, pETH);
                 emit Transfer(address(0), e.account, e.value);
@@ -520,21 +527,37 @@ contract MigrateV3 is UpgradeRouter, Test {
     }
 
     function setUp() public {
-        // TODO: mark down reserves
-        // TODO: push out vault user profits
         // deployWrappedFCash();
 
         // Set fork
-        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), vm.envUint("FORK_BLOCK"));
+        vm.createSelectFork(vm.envString("GOERLI_RPC_URL"), vm.envUint("FORK_BLOCK"));
 
-        deployBeacons();
-        (
-            MigrationSettings settings,
-            MigratePrimeCash migratePrimeCash,
-            PauseRouter pauseRouter,
-            Router finalRouter
-        ) = deployMigratePrimeCash();
-        CompoundV2HoldingsOracle[] memory oracles = deployPrimeCashOracles();
+        // deployBeacons();
+        // (
+        //     MigrationSettings settings,
+        //     MigratePrimeCash migratePrimeCash,
+        //     PauseRouter pauseRouter,
+        //     Router finalRouter
+        // ) = deployMigratePrimeCash();
+        // CompoundV2HoldingsOracle[] memory oracles = deployPrimeCashOracles();
+
+        // New Router 0x6b986A60216ACA687457782aDFA0B002aD392Ce7
+        // New Pause Router 0xFFd7531ED937F703B269815950cB75bdAAA341c9
+        // Settings 0x5fbf4539A89fBd1E5d784DB3f7Ba6c394AC450fC
+        // Migrate 0x6F4C6dC0340051EBFc1583Ca6A0c3ef5b94c50e0
+        MigrationSettings settings = MigrationSettings(0x5fbf4539A89fBd1E5d784DB3f7Ba6c394AC450fC);
+        // MigratePrimeCash migratePrimeCash = MigratePrimeCash(0x6F4C6dC0340051EBFc1583Ca6A0c3ef5b94c50e0);
+        MigratePrimeCash migratePrimeCash = new MigratePrimeCash(
+            settings,
+            0x6b986A60216ACA687457782aDFA0B002aD392Ce7,
+            0xFFd7531ED937F703B269815950cB75bdAAA341c9,
+            MANAGER
+        );
+        CompoundV2HoldingsOracle[] memory oracles = new CompoundV2HoldingsOracle[](4);
+        oracles[0] = CompoundV2HoldingsOracle(0xB12b08045c2FB403Fcae579641D0a011AAd8ED70);
+        oracles[1] = CompoundV2HoldingsOracle(0xbe401d7e76bb71bf7fa5a4aed7F3b650C6E0bd25);
+        oracles[2] = CompoundV2HoldingsOracle(0x123fCA954EA894305b684F56A0d043169a5aA7E4);
+        oracles[3] = CompoundV2HoldingsOracle(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
 
         setMigrationSettings(settings, oracles);
         checkAllAccounts();
@@ -606,7 +629,7 @@ contract MigrateV3 is UpgradeRouter, Test {
         MarketParameters[] memory markets = NOTIONAL.getActiveMarkets(ETH);
 
         (/* */, /* */, /* */, bytes32 encodedTrade) = NOTIONAL.getDepositFromfCashLend(
-            ETH, 1e8, markets[0].maturity, 0, block.timestamp
+            ETH, 0.01e8, markets[0].maturity, 0, block.timestamp
         );
         bytes32[] memory trades = new bytes32[](1);
         trades[0] = encodedTrade;

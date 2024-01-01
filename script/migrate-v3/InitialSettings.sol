@@ -12,9 +12,9 @@ library InitialSettings {
         InterestRateCurveSettings[] memory fCashCurves = new InterestRateCurveSettings[](2);
         fCashCurves[0] = InterestRateCurveSettings({
             kinkUtilization1: 15,
-            kinkUtilization2: 70,
-            kinkRate1: 17,
-            kinkRate2: 51,
+            kinkUtilization2: 75,
+            kinkRate1: 27,
+            kinkRate2: 43,
             maxRateUnits: 120,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
@@ -22,9 +22,9 @@ library InitialSettings {
         });
         fCashCurves[1] = InterestRateCurveSettings({
             kinkUtilization1: 15,
-            kinkUtilization2: 70,
-            kinkRate1: 20,
-            kinkRate2: 61,
+            kinkUtilization2: 75,
+            kinkRate1: 10,
+            kinkRate2: 41,
             maxRateUnits: 100,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
@@ -33,9 +33,9 @@ library InitialSettings {
 
         InterestRateCurveSettings memory primeDebtCurve = InterestRateCurveSettings({
             kinkUtilization1: 15,
-            kinkUtilization2: 70,
+            kinkUtilization2: 80,
             kinkRate1: 2,
-            kinkRate2: 8,
+            kinkRate2: 5,
             maxRateUnits: 255,
             feeRatePercent: 20,
             minFeeRate5BPS: 10,
@@ -72,9 +72,9 @@ library InitialSettings {
         InterestRateCurveSettings[] memory fCashCurves = new InterestRateCurveSettings[](3);
         fCashCurves[0] = InterestRateCurveSettings({
             kinkUtilization1: 15,
-            kinkUtilization2: 70,
+            kinkUtilization2: 80,
             kinkRate1: 17,
-            kinkRate2: 51,
+            kinkRate2: 59,
             maxRateUnits: 120,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
@@ -82,9 +82,9 @@ library InitialSettings {
         });
         fCashCurves[1] = InterestRateCurveSettings({
             kinkUtilization1: 15,
-            kinkUtilization2: 70,
-            kinkRate1: 20,
-            kinkRate2: 61,
+            kinkUtilization2: 75,
+            kinkRate1: 21,
+            kinkRate2: 66,
             maxRateUnits: 100,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
@@ -93,20 +93,20 @@ library InitialSettings {
         fCashCurves[2] = InterestRateCurveSettings({
             kinkUtilization1: 15,
             kinkUtilization2: 70,
-            kinkRate1: 20,
-            kinkRate2: 61,
-            maxRateUnits: 100,
+            kinkRate1: 25,
+            kinkRate2: 74,
+            maxRateUnits: 90,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
             maxFeeRate25BPS: 8
         });
 
         InterestRateCurveSettings memory primeDebtCurve = InterestRateCurveSettings({
-            kinkUtilization1: 15,
-            kinkUtilization2: 70,
-            kinkRate1: 2,
-            kinkRate2: 8,
-            maxRateUnits: 255,
+            kinkUtilization1: 10,
+            kinkUtilization2: 85,
+            kinkRate1: 6,
+            kinkRate2: 12,
+            maxRateUnits: 192,
             feeRatePercent: 20,
             minFeeRate5BPS: 10,
             maxFeeRate25BPS: 160
@@ -142,9 +142,9 @@ library InitialSettings {
         InterestRateCurveSettings[] memory fCashCurves = new InterestRateCurveSettings[](3);
         fCashCurves[0] = InterestRateCurveSettings({
             kinkUtilization1: 15,
-            kinkUtilization2: 70,
+            kinkUtilization2: 80,
             kinkRate1: 17,
-            kinkRate2: 51,
+            kinkRate2: 59,
             maxRateUnits: 120,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
@@ -152,9 +152,9 @@ library InitialSettings {
         });
         fCashCurves[1] = InterestRateCurveSettings({
             kinkUtilization1: 15,
-            kinkUtilization2: 70,
-            kinkRate1: 20,
-            kinkRate2: 61,
+            kinkUtilization2: 75,
+            kinkRate1: 21,
+            kinkRate2: 66,
             maxRateUnits: 100,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
@@ -162,21 +162,21 @@ library InitialSettings {
         });
         fCashCurves[2] = InterestRateCurveSettings({
             kinkUtilization1: 15,
-            kinkUtilization2: 60,
-            kinkRate1: 20,
-            kinkRate2: 55,
-            maxRateUnits: 100,
+            kinkUtilization2: 70,
+            kinkRate1: 25,
+            kinkRate2: 74,
+            maxRateUnits: 90,
             feeRatePercent: 8,
             minFeeRate5BPS: 3,
             maxFeeRate25BPS: 8
         });
 
         InterestRateCurveSettings memory primeDebtCurve = InterestRateCurveSettings({
-            kinkUtilization1: 15,
-            kinkUtilization2: 70,
-            kinkRate1: 2,
-            kinkRate2: 8,
-            maxRateUnits: 255,
+            kinkUtilization1: 10,
+            kinkUtilization2: 85,
+            kinkRate1: 6,
+            kinkRate2: 12,
+            maxRateUnits: 192,
             feeRatePercent: 20,
             minFeeRate5BPS: 10,
             maxFeeRate25BPS: 160
@@ -213,30 +213,30 @@ library InitialSettings {
         fCashCurves[0] = InterestRateCurveSettings({
             kinkUtilization1: 15,
             kinkUtilization2: 70,
-            kinkRate1: 17,
-            kinkRate2: 40,
-            maxRateUnits: 80,
+            kinkRate1: 5,
+            kinkRate2: 25,
+            maxRateUnits: 120,
             feeRatePercent: 8,
-            minFeeRate5BPS: 3,
+            minFeeRate5BPS: 2,
             maxFeeRate25BPS: 8
         });
         fCashCurves[1] = InterestRateCurveSettings({
             kinkUtilization1: 15,
             kinkUtilization2: 70,
-            kinkRate1: 20,
-            kinkRate2: 40,
-            maxRateUnits: 80,
+            kinkRate1: 8,
+            kinkRate2: 20,
+            maxRateUnits: 100,
             feeRatePercent: 8,
-            minFeeRate5BPS: 3,
+            minFeeRate5BPS: 2,
             maxFeeRate25BPS: 8
         });
 
         InterestRateCurveSettings memory primeDebtCurve = InterestRateCurveSettings({
             kinkUtilization1: 15,
             kinkUtilization2: 70,
-            kinkRate1: 2,
-            kinkRate2: 8,
-            maxRateUnits: 255,
+            kinkRate1: 1,
+            kinkRate2: 3,
+            maxRateUnits: 225,
             feeRatePercent: 20,
             minFeeRate5BPS: 10,
             maxFeeRate25BPS: 160

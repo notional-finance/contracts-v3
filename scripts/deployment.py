@@ -157,9 +157,6 @@ def deployNotionalContracts(deployer, **kwargs):
 
     # Deploy logic contracts
     contracts["Governance"] = GovernanceAction.deploy({"from": deployer})
-
-    if network.show_active() in ["goerli", "mainnet"]:
-        raise Exception("update governance deployment!")
     # Brownie and Hardhat do not compile to the same bytecode for this contract, during mainnet
     # deployment. Therefore, when we deploy to mainnet we actually deploy the artifact generated
     # by the hardhat deployment here. NOTE: this artifact must be generated, the artifact here will
@@ -188,6 +185,7 @@ def deployNotionalContracts(deployer, **kwargs):
         contracts["LiquidatefCashAction"].address,
         contracts["CalculationViews"].address,
         contracts["VaultAccountHealth"].address,
+        contracts["ERC1155Action"].address,
         {"from": deployer},
     )
 

@@ -3,9 +3,10 @@ import requests
 import argparse
 import json
 
-def get_accounts_page(block_number, skip=0):
-    endpoint = "https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-v2"
+endpoint = 'https://api.thegraph.com/subgraphs/name/notional-finance/goerli-v2'
+# endpoint = "https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-v2"
 
+def get_accounts_page(block_number, skip=0):
     # Your GraphQL query
     query = """
     {

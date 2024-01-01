@@ -13,7 +13,8 @@ import {
     AssetRateStorage,
     TotalfCashDebtStorage,
     BalanceStorage,
-    PortfolioAsset
+    PortfolioAsset,
+    CashGroupParameters
 } from "../../global/Types.sol";
 import {StorageLayoutV2} from "../../global/StorageLayoutV2.sol";
 import {Constants} from "../../global/Constants.sol";
@@ -25,7 +26,9 @@ import {SafeInt256} from "../../math/SafeInt256.sol";
 import {PrimeCashExchangeRate} from "../../internal/pCash/PrimeCashExchangeRate.sol";
 import {InterestRateCurve} from "../../internal/markets/InterestRateCurve.sol";
 import {TokenHandler} from "../../internal/balances/TokenHandler.sol";
+import {nTokenHandler} from "../../internal/nToken/nTokenHandler.sol";
 import {PortfolioHandler} from "../../internal/portfolio/PortfolioHandler.sol";
+import {BitmapAssetsHandler} from "../../internal/portfolio/BitmapAssetsHandler.sol";
 import {CashGroup} from "../../internal/markets/CashGroup.sol";
 import {Market} from "../../internal/markets/Market.sol";
 import {DateTime} from "../../internal/markets/DateTime.sol";
@@ -46,24 +49,31 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
     using SafeUint256 for uint256;
     using SafeInt256 for int256;
     using Market for MarketParameters;
+    using CashGroup for CashGroupParameters;
     using TokenHandler for Token;
 
     uint256 private constant MAX_PORTFOLIO_ASSETS = 8;
-    address internal constant NOTIONAL_MANAGER = 0x02479BFC7Dce53A02e26fE7baea45a0852CB0909;
 
     MigrationSettings public immutable MIGRATION_SETTINGS;
     address public immutable FINAL_ROUTER;
     address public immutable PAUSE_ROUTER;
+    address public immutable NOTIONAL_MANAGER;
 
     event UpdateCashGroup(uint16 currencyId);
     event MigratedToV3();
     event StartV3AccountEvents();
     event EndV3AccountEvents();
 
-    constructor(MigrationSettings settings, address finalRouter, address _pauseRouter) {
+    constructor(
+        MigrationSettings settings,
+        address finalRouter,
+        address _pauseRouter,
+        address _manager
+    ) {
         MIGRATION_SETTINGS = settings;
         FINAL_ROUTER = finalRouter;
         PAUSE_ROUTER = _pauseRouter;
+        NOTIONAL_MANAGER = _manager;
     }
 
     fallback() external { _delegate(PAUSE_ROUTER); }
@@ -144,9 +154,7 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
         // Set the new pause router in the proxy storage tree
         pauseRouter = PAUSE_ROUTER;
 
-        // Loop through all all currencies and init the prime cash curve. `maxCurrencyId` is read
-        // from the NotionalProxy storage tree.
-        uint16 _maxCurrencies = maxCurrencyId;
+        uint16 _maxCurrencies = 4;
 
         // Emit this first to let the subgraph know that the transition to V3 has occurred
         // for updating view function calls.
@@ -173,6 +181,9 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
             // The address for the "fee reserve" has changed in v3, migrate the balance
             // from one storage slot to the other
             _setFeeReserveCashBalance(currencyId);
+
+            // Emits events for nToken balances
+            _emitNTokenBalances(currencyId);
         }
     }
 
@@ -297,6 +308,41 @@ contract MigratePrimeCash is StorageLayoutV2, ERC1967Upgrade {
         // Notional V2 reserve constant is set at address(0), copy the value to the new reserve constant
         store[Constants.FEE_RESERVE][currencyId] = store[address(0)][currencyId];
         delete store[address(0)][currencyId];
+        int256 cashBalance = store[Constants.FEE_RESERVE][currencyId].cashBalance;
+        Emitter.emitMintOrBurnPrimeCash(Constants.FEE_RESERVE, currencyId, cashBalance);
+    }
+
+    function _emitNTokenBalances(uint16 currencyId) internal {
+        address tokenAddress = nTokenHandler.nTokenAddress(currencyId);
+        CashGroupParameters memory cashGroup = CashGroup.buildCashGroupStateful(currencyId);
+        MarketParameters[] memory markets = new MarketParameters[](cashGroup.maxMarketIndex);
+        (/* */, /* */, uint256 lastInitializedTime, /* */, /* */) = nTokenHandler.getNTokenContext(tokenAddress);
+
+        MarketParameters memory market;
+        int256 totalPrimeCash;
+        PortfolioAsset[] memory netfCashAssets = BitmapAssetsHandler.getifCashArray(
+            tokenAddress,
+            currencyId,
+            lastInitializedTime
+        );
+
+        for (uint256 i = 0; i < cashGroup.maxMarketIndex; i++) {
+            cashGroup.loadMarket(market, i + 1, true, block.timestamp);
+            totalPrimeCash = totalPrimeCash.add(market.totalPrimeCash);
+            Emitter.emitTransferfCash(
+                address(0), tokenAddress, currencyId,
+                market.maturity, market.totalfCash
+            );
+        }
+
+        for (uint256 i = 0; i < netfCashAssets.length; i++) {
+            Emitter.emitTransferfCash(
+                address(0), tokenAddress, currencyId,
+                netfCashAssets[i].maturity, netfCashAssets[i].notional
+            );
+        }
+
+        Emitter.emitMintOrBurnPrimeCash(tokenAddress, currencyId, totalPrimeCash);
     }
 
     /// @dev Delegates the current call to `implementation`.

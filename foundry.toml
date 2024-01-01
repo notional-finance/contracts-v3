@@ -28,4 +28,9 @@ libraries = [
   "@notional-v3/external/actions/nTokenRedeemAction.sol:nTokenRedeemAction:0x326746FD16FdA81599a80280AC94d3EdE71E2CE1"
 ]
 
+[etherscan]
+mainnet = { key = "${ETHERSCAN_TOKEN}" }
+goerli = { key = "${ETHERSCAN_TOKEN}", url = "https://api-goerli.etherscan.io/api" }
+arbitrum = { key = "${ARBISCAN_TOKEN}" }
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
