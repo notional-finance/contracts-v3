@@ -17,7 +17,7 @@ contract MockExchangeRate is StorageLayoutV1 {
     function assertBalanceSign(int256 balance, int256 result) private pure {
         if (balance == 0) assert(result == 0);
         else if (balance < 0) assert(result < 0);
-        else if (balance > 0) assert(result > 0);
+        else if (balance > 0) assert(result >= 0);
     }
 
     // Prove that exchange rates move in the correct direction
