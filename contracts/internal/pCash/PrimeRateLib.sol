@@ -302,7 +302,8 @@ library PrimeRateLib {
         PrimeRate memory pr,
         int256 primeCashBalance
     ) internal pure returns (int256) {
-        return primeCashBalance.mul(pr.supplyFactor).div(Constants.DOUBLE_SCALAR_PRECISION);
+        int256 result = primeCashBalance.mul(pr.supplyFactor).div(Constants.DOUBLE_SCALAR_PRECISION);
+        return primeCashBalance < 0 ? SafeInt256.min(result, -1) : result;
     }
 
     /// @notice Converts underlying to a prime cash balance (both in internal 8
@@ -311,7 +312,8 @@ library PrimeRateLib {
         PrimeRate memory pr,
         int256 underlyingBalance
     ) internal pure returns (int256) {
-        return underlyingBalance.mul(Constants.DOUBLE_SCALAR_PRECISION).div(pr.supplyFactor);
+        int256 result = underlyingBalance.mul(Constants.DOUBLE_SCALAR_PRECISION).div(pr.supplyFactor);
+        return underlyingBalance < 0 ? SafeInt256.min(result, -1) : result;
     }
 
     function convertDebtStorageToUnderlying(
