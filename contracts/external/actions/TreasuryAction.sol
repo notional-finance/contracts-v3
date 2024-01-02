@@ -29,102 +29,11 @@ import {ActionGuards} from "./ActionGuards.sol";
 import {NotionalTreasury} from "../../../interfaces/notional/NotionalTreasury.sol";
 import {Comptroller} from "../../../interfaces/compound/ComptrollerInterface.sol";
 import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";
-import {CErc20Interface} from "../../../interfaces/compound/CErc20Interface.sol";
-import {IPrimeCashHoldingsOracle, DepositData, RedeemData} from "../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
-import {IRebalancingStrategy, RebalancingData} from "../../../interfaces/notional/IRebalancingStrategy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IPrimeCashHoldingsOracle, DepositData, RedeemData, OracleData}
     from "../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
-import {RebalancingData} from "../../../interfaces/notional/IRebalancingStrategy.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import {Math} from "@openzeppelin/contracts/math/Math.sol";
-
-/// @dev moved getTargetExternalLendingAmount to library for easier testing
-library TargetHelper {
-    using PrimeRateLib for PrimeRate;
-    using SafeUint256 for uint256;
-    using SafeInt256 for int256;
-    using TokenHandler for Token;
-
-    function getTargetExternalLendingAmount(
-        Token memory underlyingToken,
-        PrimeCashFactors memory factors,
-        RebalancingTargetData memory rebalancingTargetData,
-        OracleData memory oracleData,
-        PrimeRate memory pr
-    ) internal pure returns (uint256 targetAmount) {
-        // Short circuit a zero target
-        if (rebalancingTargetData.targetUtilization == 0) return 0;
-
-        int256 totalPrimeCashInUnderlying = pr.convertToUnderlying(int256(factors.totalPrimeSupply));
-        int256 totalPrimeDebtInUnderlying = pr.convertDebtStorageToUnderlying(int256(factors.totalPrimeDebt).neg()).abs();
-
-        // The target amount to lend is based on a target "utilization" of the total prime supply. For example, for
-        // a target utilization of 80%, if the prime cash utilization is 70% (totalPrimeSupply / totalPrimeDebt) then
-        // we want to lend 10% of the total prime supply. This ensures that 20% of the totalPrimeSupply will not be held
-        // in external money markets which run the risk of becoming unredeemable.
-        int256 targetExternalUnderlyingLend = totalPrimeCashInUnderlying
-            .mul(rebalancingTargetData.targetUtilization)
-            .div(Constants.PERCENTAGE_DECIMALS)
-            .sub(totalPrimeDebtInUnderlying);
-        // Floor this value at zero. This will be negative above the target utilization. We do not want to be lending at
-        // all above the target.
-        if (targetExternalUnderlyingLend < 0) targetExternalUnderlyingLend = 0;
-
-        // To ensure redeemability of Notional’s funds on external lending markets,
-        // Notional requires there to be redeemable funds on the external lending market
-        // that are a multiple of the funds that Notional has lent on that market itself.
-        //
-        // The max amount that Notional can lend on that market is a function
-        // of the excess redeemable funds on that market
-        // (funds that are redeemable in excess of Notional’s own funds on that market)
-        // and the externalWithdrawThreshold.
-        //
-        // excessFunds = externalUnderlyingAvailableForWithdraw - currentExternalUnderlyingLend
-        //
-        // maxExternalUnderlyingLend * (externalWithdrawThreshold + 1) = maxExternalUnderlyingLend + excessFunds
-        //
-        // maxExternalUnderlyingLend * (externalWithdrawThreshold + 1) - maxExternalUnderlyingLend = excessFunds
-        //
-        // maxExternalUnderlyingLend * externalWithdrawThreshold = excessFunds
-        //
-        // maxExternalUnderlyingLend = excessFunds / externalWithdrawThreshold
-        uint256 maxExternalUnderlyingLend;
-        if (oracleData.currentExternalUnderlyingLend < oracleData.externalUnderlyingAvailableForWithdraw) {
-            maxExternalUnderlyingLend =
-                (oracleData.externalUnderlyingAvailableForWithdraw - oracleData.currentExternalUnderlyingLend)
-                .mul(uint256(Constants.PERCENTAGE_DECIMALS))
-                .div(rebalancingTargetData.externalWithdrawThreshold);
-        } else {
-            maxExternalUnderlyingLend = 0;
-        }
-
-        targetAmount = Math.min(
-            // totalPrimeCashInUnderlying and totalPrimeDebtInUnderlying are in 8 decimals, convert it to native
-            // token precision here for accurate comparison. No underflow possible since targetExternalUnderlyingLend
-            // is floored at zero.
-            uint256(underlyingToken.convertToExternal(targetExternalUnderlyingLend)),
-            // maxExternalUnderlyingLend is limit enforced by setting externalWithdrawThreshold
-            // maxExternalDeposit is limit due to the supply cap on external pools
-            Math.min(maxExternalUnderlyingLend, oracleData.maxExternalDeposit)
-        );
-        // in case of redemption, make sure there is enough to withdraw, important for health check so that
-        // it does not trigger rebalances(redemptions) when there is nothing to redeem
-        if (targetAmount < oracleData.currentExternalUnderlyingLend) {
-            uint256 forRedemption = oracleData.currentExternalUnderlyingLend - targetAmount;
-            if (oracleData.externalUnderlyingAvailableForWithdraw < forRedemption) {
-                // increase target amount so that redemptions amount match externalUnderlyingAvailableForWithdraw
-                targetAmount = targetAmount.add(
-                    // unchecked - is safe here, overflow is not possible due to above if conditional
-                    forRedemption - oracleData.externalUnderlyingAvailableForWithdraw
-                );
-            }
-        }
-    }
-}
 
 contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     using PrimeRateLib for PrimeRate;
@@ -132,6 +41,11 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     using SafeInt256 for int256;
     using SafeERC20 for IERC20;
     using TokenHandler for Token;
+
+    struct RebalancingData {
+        RedeemData[] redeemData;
+        DepositData[] depositData;
+    }
 
     /// @dev Harvest methods are only callable by the authorized treasury manager contract
     modifier onlyManagerContract() {
@@ -547,46 +461,6 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         mapping(uint16 => RebalancingContextStorage) storage store = LibStorage.getRebalancingContext();
         store[currencyId].lastRebalanceTimestampInSeconds = block.timestamp.toUint40();
         store[currencyId].previousSupplyFactorAtRebalance = supplyFactor;
-    }
-
-    function _executeDeposits(Token memory underlyingToken, DepositData[] memory deposits) private {
-        for (uint256 i; i < deposits.length; i++) {
-            DepositData memory depositData = deposits[i];
-            // Measure the token balance change if the `assetToken` value is set in the
-            // current deposit data struct.
-            uint256 oldAssetBalance = IERC20(depositData.assetToken).balanceOf(address(this));
-
-            // Measure the underlying balance change before and after the call.
-            uint256 oldUnderlyingBalance = underlyingToken.balanceOf(address(this));
-
-            for (uint256 j; j < depositData.targets.length; ++j) {
-                GenericToken.executeLowLevelCall(
-                    depositData.targets[j],
-                    depositData.msgValue[j],
-                    depositData.callData[j]
-                );
-            }
-
-            // Ensure that the underlying balance change matches the deposit amount
-            uint256 newUnderlyingBalance = underlyingToken.balanceOf(address(this));
-            uint256 underlyingBalanceChange = oldUnderlyingBalance.sub(newUnderlyingBalance);
-            // If the call is not the final deposit, then underlyingDepositAmount should
-            // be set to zero.
-            require(underlyingBalanceChange <= depositData.underlyingDepositAmount);
-            // Measure and update the asset token
-            uint256 newAssetBalance = IERC20(depositData.assetToken).balanceOf(address(this));
-            require(oldAssetBalance <= newAssetBalance);
-
-            if (
-                (depositData.rebasingTokenBalanceAdjustment != 0) &&
-                (underlyingBalanceChange != newAssetBalance.sub(oldAssetBalance))
-            ) {
-                newAssetBalance = newAssetBalance.add(depositData.rebasingTokenBalanceAdjustment);
-            }
-
-            TokenHandler.updateStoredTokenBalance(depositData.assetToken, oldAssetBalance, newAssetBalance);
-            TokenHandler.updateStoredTokenBalance(underlyingToken.tokenAddress, oldUnderlyingBalance, newUnderlyingBalance);
-        }
     }
 
     function _calculateRebalance(
