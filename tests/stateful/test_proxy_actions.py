@@ -212,7 +212,7 @@ def test_total_supply_and_value(environment, accounts, useNToken):
         assert totalSupply == environment.notional.getNTokenAccount(proxy.address)['totalSupply']
         assert totalAssets == environment.notional.nTokenPresentValueUnderlyingDenominated(proxy.currencyId()) * 1e18 / 1e8
     else:
-        (_, factors, _, totalUnderlying) = environment.notional.getPrimeFactors(proxy.currencyId(), chain.time())
+        (_, factors, _, totalUnderlying, _, _) = environment.notional.getPrimeFactors(proxy.currencyId(), chain.time())
         assert totalSupply == factors['totalPrimeSupply']
         assert pytest.approx(totalAssets, abs=5) == totalUnderlying * 1e18 / 1e8
 
@@ -230,8 +230,8 @@ def test_erc4626_convert_to_shares_and_assets(environment, accounts, useNToken):
 @given(useNToken=strategy("bool"))
 def test_transfer_above_supply_cap(environment, accounts, useNToken):
     proxy = getProxy(environment, useNToken)
-    (_, factors, _, _) = environment.notional.getPrimeFactors(proxy.currencyId(), chain.time())
-    environment.notional.setMaxUnderlyingSupply(1, factors['lastTotalUnderlyingValue'] - 100e8)
+    (_, factors, _, _, _, _) = environment.notional.getPrimeFactors(proxy.currencyId(), chain.time())
+    environment.notional.setMaxUnderlyingSupply(1, factors['lastTotalUnderlyingValue'] - 100e8, 100)
     
     # Assert cap is in effect
     with brownie.reverts("Over Supply Cap"):
@@ -248,14 +248,14 @@ def test_max_mint_and_deposit_respects_supply_cap(environment, accounts, useNTok
     assert proxy.maxDeposit(accounts[0]) == 2 ** 256 - 1
     assert proxy.maxMint(accounts[0]) == 2 ** 256 - 1
 
-    (_, factors, _, _) = environment.notional.getPrimeFactors(proxy.currencyId(), chain.time())
-    environment.notional.setMaxUnderlyingSupply(1, factors['lastTotalUnderlyingValue'])
+    (_, factors, _, _, _, _) = environment.notional.getPrimeFactors(proxy.currencyId(), chain.time())
+    environment.notional.setMaxUnderlyingSupply(1, factors['lastTotalUnderlyingValue'], 100)
 
     assert proxy.maxDeposit(accounts[0]) == 0
     assert proxy.maxMint(accounts[0]) == 0
 
     cap = factors['lastTotalUnderlyingValue'] + 100e8
-    environment.notional.setMaxUnderlyingSupply(1, cap)
+    environment.notional.setMaxUnderlyingSupply(1, cap, 100)
 
     assert pytest.approx(proxy.maxDeposit(accounts[0]), rel=1e-6) == 100e18
     assert pytest.approx(proxy.maxMint(accounts[0]), rel=1e-6) == 5000e8

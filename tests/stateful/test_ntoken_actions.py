@@ -33,7 +33,7 @@ def isolation(fn_isolation):
 
 def get_market_proportion(currencyId, environment):
     proportions = []
-    (primeRate, _, _, _) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+    (primeRate, _, _, _, _, _) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
     markets = environment.notional.getActiveMarkets(currencyId)
     for (i, market) in enumerate(markets):
         totalCashUnderlying = (market[3] * primeRate["supplyFactor"]) / Wei(1e36)
@@ -741,7 +741,8 @@ def test_mint_and_redeem_with_supply_caps(environment, accounts, useBitmap):
     factors = environment.notional.getPrimeFactorsStored(currencyId)
     environment.notional.setMaxUnderlyingSupply(
         currencyId,
-        factors['lastTotalUnderlyingValue'] + 1_050e8
+        factors['lastTotalUnderlyingValue'] + 1_050e8,
+        100
     )
     
     environment.notional.batchBalanceAction(
@@ -754,7 +755,7 @@ def test_mint_and_redeem_with_supply_caps(environment, accounts, useBitmap):
         {"from": accounts[0]},
     )
 
-    environment.notional.setMaxUnderlyingSupply(currencyId, 1e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, 1e8, 100)
 
     # In this edge condition, the account cannot redeem nTokens via the batch action. They
     # have to use account action

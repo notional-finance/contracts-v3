@@ -11,6 +11,7 @@ from brownie.test import given, strategy
 from fixtures import *
 from scripts.EventProcessor import processTxn
 from tests.constants import PRIME_CASH_VAULT_MATURITY, SECONDS_IN_QUARTER
+from tests.helpers import borrow_to_debt_cap
 from tests.internal.vaults.fixtures import get_vault_config, set_flags
 from tests.snapshot import EventChecker
 from tests.stateful.invariants import check_system_invariants
@@ -527,10 +528,12 @@ def test_partial_exit(environment, accounts, currencyId, isPrime, hasMatured, sh
     else:
         balanceAfter = token.balanceOf(accounts[1])
 
-    # assert (
-    #     pytest.approx(balanceAfter - balanceBefore, rel=5e-7, abs=5_000)
-    #     == valueToRedeem - costToRepay - totalFees
-    # )
+    # The difference here is the total fee, which we cannot easily calculate directly
+    # via the contracts. The fee rate is set to 1% and then we also add 50 bps for fCash trading
+    assert (
+        pytest.approx(balanceAfter - balanceBefore, rel=0.015)
+        == valueToRedeem - costToRepay
+    )
 
     check_system_invariants(environment, accounts, [vault])
 
@@ -765,4 +768,39 @@ def test_settle_vault_below_minimum_borrow(environment, accounts):
     assert vaultAccountAfter["lastUpdateBlockTime"] == txn.timestamp
 
     # the second account will be settled in invariants
+    check_system_invariants(environment, accounts, [vault])
+
+@given(
+    isPrime=strategy("bool"),
+    isFullExit=strategy("bool")
+)
+def test_allow_vault_exit_above_debt_cap(environment, accounts, isPrime, isFullExit):
+    (vault, _, _, _) = get_vault_account(
+        environment, accounts, 3, isPrime, False
+    )
+    borrow_to_debt_cap(environment, 3, 1.10)
+    vaultAccountBefore = environment.notional.getVaultAccount(accounts[1], vault)
+
+    chain.mine(timedelta=3600)
+    if isFullExit:
+        debtToRepay = (
+            2 ** 256 - 1 if isPrime else -vaultAccountBefore["accountDebtUnderlying"]
+        )
+        vaultShares = vaultAccountBefore['vaultShares']
+    else:
+        # Just exit a small amount of vault shares and do not repay debt
+        debtToRepay = 0
+        vaultShares = math.floor(vaultAccountBefore['vaultShares'] * 0.01)
+
+    environment.notional.exitVault(
+        accounts[1],
+        vault.address,
+        accounts[1],
+        vaultShares,
+        debtToRepay,
+        0,
+        "",
+        {"from": accounts[1]},
+    )
+
     check_system_invariants(environment, accounts, [vault])

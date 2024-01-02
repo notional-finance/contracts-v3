@@ -425,7 +425,7 @@ def test_lend_fails_on_supply_cap(environment, accounts, useBitmap):
         environment.notional.enableBitmapCurrency(2, {"from": accounts[1]})
 
     factors = environment.notional.getPrimeFactorsStored(currencyId)
-    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 1e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 1e8, 70)
 
     action = get_balance_trade_action(
         2,
@@ -441,7 +441,7 @@ def test_lend_fails_on_supply_cap(environment, accounts, useBitmap):
         )
 
     # Increase supply cap
-    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 100e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 100e8, 100)
 
     environment.notional.batchBalanceAndTradeAction(
         accounts[1], [action], {"from": accounts[1]}
@@ -452,5 +452,96 @@ def test_lend_fails_on_supply_cap(environment, accounts, useBitmap):
     assert portfolio[0][0] == 2
     assert portfolio[0][2] == 1
     assert portfolio[0][3] == 100e8
+
+    check_system_invariants(environment, accounts)
+
+def test_can_lend_when_debt_cap_exceeded(environment, accounts):
+    factors = environment.notional.getPrimeFactors(3, chain.time() + 1)
+    # Have to buffer the max supply a bit to ensure that interest accrual does not
+    # push this over the cap immediately
+    maxSupply = factors['factors']['lastTotalUnderlyingValue'] * 1.10
+    environment.notional.setMaxUnderlyingSupply(3, maxSupply, 70)
+    factors = environment.notional.getPrimeFactors(3, chain.time() + 1)
+
+    environment.notional.enablePrimeBorrow(True, {"from": accounts[0]})
+
+    # Can borrow up to debt cap
+    maxPrimeCash = environment.notional.convertUnderlyingToPrimeCash(3, factors['maxUnderlyingDebt'] / 100)
+    environment.notional.withdraw(3, maxPrimeCash, True, {"from": accounts[0]})
+
+    with brownie.reverts("Over Debt Cap"):
+        environment.notional.withdraw(3, 1e8, True, {"from": accounts[0]})
+
+    action = get_balance_trade_action(
+        3,
+        "DepositUnderlying",
+        [{"tradeActionType": "Lend", "marketIndex": 1, "notional": 100e8, "minSlippage": 0}],
+        depositActionAmount=100e6,
+        withdrawEntireCashBalance=True,
+    )
+
+    environment.notional.batchBalanceAndTradeAction(
+        accounts[1], [action], {"from": accounts[1]}
+    )
+
+    borrow = get_balance_trade_action(
+        3,
+        "DepositUnderlying",
+        [{"tradeActionType": "Borrow", "marketIndex": 1, "notional": 100e8, "maxSlippage": 0}],
+        withdrawEntireCashBalance=True,
+    )
+
+    environment.notional.batchBalanceAndTradeAction(
+        accounts[1], [borrow], {"from": accounts[1]}
+    )
+
+    check_system_invariants(environment, accounts)
+
+def test_cannot_leveraged_lend_over_debt_cap(environment, accounts):
+    factors = environment.notional.getPrimeFactors(3, chain.time() + 1)
+    # Have to buffer the max supply a bit to ensure that interest accrual does not
+    # push this over the cap immediately
+    maxSupply = factors['factors']['lastTotalUnderlyingValue'] * 1.10
+    environment.notional.setMaxUnderlyingSupply(3, maxSupply, 70)
+    factors = environment.notional.getPrimeFactors(3, chain.time() + 1)
+
+    environment.notional.enablePrimeBorrow(True, {"from": accounts[0]})
+
+    # Can borrow up to debt cap
+    maxPrimeCash = environment.notional.convertUnderlyingToPrimeCash(3, factors['maxUnderlyingDebt'] / 100)
+    environment.notional.withdraw(3, maxPrimeCash, True, {"from": accounts[0]})
+
+    with brownie.reverts("Over Debt Cap"):
+        environment.notional.withdraw(3, 1e8, True, {"from": accounts[0]})
+
+    environment.notional.enablePrimeBorrow(True, {"from": accounts[1]})
+    environment.notional.depositUnderlyingToken(
+        accounts[1], 1, 100e18, {"from": accounts[1], "value": 100e18}
+    )
+
+    with brownie.reverts("Over Debt Cap"):
+        # This executes a leveraged lend by borrowing variable
+        action = get_balance_trade_action(
+            3,
+            "None",
+            [{"tradeActionType": "Lend", "marketIndex": 1, "notional": 100e8, "minSlippage": 0}],
+        )
+
+        environment.notional.batchBalanceAndTradeAction(
+            accounts[1], [action], {"from": accounts[1]}
+        )
+
+    with brownie.reverts("Over Debt Cap"):
+        # This executes a leveraged liquidity by borrowing variable
+        action = get_balance_trade_action(
+            3,
+            "ConvertCashToNToken",
+            [],
+            depositActionAmount=100e8
+        )
+
+        environment.notional.batchBalanceAndTradeAction(
+            accounts[1], [action], {"from": accounts[1]}
+        )
 
     check_system_invariants(environment, accounts)

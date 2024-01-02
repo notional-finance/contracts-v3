@@ -116,8 +116,8 @@ library VaultValuation {
         address account,
         uint256 vaultShares,
         int256 debtUnderlying
-    ) internal returns (int256 collateralRatio, int256 vaultShareValue) {
-        vaultShareValue = getPrimaryUnderlyingValueOfShare(vaultState, vaultConfig, account, vaultShares);
+    ) internal returns (int256 collateralRatio,  PrimeRate[2] memory primeRates) {
+        int256 vaultShareValue = getPrimaryUnderlyingValueOfShare(vaultState, vaultConfig, account, vaultShares);
 
         int256 debtOutstanding = getPresentValue(
             vaultConfig.primeRate,
@@ -128,7 +128,7 @@ library VaultValuation {
         );
 
         if (vaultConfig.hasSecondaryBorrows()) {
-            PrimeRate[2] memory primeRates = VaultSecondaryBorrow.getSecondaryPrimeRateStateful(vaultConfig);
+            primeRates = VaultSecondaryBorrow.getSecondaryPrimeRateStateful(vaultConfig);
             (int256 secondaryDebtInPrimary, int256 excessCashInPrimary, /* */, /* */, /* */) =
                 VaultSecondaryBorrow.getSecondaryBorrowCollateralFactors(vaultConfig, primeRates, vaultState, account);
             require(excessCashInPrimary == 0); // dev: no excess cash

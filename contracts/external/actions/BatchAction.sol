@@ -22,6 +22,7 @@ import {BalanceHandler} from "../../internal/balances/BalanceHandler.sol";
 import {TokenHandler} from "../../internal/balances/TokenHandler.sol";
 import {PortfolioHandler} from "../../internal/portfolio/PortfolioHandler.sol";
 import {PrimeRateLib} from "../../internal/pCash/PrimeRateLib.sol";
+import {PrimeSupplyCap} from "../../internal/pCash/PrimeSupplyCap.sol";
 import {AccountContextHandler} from "../../internal/AccountContextHandler.sol";
 import {NotionalCallback} from "../../../interfaces/notional/NotionalCallback.sol";
 import {DeprecatedAssetRate} from "../../internal/markets/DeprecatedAssetRate.sol";
@@ -39,6 +40,7 @@ contract BatchAction is StorageLayoutV1, ActionGuards {
     using PortfolioHandler for PortfolioState;
     using AccountContextHandler for AccountContext;
     using PrimeRateLib for PrimeRate;
+    using PrimeSupplyCap for PrimeRate;
     using TokenHandler for Token;
     using SafeInt256 for int256;
 
