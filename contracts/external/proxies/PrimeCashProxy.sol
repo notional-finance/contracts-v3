@@ -31,8 +31,7 @@ contract PrimeCashProxy is BaseERC4626Proxy {
         (
             /* */,
             PrimeCashFactors memory factors,
-            /* */,
-            /* */
+            /* */, /* */, /* */, /* */
         ) = NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
 
         return factors.totalPrimeSupply;
@@ -65,8 +64,7 @@ contract PrimeCashProxy is BaseERC4626Proxy {
         (
             PrimeRate memory pr,
             PrimeCashFactors memory factors,
-            /* */,
-            /* */
+            /* */, /* */, /* */, /* */
         ) = NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
 
         totalValueExternal = pr.convertToUnderlying(factors.totalPrimeSupply.toInt())

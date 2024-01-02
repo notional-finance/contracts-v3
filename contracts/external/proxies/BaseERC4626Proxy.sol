@@ -184,7 +184,9 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
             /* */,
             /* */,
             uint256 maxUnderlyingSupply,
-            uint256 currentUnderlyingSupply
+            uint256 currentUnderlyingSupply,
+            /* */,
+            /* */
         ) = NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
 
         if (maxUnderlyingSupply == 0) {

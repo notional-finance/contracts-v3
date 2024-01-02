@@ -8,7 +8,7 @@ from brownie.network.state import Chain
 from brownie.test import given, strategy
 from fixtures import *
 from tests.constants import PRIME_CASH_VAULT_MATURITY, SECONDS_IN_QUARTER
-from tests.helpers import get_balance_action, get_balance_trade_action, get_lend_action
+from tests.helpers import get_balance_trade_action, get_lend_action, borrow_to_debt_cap
 from tests.internal.vaults.fixtures import get_vault_config, set_flags
 from tests.snapshot import EventChecker
 from tests.stateful.invariants import check_system_invariants
@@ -261,8 +261,6 @@ def test_roll_vault_success(
     depositAmountShare,
     enablefCashDiscount,
 ):
-    initialMaturity = 1
-    hasMatured = False
     decimals = environment.notional.getCurrency(currencyId)["underlyingToken"]["decimals"]
     vault = SimpleStrategyVault.deploy(
         "Simple Strategy", environment.notional.address, currencyId, {"from": accounts[0]}
@@ -527,3 +525,44 @@ def test_roll_vault_collateral_ratio(
     assert pytest.approx(healthBefore["collateralRatio"], abs=100) == healthAfter["collateralRatio"]
 
     check_system_invariants(environment, accounts, [vault])
+
+@given(isPrime=strategy("bool"))
+def test_reverts_if_enter_above_debt_cap(environment, accounts, isPrime, vault):
+    environment.notional.updateVault(
+        vault.address,
+        get_vault_config(currencyId=2, flags=set_flags(0, ENABLED=True, ALLOW_ROLL_POSITION=True)),
+        100_000_000e8,
+    )
+    maturity = PRIME_CASH_VAULT_MATURITY if isPrime else environment.notional.getActiveMarkets(2)[0][1]
+    environment.notional.enterVault(
+        accounts[1], vault.address, 25_000e18, maturity, 100_000e8, 0, "", {"from": accounts[1]}
+    )
+
+    borrow_to_debt_cap(environment, 2, 1.10)
+
+    if isPrime:
+        # Can roll from prime to fCash while over debt cap
+        environment.notional.rollVaultPosition(
+            accounts[1],
+            vault,
+            105_000e8,
+            environment.notional.getActiveMarkets(2)[0][1],
+            5e18,
+            0,
+            0,
+            "",
+            {"from": accounts[1]},
+        )
+    else:
+        with brownie.reverts("Over Debt Cap"):
+            environment.notional.rollVaultPosition(
+                accounts[1],
+                vault,
+                100_000e8,
+                PRIME_CASH_VAULT_MATURITY,
+                5e18,
+                0,
+                0,
+                "",
+                {"from": accounts[1]},
+            )
