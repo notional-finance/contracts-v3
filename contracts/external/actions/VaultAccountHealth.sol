@@ -24,19 +24,21 @@ import {VaultValuation, VaultAccountHealthFactors} from "../../internal/vaults/V
 import {VaultSecondaryBorrow} from "../../internal/vaults/VaultSecondaryBorrow.sol";
 import {VaultStateLib} from "../../internal/vaults/VaultState.sol";
 import {PrimeRateLib} from "../../internal/pCash/PrimeRateLib.sol";
+import {PrimeSupplyCap} from "../../internal/pCash/PrimeSupplyCap.sol";
 import {PrimeCashExchangeRate} from "../../internal/pCash/PrimeCashExchangeRate.sol";
 
 import {IVaultAccountHealth} from "../../../interfaces/notional/IVaultController.sol";
 
 contract VaultAccountHealth is IVaultAccountHealth {
     using PrimeRateLib for PrimeRate;
+    using PrimeSupplyCap for PrimeRate;
     using VaultConfiguration for VaultConfig;
     using SafeUint256 for uint256;
     using SafeInt256 for int256;
 
     /// @notice Checks if a vault account has sufficient collateral to perform an action, reverts if it does not.
     /// Called at the end of VaultAccountActions after all values have been set in storage
-    function checkVaultAccountCollateralRatio(address vault, address account) external override {
+    function checkVaultAccountCollateralRatio(address vault, address account, bool checkDebtCap) external override {
         require(account != vault);
         VaultConfig memory vaultConfig = VaultConfiguration.getVaultConfigStateful(vault);
         VaultAccount memory vaultAccount = VaultAccountLib.getVaultAccount(account, vaultConfig);
@@ -47,9 +49,19 @@ contract VaultAccountHealth is IVaultAccountHealth {
         // Require that secondary cash is zero during this method as well
         VaultAccountLib.checkVaultAccountSecondaryCash(account, vault);
 
-        (int256 collateralRatio, /* */) = VaultValuation.getCollateralRatioFactorsStateful(
+        (int256 collateralRatio, PrimeRate[2] memory secondaryRates) = VaultValuation.getCollateralRatioFactorsStateful(
             vaultConfig, vaultState, account, vaultAccount.vaultShares, vaultAccount.accountDebtUnderlying
         );
+
+        if (checkDebtCap && vaultAccount.maturity == Constants.PRIME_CASH_VAULT_MATURITY) {
+            vaultConfig.primeRate.checkDebtCap(vaultConfig.borrowCurrencyId);
+            if (vaultConfig.secondaryBorrowCurrencies[0] != 0) {
+                secondaryRates[0].checkDebtCap(vaultConfig.secondaryBorrowCurrencies[0]);
+            }
+            if (vaultConfig.secondaryBorrowCurrencies[1] != 0) {
+                secondaryRates[1].checkDebtCap(vaultConfig.secondaryBorrowCurrencies[1]);
+            }
+        }
 
         // Enforce a maximum account collateral ratio that must be satisfied for vault entry and vault exit,
         // to ensure that accounts are not "free riding" on vaults by entering without incurring borrowing

@@ -78,7 +78,7 @@ def check_cash_balance(env, accounts, vaults):
         chain.mine(1, timedelta=1)
         env.notional.accruePrimeInterest(currencyId)
         chain.mine(1, timedelta=2)
-        (primeRate, primeFactors, _, _) = env.notional.getPrimeFactors(currencyId, chain.time())
+        (primeRate, primeFactors, _, _, _, _) = env.notional.getPrimeFactors(currencyId, chain.time())
 
         for account in accounts:
             (cashBalance, nTokenBalance, _) = env.notional.getAccountBalance(

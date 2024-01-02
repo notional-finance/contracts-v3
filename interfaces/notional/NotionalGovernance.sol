@@ -85,7 +85,8 @@ interface NotionalGovernance {
 
     function setMaxUnderlyingSupply(
         uint16 currencyId,
-        uint256 maxUnderlyingSupply
+        uint256 maxUnderlyingSupply,
+        uint8 maxPrimeDebtUtilization
     ) external;
 
     function updatePrimeCashHoldingsOracle(

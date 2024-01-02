@@ -5,6 +5,7 @@ from brownie.network.state import Chain
 from brownie.test import given, strategy
 from fixtures import *
 from tests.constants import PRIME_CASH_VAULT_MATURITY, SECONDS_IN_QUARTER
+from tests.helpers import borrow_to_debt_cap
 from tests.internal.vaults.fixtures import get_vault_config, set_flags
 from tests.snapshot import EventChecker
 from tests.stateful.invariants import check_system_invariants
@@ -618,6 +619,29 @@ def test_cannot_enter_vault_with_matured_position(environment, accounts, vault):
             0,
             "",
             {"from": accounts[1]},
+        )
+
+    check_system_invariants(environment, accounts, [vault])
+
+@given(isPrime=strategy("bool"))
+def test_reverts_if_enter_above_debt_cap(environment, accounts, isPrime, vault):
+    maturity = PRIME_CASH_VAULT_MATURITY if isPrime else environment.notional.getActiveMarkets(2)[0][1]
+    borrow_to_debt_cap(environment, 2, 1.10)
+    environment.notional.updateVault(
+        vault.address,
+        get_vault_config(currencyId=2, flags=set_flags(0, ENABLED=True, ALLOW_ROLL_POSITION=True)),
+        100_000_000e8,
+    )
+
+    if isPrime:
+        # Debt cap is only checked on prime borrows
+        with brownie.reverts("Over Debt Cap"):
+            environment.notional.enterVault(
+                accounts[1], vault.address, 25_000e18, maturity, 100_000e8, 0, "", {"from": accounts[1]}
+            )
+    else:
+        environment.notional.enterVault(
+            accounts[1], vault.address, 25_000e18, maturity, 100_000e8, 0, "", {"from": accounts[1]}
         )
 
     check_system_invariants(environment, accounts, [vault])
