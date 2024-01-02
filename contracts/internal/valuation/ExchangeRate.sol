@@ -26,7 +26,8 @@ library ExchangeRate {
                 er.rateDecimals
             );
 
-        return result;
+        // Ensure that debt balances always return a negative value
+        return balance < 0 ? SafeInt256.min(result, -1) : result;
     }
 
     /// @notice Converts the balance denominated in ETH to the equivalent value in a base currency.
