@@ -436,19 +436,20 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         address holding = oracleData.holding;
         uint256 currentAmount = oracleData.currentExternalUnderlyingLend;
 
-        address[] memory holdings = new address[](1);
-        holdings[0] = holding;
+        address[] memory redeemHoldings = new address[](1);
+        uint256[] memory redeemAmounts = new uint256[](1);
+        address[] memory depositHoldings = new address[](1);
+        uint256[] memory depositAmounts = new uint256[](1);
+
+        redeemHoldings[0] = holding;
+        depositHoldings[0] = holding;
 
         if (targetAmount < currentAmount) {
-            uint256[] memory redeemAmounts = new uint256[](1);
             redeemAmounts[0] = currentAmount - targetAmount;
-
-            rebalancingData.redeemData = oracle.getRedemptionCalldataForRebalancing(holdings, redeemAmounts);
+            rebalancingData.redeemData = oracle.getRedemptionCalldataForRebalancing(redeemHoldings, redeemAmounts);
         } else if (currentAmount < targetAmount) {
-            uint256[] memory depositAmounts = new uint256[](1);
             depositAmounts[0] = targetAmount - currentAmount;
-
-            rebalancingData.depositData = oracle.getDepositCalldataForRebalancing(holdings, depositAmounts);
+            rebalancingData.depositData = oracle.getDepositCalldataForRebalancing(depositHoldings, depositAmounts);
         }
     }
 

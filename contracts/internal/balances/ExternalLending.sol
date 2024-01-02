@@ -58,8 +58,24 @@ library ExternalLending {
         // all above the target.
         if (targetExternalUnderlyingLend < 0) targetExternalUnderlyingLend = 0;
 
-        // this limit should ensures we can always withdraw deposited underlying, can be increased/decreased by 
-        // setting externalWithdrawThreshold
+        // To ensure redeemability of Notional’s funds on external lending markets,
+        // Notional requires there to be redeemable funds on the external lending market
+        // that are a multiple of the funds that Notional has lent on that market itself.
+        //
+        // The max amount that Notional can lend on that market is a function
+        // of the excess redeemable funds on that market
+        // (funds that are redeemable in excess of Notional’s own funds on that market)
+        // and the externalWithdrawThreshold.
+        //
+        // excessFunds = externalUnderlyingAvailableForWithdraw - currentExternalUnderlyingLend
+        //
+        // maxExternalUnderlyingLend * (externalWithdrawThreshold + 1) = maxExternalUnderlyingLend + excessFunds
+        //
+        // maxExternalUnderlyingLend * (externalWithdrawThreshold + 1) - maxExternalUnderlyingLend = excessFunds
+        //
+        // maxExternalUnderlyingLend * externalWithdrawThreshold = excessFunds
+        //
+        // maxExternalUnderlyingLend = excessFunds / externalWithdrawThreshold
         uint256 maxExternalUnderlyingLend;
         if (oracleData.currentExternalUnderlyingLend < oracleData.externalUnderlyingAvailableForWithdraw) {
             maxExternalUnderlyingLend =
@@ -79,14 +95,16 @@ library ExternalLending {
             // maxExternalDeposit is limit due to the supply cap on external pools
             SafeUint256.min(maxExternalUnderlyingLend, oracleData.maxExternalDeposit)
         );
-
         // in case of redemption, make sure there is enough to withdraw, important for health check so that
         // it does not trigger rebalances(redemptions) when there is nothing to redeem
         if (targetAmount < oracleData.currentExternalUnderlyingLend) {
             uint256 forRedemption = oracleData.currentExternalUnderlyingLend - targetAmount;
             if (oracleData.externalUnderlyingAvailableForWithdraw < forRedemption) {
                 // increase target amount so that redemptions amount match externalUnderlyingAvailableForWithdraw
-                targetAmount += forRedemption - oracleData.externalUnderlyingAvailableForWithdraw;
+                targetAmount = targetAmount.add(
+                    // unchecked - is safe here, overflow is not possible due to above if conditional
+                    forRedemption - oracleData.externalUnderlyingAvailableForWithdraw
+                );
             }
         }
     }
@@ -137,7 +155,7 @@ library ExternalLending {
             uint256 oldAssetBalance = IERC20(data.assetToken).balanceOf(address(this));
 
             // Measure the underlying balance change before and after the call.
-            uint256 oldUnderlyingBalance = balanceOf(underlyingToken, address(this));
+            uint256 oldUnderlyingBalance = TokenHandler.balanceOf(underlyingToken, address(this));
 
             // Some asset tokens may require multiple calls to redeem if there is an unstake
             // or redemption from WETH involved. We only measure the asset token balance change
@@ -147,7 +165,7 @@ library ExternalLending {
             }
 
             // Ensure that we get sufficient underlying on every redemption
-            uint256 newUnderlyingBalance = balanceOf(underlyingToken, address(this));
+            uint256 newUnderlyingBalance = TokenHandler.balanceOf(underlyingToken, address(this));
             uint256 underlyingBalanceChange = newUnderlyingBalance.sub(oldUnderlyingBalance);
             // If the call is not the final redemption, then expectedUnderlying should
             // be set to zero.
@@ -164,18 +182,17 @@ library ExternalLending {
                 newAssetBalance = newAssetBalance.add(data.rebasingTokenBalanceAdjustment);
             }
 
-            updateStoredTokenBalance(data.assetToken, oldAssetBalance, newAssetBalance);
+            TokenHandler.updateStoredTokenBalance(data.assetToken, oldAssetBalance, newAssetBalance);
 
             // Update the total value with the net change
             totalUnderlyingRedeemed = totalUnderlyingRedeemed.add(underlyingBalanceChange);
 
             // totalUnderlyingRedeemed is always positive or zero.
-            updateStoredTokenBalance(underlyingToken.tokenAddress, oldUnderlyingBalance, newUnderlyingBalance);
+            TokenHandler.updateStoredTokenBalance(underlyingToken.tokenAddress, oldUnderlyingBalance, newUnderlyingBalance);
         }
     }
 
     function executeDeposits(Token memory underlyingToken, DepositData[] memory deposits) internal {
-        uint256 totalUnderlyingDepositAmount;
         for (uint256 i; i < deposits.length; i++) {
             DepositData memory depositData = deposits[i];
             // Measure the token balance change if the `assetToken` value is set in the
@@ -203,17 +220,14 @@ library ExternalLending {
             uint256 newAssetBalance = IERC20(depositData.assetToken).balanceOf(address(this));
             require(oldAssetBalance <= newAssetBalance);
 
-            if (underlyingBalanceChange != newAssetBalance.sub(oldAssetBalance)) {
-                newAssetBalance = newAssetBalance.add(depositData.assetTokenBalanceAdjustment);
+            if (
+                (depositData.rebasingTokenBalanceAdjustment != 0) &&
+                (underlyingBalanceChange != newAssetBalance.sub(oldAssetBalance))
+            ) {
+                newAssetBalance = newAssetBalance.add(depositData.rebasingTokenBalanceAdjustment);
             }
 
-
             TokenHandler.updateStoredTokenBalance(depositData.assetToken, oldAssetBalance, newAssetBalance);
-
-            // Update the total value with the net change
-            totalUnderlyingDepositAmount = totalUnderlyingDepositAmount.add(underlyingBalanceChange);
-            // totalUnderlyingDepositAmount needs to be subtracted from the underlying balance because
-            // we are trading underlying cash for asset cash
             TokenHandler.updateStoredTokenBalance(underlyingToken.tokenAddress, oldUnderlyingBalance, newUnderlyingBalance);
         }
     }
