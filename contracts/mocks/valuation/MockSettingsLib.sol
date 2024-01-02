@@ -319,7 +319,8 @@ contract MockSettingsLib {
             pvHaircutPercentage,
             0,
             0,
-            liquidationHaircutPercentage
+            liquidationHaircutPercentage,
+            liquidationHaircutPercentage - pvHaircutPercentage
         );
     }
 
@@ -350,8 +351,8 @@ contract MockSettingsLib {
         return TokenHandler.getUnderlyingToken(currencyId);
     }
 
-    function setMaxUnderlyingSupply(uint16 currencyId, uint256 maxUnderlying) external {
-        PrimeCashExchangeRate.setMaxUnderlyingSupply(currencyId, maxUnderlying);
+    function setMaxUnderlyingSupply(uint16 currencyId, uint256 maxUnderlying, uint8 maxPrimeDebtUtilization) external {
+        PrimeCashExchangeRate.setMaxUnderlyingSupply(currencyId, maxUnderlying, maxPrimeDebtUtilization);
     }
 
     function getPrimeInterestRates(

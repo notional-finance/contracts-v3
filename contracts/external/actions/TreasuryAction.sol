@@ -136,6 +136,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
         int256 actualTransferExternal = TokenHandler.withdrawPrimeCash(
             treasuryManagerContract,
+            treasuryManagerContract,
             currencyId,
             primeCashRedeemAmount.neg(),
             primeRate,

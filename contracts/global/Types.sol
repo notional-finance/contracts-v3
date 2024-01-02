@@ -374,9 +374,9 @@ struct nTokenContext {
     // currently holds
     uint8 assetArrayLength;
     // Each byte is a specific nToken parameter
-    bytes5 nTokenParameters;
+    bytes6 nTokenParameters;
     // Reserved bytes for future usage
-    bytes15 _unused;
+    bytes14 _unused;
     // Set to true if a secondary rewarder is set
     bool hasSecondaryRewarder;
 }
@@ -707,7 +707,10 @@ struct PrimeCashFactorsStorage {
     // gives us approx 7 digits of precision for each value. Because these are used
     // to maintain supply and borrow caps, they are not required to be exact.
     uint32 maxUnderlyingSupply;
-    uint128 _reserved;
+    // The maximum utilization that prime debt is allowed to reach by users borrowing prime
+    // debt via the markets directly. This cap is not applied to liquidations and settlement.
+    uint8 maxPrimeDebtUtilization;
+    uint120 _reserved;
     // Reserving the next 128 bytes for future use in case we decide to implement debt
     // caps on a currency. In that case, we will need to track the total fcash overall
     // and subtract the total debt held in vaults.

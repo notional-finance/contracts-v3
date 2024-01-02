@@ -123,7 +123,7 @@ class TestTokenHandler:
     def test_deposit_respects_max_supply(self, tokens, accounts):
         tokenHandler = tokens["handler"]
         for (i, t) in enumerate(tokens["tokens"]):
-            tokenHandler.setMaxUnderlyingSupply(i + 1, 1500e8)
+            tokenHandler.setMaxUnderlyingSupply(i + 1, 1500e8, 100)
             decimals = 18 if i == 0 else t.decimals()
             balanceBefore = tokens["oracles"][i].getTotalUnderlyingValueView()
             depositExternal = Wei(400 * (10 ** decimals))
@@ -150,7 +150,7 @@ class TestTokenHandler:
                 )
 
             # Reduce supply balance
-            tokenHandler.setMaxUnderlyingSupply(i + 1, 1200e8)
+            tokenHandler.setMaxUnderlyingSupply(i + 1, 1200e8, 100)
 
             # Still cannot deposit
             with brownie.reverts("Over Supply Cap"):

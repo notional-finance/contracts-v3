@@ -38,6 +38,7 @@ import {DeprecatedAssetRate} from "../internal/markets/DeprecatedAssetRate.sol";
 import {nTokenHandler} from "../internal/nToken/nTokenHandler.sol";
 import {nTokenSupply} from "../internal/nToken/nTokenSupply.sol";
 import {PrimeRateLib} from "../internal/pCash/PrimeRateLib.sol";
+import {PrimeSupplyCap} from "../internal/pCash/PrimeSupplyCap.sol";
 import {PrimeCashExchangeRate} from "../internal/pCash/PrimeCashExchangeRate.sol";
 import {TokenHandler} from "../internal/balances/TokenHandler.sol";
 import {BalanceHandler} from "../internal/balances/BalanceHandler.sol";
@@ -55,6 +56,7 @@ contract Views is StorageLayoutV2, NotionalViews {
     using TokenHandler for Token;
     using Market for MarketParameters;
     using PrimeRateLib for PrimeRate;
+    using PrimeSupplyCap for PrimeRate;
     using SafeInt256 for int256;
     using SafeUint256 for uint256;
     using BalanceHandler for BalanceState;
@@ -254,10 +256,17 @@ contract Views is StorageLayoutV2, NotionalViews {
         PrimeRate memory pr,
         PrimeCashFactors memory factors,
         uint256 maxUnderlyingSupply,
-        uint256 totalUnderlyingSupply
+        uint256 totalUnderlyingSupply,
+        uint256 maxUnderlyingDebt,
+        uint256 totalUnderlyingDebt
     ) {
         (pr, factors) = PrimeCashExchangeRate.getPrimeCashRateView(currencyId, blockTime);
-        (maxUnderlyingSupply, totalUnderlyingSupply) = pr.getSupplyCap(currencyId);
+        (
+            maxUnderlyingSupply,
+            totalUnderlyingSupply,
+            maxUnderlyingDebt,
+            totalUnderlyingDebt
+        ) = pr.getSupplyCap(currencyId);
     }
 
     function getPrimeFactorsStored(
@@ -418,7 +427,10 @@ contract Views is StorageLayoutV2, NotionalViews {
             uint256 totalSupply,
             uint256 incentiveAnnualEmissionRate,
             uint256 lastInitializedTime,
-            bytes5 nTokenParameters,
+            // NOTE: changing the number of bytes returned by nTokenParameters will not break ABI
+            // decoding since abi encoding is not packed. This method will always return bytes32
+            // and the calling function will truncate that down to the number of bytes specified here.
+            bytes6 nTokenParameters,
             int256 cashBalance,
             uint256 accumulatedNOTEPerNToken,
             uint256 lastAccumulatedTime

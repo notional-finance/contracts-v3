@@ -33,7 +33,7 @@ def isolation(fn_isolation):
 
 def get_market_proportion(currencyId, environment):
     proportions = []
-    (primeRate, _, _, _) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+    (primeRate, _, _, _, _, _) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
     markets = environment.notional.getActiveMarkets(currencyId)
     for (i, market) in enumerate(markets):
         totalCashUnderlying = (market[3] * primeRate["supplyFactor"]) / Wei(1e36)
@@ -41,6 +41,84 @@ def get_market_proportion(currencyId, environment):
         proportions.append(proportion)
 
     return proportions
+
+def test_mint_ntokens_above_deviation(environment, accounts):
+    currencyId = 2
+    lendAction = get_balance_trade_action(
+        2,
+        "DepositUnderlying",
+        [
+            {
+                "tradeActionType": "Lend",
+                "marketIndex": 1,
+                "notional": 450_000e8,
+                "minSlippage": 0,
+            },
+            {
+                "tradeActionType": "Lend",
+                "marketIndex": 2,
+                "notional": 450_000e8,
+                "minSlippage": 0,
+            }
+        ],
+        depositActionAmount=1_000_000e18,
+        withdrawEntireCashBalance=False,
+        redeemToUnderlying=True,
+    )
+    environment.notional.batchBalanceAndTradeAction(
+        accounts[0],
+        [ lendAction ],
+        {"from": accounts[0]},
+    )
+    pv0 = environment.notional.nTokenPresentValueAssetDenominated(currencyId)
+
+    chain.mine(blocks=1, timedelta=21600)
+    pv1 = environment.notional.nTokenPresentValueAssetDenominated(currencyId)
+
+    # Borrow a bunch to move the last implied PV
+    borrowAction = get_balance_trade_action(
+        2,
+        "None",
+        [
+            {
+                "tradeActionType": "Borrow",
+                "marketIndex": 1,
+                "notional": 900_000e8,
+                "maxSlippage": 0,
+            },
+            {
+                "tradeActionType": "Borrow",
+                "marketIndex": 2,
+                "notional": 900_000e8,
+                "maxSlippage": 0,
+            }
+        ],
+        withdrawEntireCashBalance=False,
+        redeemToUnderlying=True,
+    )
+
+    environment.notional.batchBalanceAndTradeAction(
+        accounts[0],
+        [ borrowAction ],
+        {"from": accounts[0]},
+    )
+
+    # Spot rate and oracle rate should differ by about 8.5% here
+    with brownie.reverts("Over Deviation Limit"):
+        environment.notional.batchBalanceAction(
+            accounts[0],
+            [
+                get_balance_action(
+                    currencyId, "DepositUnderlyingAndMintNToken", depositActionAmount=1_000e18
+                )
+            ],
+            {"from": accounts[0]},
+        )
+
+    with brownie.reverts("Over Deviation Limit"):
+        environment.notional.calculateNTokensToMint(
+            currencyId, 1000e18
+        )
 
 def test_deleverage_markets_no_lend(environment, accounts):
     # Lending does not succeed when markets are over levered, cash goes into cash balance
@@ -634,7 +712,8 @@ def test_mint_and_redeem_with_supply_caps(environment, accounts, useBitmap):
     factors = environment.notional.getPrimeFactorsStored(currencyId)
     environment.notional.setMaxUnderlyingSupply(
         currencyId,
-        factors['lastTotalUnderlyingValue'] + 1_050e8
+        factors['lastTotalUnderlyingValue'] + 1_050e8,
+        100
     )
     
     environment.notional.batchBalanceAction(
@@ -647,7 +726,7 @@ def test_mint_and_redeem_with_supply_caps(environment, accounts, useBitmap):
         {"from": accounts[0]},
     )
 
-    environment.notional.setMaxUnderlyingSupply(currencyId, 1e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, 1e8, 100)
 
     # In this edge condition, the account cannot redeem nTokens via the batch action. They
     # have to use account action

@@ -201,10 +201,18 @@ library PrimeCashExchangeRate {
         s.rateOracleTimeWindow5Min = rateOracleTimeWindow5min;
     }
 
-    function setMaxUnderlyingSupply(uint16 currencyId, uint256 maxUnderlyingSupply) internal returns (uint256 unpackedSupply) {
+    function setMaxUnderlyingSupply(
+        uint16 currencyId,
+        uint256 maxUnderlyingSupply,
+        uint8 maxPrimeDebtUtilization
+    ) internal returns (uint256 unpackedSupply) {
         PrimeCashFactorsStorage storage s = LibStorage.getPrimeCashFactors()[currencyId];
         s.maxUnderlyingSupply = FloatingPoint.packTo32Bits(maxUnderlyingSupply);
         unpackedSupply = FloatingPoint.unpackFromBits(uint256(s.maxUnderlyingSupply));
+
+        // This is set in percentage of the max underlying supply
+        require(maxPrimeDebtUtilization <= Constants.PERCENTAGE_DECIMALS);
+        s.maxPrimeDebtUtilization = maxPrimeDebtUtilization;
     }
 
     /// @notice Updates prime cash interest rate curve after initialization,

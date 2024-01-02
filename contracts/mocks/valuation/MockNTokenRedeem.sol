@@ -107,7 +107,8 @@ contract MockNTokenRedeem is AbstractSettingsRouter {
     function getNTokenMarketValue(nTokenPortfolio memory nToken, uint256 blockTime)
         public view returns (int256 totalAssetValue, int256[] memory netfCash)
     {
-        return nTokenCalculations.getNTokenMarketValue(nToken, blockTime);
+        // Use Oracle Value
+        return nTokenCalculations.getNTokenMarketValue(nToken, blockTime, true);
     }
 
     function redeem(

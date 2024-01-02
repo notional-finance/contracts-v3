@@ -40,7 +40,12 @@ contract RedeemNToken is Test {
     function setUp() public {
         vm.createSelectFork(ARBITRUM_RPC_URL, ARBITRUM_FORK_BLOCK);
         Router.DeployedContracts memory c = getDeployedContracts();
+        nTokenMintAction = address(new nTokenMintAction());
+        FreeCollateral = address(new FreeCollateral());
+
         c.batchAction = address(new BatchAction());
+        c.views = address(new Views());
+        c.calculationViews = address(new CalculationViews());
 
         upgradeTo(c);
     }

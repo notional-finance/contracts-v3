@@ -80,7 +80,9 @@ interface NotionalViews {
         PrimeRate memory primeRate,
         PrimeCashFactors memory factors,
         uint256 maxUnderlyingSupply,
-        uint256 totalUnderlyingSupply
+        uint256 totalUnderlyingSupply,
+        uint256 maxUnderlyingDebt,
+        uint256 totalUnderlyingDebt
     );
 
     function getPrimeFactorsStored(uint16 currencyId) external view returns (PrimeCashFactors memory);
@@ -134,7 +136,7 @@ interface NotionalViews {
             uint256 totalSupply,
             uint256 incentiveAnnualEmissionRate,
             uint256 lastInitializedTime,
-            bytes5 nTokenParameters,
+            bytes6 nTokenParameters,
             int256 cashBalance,
             uint256 accumulatedNOTEPerNToken,
             uint256 lastAccumulatedTime

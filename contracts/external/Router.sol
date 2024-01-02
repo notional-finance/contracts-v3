@@ -156,6 +156,7 @@ contract Router is StorageLayoutV1 {
             sig == NotionalProxy.depositUnderlyingToken.selector ||
             sig == NotionalProxy.depositAssetToken.selector ||
             sig == NotionalProxy.withdraw.selector ||
+            sig == NotionalProxy.withdrawViaProxy.selector ||
             sig == NotionalProxy.settleAccount.selector ||
             sig == NotionalProxy.nTokenRedeem.selector ||
             sig == NotionalProxy.enableBitmapCurrency.selector ||
