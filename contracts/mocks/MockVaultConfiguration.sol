@@ -451,8 +451,11 @@ contract MockVaultValuation is MockVaultConfiguration {
         }
 
         (VaultAccountHealthFactors memory h, /* er */) = VaultValuation.calculateAccountHealthFactors(vaultConfig, vaultAccount, vaultState, primeRates);
+        int256 vaultShareValue = VaultValuation.getPrimaryUnderlyingValueOfShare(
+            vaultState, vaultConfig, vaultAccount.account, vaultAccount.vaultShares
+        );
 
-        (int256 collateralRatio, int256 vaultShareValue) = VaultValuation.getCollateralRatioFactorsStateful(
+        (int256 collateralRatio, /* */) = VaultValuation.getCollateralRatioFactorsStateful(
             vaultConfig, vaultState, vaultAccount.account, vaultAccount.vaultShares, vaultAccount.accountDebtUnderlying
         );
 

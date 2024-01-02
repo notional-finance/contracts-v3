@@ -16,6 +16,7 @@ import {TransferAssets} from "../../internal/portfolio/TransferAssets.sol";
 import {BalanceHandler} from "../../internal/balances/BalanceHandler.sol";
 import {nTokenHandler} from "../../internal/nToken/nTokenHandler.sol";
 import {PrimeRateLib} from "../../internal/pCash/PrimeRateLib.sol";
+import {PrimeSupplyCap} from "../../internal/pCash/PrimeSupplyCap.sol";
 import {AccountContextHandler} from "../../internal/AccountContextHandler.sol";
 
 import {ActionGuards} from "./ActionGuards.sol";
@@ -28,6 +29,7 @@ contract AccountAction is ActionGuards {
     using BalanceHandler for BalanceState;
     using AccountContextHandler for AccountContext;
     using PrimeRateLib for PrimeRate;
+    using PrimeSupplyCap for PrimeRate;
     using SafeInt256 for int256;
 
     /// @notice A per account setting that allows it to borrow prime cash (i.e. incur negative cash)

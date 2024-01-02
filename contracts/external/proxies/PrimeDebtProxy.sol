@@ -32,8 +32,7 @@ contract PrimeDebtProxy is BaseERC4626Proxy {
         (
             /* */,
             PrimeCashFactors memory factors,
-            /* */,
-            /* */
+            /* */, /* */, /* */, /* */
         ) = NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
 
         return factors.totalPrimeDebt;
@@ -67,8 +66,7 @@ contract PrimeDebtProxy is BaseERC4626Proxy {
         (
             PrimeRate memory pr,
             PrimeCashFactors memory factors,
-            /* */,
-            /* */
+            /* */, /* */, /* */, /* */
         ) = NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
 
         totalValueExternal = pr.convertDebtStorageToUnderlying(factors.totalPrimeDebt.toInt().neg())

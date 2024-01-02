@@ -14,7 +14,6 @@ import {LibStorage} from "../../global/LibStorage.sol";
 import {Constants} from "../../global/Constants.sol";
 import {Deployments} from "../../global/Deployments.sol";
 
-import {FloatingPoint} from "../../math/FloatingPoint.sol";
 import {SafeUint256} from "../../math/SafeUint256.sol";
 import {SafeInt256} from "../../math/SafeInt256.sol";
 
@@ -480,28 +479,5 @@ library PrimeRateLib {
 
         // Clear the storage slot, no longer needed
         delete store[currencyId][maturity];
-    }
-
-    /// @notice Checks whether or not a currency has exceeded its total prime supply cap. Used to
-    /// prevent some listed currencies to be used as collateral above a threshold where liquidations
-    /// can be safely done on chain.
-    /// @dev Called during deposits in AccountAction and BatchAction. Supply caps are not checked
-    /// during settlement, liquidation and withdraws.
-    function checkSupplyCap(PrimeRate memory pr, uint16 currencyId) internal view {
-        (uint256 maxUnderlyingSupply, uint256 totalUnderlyingSupply) = getSupplyCap(pr, currencyId);
-        if (maxUnderlyingSupply == 0) return;
-
-        require(totalUnderlyingSupply <= maxUnderlyingSupply, "Over Supply Cap");
-    }
-
-    function getSupplyCap(
-        PrimeRate memory pr,
-        uint16 currencyId
-    ) internal view returns (uint256 maxUnderlyingSupply, uint256 totalUnderlyingSupply) {
-        PrimeCashFactorsStorage storage s = LibStorage.getPrimeCashFactors()[currencyId];
-        maxUnderlyingSupply = FloatingPoint.unpackFromBits(s.maxUnderlyingSupply);
-        // No potential for overflow due to storage size
-        int256 totalPrimeSupply = int256(uint256(s.totalPrimeSupply));
-        totalUnderlyingSupply = convertToUnderlying(pr, totalPrimeSupply).toUint();
     }
 }
