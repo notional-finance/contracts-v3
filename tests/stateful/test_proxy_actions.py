@@ -314,7 +314,7 @@ def test_mint(environment, accounts, currencyId, useReceiver):
 
     if currencyId == 1:
         weth = Contract.from_abi("WETH", erc20.address, WETH9.abi)
-        weth.deposit({"from": accounts[1], "value": 1e18})
+        weth.deposit({"from": accounts[1], "value": 1e18 + 1e10})
 
     erc20.approve(proxy, 2 ** 255 - 1, {"from": accounts[1]})
     depositAmount = 10 ** decimals
@@ -327,13 +327,12 @@ def test_mint(environment, accounts, currencyId, useReceiver):
     balanceAfter = erc20.balanceOf(accounts[1])
 
     minted = proxy.balanceOf(receiver)
-    assert pytest.approx(shares, rel=1e-5) == minted
-    assert shares >= minted
+    assert shares == minted
 
     (cashBalance, _, _) = environment.notional.getAccountBalance(currencyId, receiver)
     assert cashBalance == minted
     assert pytest.approx(balanceBefore - balanceAfter, rel=1e-6, abs=100) == depositAmount
-    # assert (balanceBefore - balanceAfter) >= depositAmount
+    assert (balanceBefore - balanceAfter) >= depositAmount
 
     check_system_invariants(environment, accounts)
 
@@ -430,7 +429,7 @@ def test_withdraw(environment, accounts, currencyId, useSender, useReceiver):
     if useSender:
         with brownie.reverts("Insufficient allowance"):
             proxy.withdraw(withdrawAmount, receiver, accounts[0], {"from": sender})
-        proxy.approve(sender, redeemAmount, {"from": accounts[0]})
+        proxy.approve(sender, proxy.previewWithdraw(withdrawAmount), {"from": accounts[0]})
 
     pCashBalanceBefore = proxy.balanceOf(accounts[0])
     senderApprovalBefore = proxy.allowance(accounts[0], sender)
@@ -445,11 +444,18 @@ def test_withdraw(environment, accounts, currencyId, useSender, useReceiver):
     (cashBalance, _, _) = environment.notional.getAccountBalance(currencyId, accounts[0])
     assert cashBalance == proxy.balanceOf(accounts[0])
 
-    assert pytest.approx(balanceAfter - balanceBefore, rel=1e-6, abs=100) == withdrawAmount
-    assert pytest.approx(pCashBalanceBefore - pCashBalanceAfter, rel=1e-6, abs=100) == redeemAmount
-    if useSender:
-        assert pytest.approx(senderApprovalBefore - senderApprovalAfter,
-                             rel=1e-6, abs=100) == redeemAmount
+    assert balanceAfter - balanceBefore == withdrawAmount
+    if currencyId == 3:
+        assert balanceAfter - balanceBefore == withdrawAmount
+        # Redeeming USDC balances results in larger redemption values
+        assert pytest.approx(pCashBalanceBefore - pCashBalanceAfter, rel=1e-6) == redeemAmount
+        if useSender:
+            assert pytest.approx(senderApprovalBefore - senderApprovalAfter, rel=1e-6) == redeemAmount
+    else:
+        assert pytest.approx(pCashBalanceBefore - pCashBalanceAfter, abs=100) == redeemAmount
+        if useSender:
+            assert pytest.approx(senderApprovalBefore - senderApprovalAfter, abs=100) == redeemAmount
+
 
     check_system_invariants(environment, accounts)
 
@@ -483,7 +489,7 @@ def test_cannot_withdraw_below_fc(environment, accounts):
         proxy.redeem(proxy.balanceOf(accounts[1]), accounts[1], accounts[1], {"from": accounts[1]})
 
     with brownie.reverts("Insufficient free collateral"):
-        proxy.withdraw(10e18, accounts[1], accounts[1], {"from": accounts[1]})
+        proxy.withdraw(9.9e18, accounts[1], accounts[1], {"from": accounts[1]})
 
 
 def test_cannot_call_withdraw_via_proxy(environment, accounts):

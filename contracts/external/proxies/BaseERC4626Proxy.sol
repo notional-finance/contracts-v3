@@ -162,19 +162,21 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
     /// for ERC4626 so that it is compatible with more use cases.
     function asset() external override view returns (address) { return underlying; }
 
-    /// @notice Returns the total present value of the nTokens held in native underlying token precision
+    /// @notice Returns the total present value of the assets held in native underlying token precision
     function totalAssets() public override view returns (uint256 totalManagedAssets) {
         totalManagedAssets = _getTotalValueExternal();
     }
 
-    /// @notice Converts an underlying token to an nToken denomination
     function convertToShares(uint256 assets) public override view returns (uint256 shares) {
         return assets.mul(EXCHANGE_RATE_PRECISION).div(exchangeRate());
     }
 
-    /// @notice Converts nToken denomination to underlying denomination
     function convertToAssets(uint256 shares) public override view returns (uint256 assets) {
-        return exchangeRate().mul(shares).div(EXCHANGE_RATE_PRECISION);
+        // Notional truncates balances below the 8th decimal place if they exist, so truncate
+        // those balances here as well.
+        uint256 truncate = 10 ** (nativeDecimals < 8 ? 0 : nativeDecimals - 8);
+        return shares.mul(exchangeRate()).div(EXCHANGE_RATE_PRECISION)
+            .div(truncate).mul(truncate);
     }
 
     /// @notice Gets the max underlying supply
@@ -217,36 +219,43 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         return convertToAssets(_balanceOf(owner));
     }
 
-    /// @notice Deposits are based on the conversion rate assets to shares
+    /// @notice Deposits are based on the conversion rate assets to shares.
+    /// @dev Will round down inside convertToShares. Deposits more closely match how
+    /// Notional processes minting within the protocol.
     function previewDeposit(uint256 assets) external override view returns (uint256 shares) {
-        // TODO: round down
+        // Rounds down so that the account receives less shares than assets. This calculation
+        // is only used as a view method.
         return convertToShares(assets);
     }
 
-    /// @notice Mints are based on the conversion rate from shares to assets
+    /// @notice Mints are based on the conversion rate from shares to assets.
+    /// @dev Will be called during `mint` to calculate how much assets to transfer. Therefore,
+    /// there may be some rounding errors when the number of shares minted does not match what
+    /// is requested.
     function previewMint(uint256 shares) public override view returns (uint256 assets) {
-        // TODO: round up
-        return convertToAssets(shares);
+        // convertToAssets will also convert the decimal basis to 8 decimal places. To round up,
+        // add one to the value with a smaller decimal basis.
+        return nativeDecimals < 8 ?
+            convertToAssets(shares).add(1) :
+            convertToAssets(shares.add(1));
     }
 
-    /// @notice Return value is an over-estimation of the assets that the user will receive via redemptions,
-    /// this method does not account for slippage and potential illiquid residuals. This method is not completely
-    /// ERC4626 compliant in that sense.
-    /// @dev Redemptions of nToken shares to underlying assets will experience slippage which is
-    /// not easily calculated. In some situations, slippage may be so great that the shares are not able
-    /// to be redeemed purely via the ERC4626 method and would require the account to call nTokenRedeem on
-    /// AccountAction and take on illiquid fCash residuals.
+    /// @notice Calculates how much assets will be returned when redeeming the given amount
+    /// of shares.
     function previewRedeem(uint256 shares) external view override returns (uint256 assets) {
-        // TODO: round down
+        // Rounds down so that the account receives less shares than assets. This calculation
+        // is only used as a view method.
         return convertToAssets(shares);
     }
 
-    /// @notice Return value is an under-estimation of the shares that the user will need to redeem to raise assets,
-    /// this method does not account for slippage and potential illiquid residuals. This method is not completely
-    /// ERC4626 compliant in that sense.
+    /// @notice Calculates how many shares need to be redeemed to receive the specified amount
+    /// of assets.
     function previewWithdraw(uint256 assets) public view override returns (uint256 shares) {
-        // TODO: round up
-        return convertToShares(assets);
+        // convertToShares will also convert the decimal basis to 8 decimal places. To round up,
+        // add one to the value with a larger decimal basis.
+        return nativeDecimals < 8 ?
+            convertToShares(assets.add(1)) :
+            convertToShares(assets).add(1);
     }
 
     /// @notice Deposits assets into Notional and mints either prime cash or nTokens. Unlike the wrapped fCash
