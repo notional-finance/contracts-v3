@@ -8,6 +8,7 @@ import "../../interfaces/chainlink/AggregatorV2V3Interface.sol";
 import "../../interfaces/notional/NotionalGovernance.sol";
 import "../../interfaces/notional/IRewarder.sol";
 import "../../interfaces/aave/ILendingPool.sol";
+import {IPrimeCashHoldingsOracle} from "../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 
 interface NotionalGovernance {
     event ListCurrency(uint16 newCurrencyId);
