@@ -9,6 +9,7 @@ import {BatchAction} from "../../contracts/external/actions/BatchAction.sol";
 import {nTokenAction} from "../../contracts/external/actions/nTokenAction.sol";
 import {TreasuryAction} from "../../contracts/external/actions/TreasuryAction.sol";
 import {AccountAction} from "../../contracts/external/actions/AccountAction.sol";
+import {Views} from "../../contracts/external/Views.sol";
 import {DateTime} from "../../contracts/internal/markets/DateTime.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
 import {Token} from "../../contracts/global/Types.sol";
@@ -77,8 +78,9 @@ abstract contract InvariantsSecondaryRewarder is SecondaryRewarderSetupTest {
         Router.DeployedContracts memory c = getDeployedContracts();
         c.batchAction = address(new BatchAction());
         c.accountAction = address(new AccountAction());
-        c.treasury = address(new TreasuryAction(TreasuryAction(c.treasury).COMPTROLLER()));
+        c.treasury = address(new TreasuryAction());
         c.nTokenActions = address(new nTokenAction());
+        c.views = address(new Views());
         upgradeTo(c);
 
         vm.prank(owner);
@@ -97,7 +99,7 @@ abstract contract InvariantsSecondaryRewarder is SecondaryRewarderSetupTest {
     }
 
     function _deposit(address account, uint256 amount) internal {
-        (,, uint256 maxSupply, uint256 totalSupply) = NOTIONAL.getPrimeFactors(CURRENCY_ID, block.timestamp);
+        (,, uint256 maxSupply, uint256 totalSupply,,) = NOTIONAL.getPrimeFactors(CURRENCY_ID, block.timestamp);
         maxSupply = maxSupply * 999 / 1000;
         if (maxSupply == 0 || maxSupply < totalSupply) {
             return;
@@ -128,7 +130,8 @@ abstract contract InvariantsSecondaryRewarder is SecondaryRewarderSetupTest {
         if (to == account) return;
 
         uint256 maxAmount = IERC20(NTOKEN).balanceOf(account);
-        amount = bound(amount, 0, maxAmount);
+        // Reduce the max transfer amount to avoid potential FC issues here
+        amount = bound(amount, 0, maxAmount / 5);
         if (amount == 0) return;
 
         vm.prank(account);
@@ -136,21 +139,22 @@ abstract contract InvariantsSecondaryRewarder is SecondaryRewarderSetupTest {
     }
 
     // maxClaim = emission rate * time period / year
+    uint256 constant NUM_SAMPLES = 100;
     function testFuzz_invariant_NoMaterWhatHappensTotalClaimsLeMaxClaim(
-        uint256[100][5] memory depositAmounts,
-        uint256[100][5] memory redeemAmounts,
-        uint32[100] memory skipTimes,
-        bool[100][5] memory shouldDeposit,
-        bool[100][5] memory shouldRedeem,
-        bool[100][5] memory shouldManualClaim,
-        bool[100][5] memory shouldTransfer,
-        uint8[100][5] memory transferTo,
-        uint256[100][5] memory transferAmounts
+        uint256[NUM_SAMPLES][5] memory depositAmounts,
+        uint256[NUM_SAMPLES][5] memory redeemAmounts,
+        uint32[NUM_SAMPLES] memory skipTimes,
+        bool[NUM_SAMPLES][5] memory shouldDeposit,
+        bool[NUM_SAMPLES][5] memory shouldRedeem,
+        bool[NUM_SAMPLES][5] memory shouldManualClaim,
+        bool[NUM_SAMPLES][5] memory shouldTransfer,
+        uint8[NUM_SAMPLES][5] memory transferTo,
+        uint256[NUM_SAMPLES][5] memory transferAmounts
     ) public {
         uint256 nextSettlementDate = DateTime.getReferenceTime(block.timestamp) + Constants.QUARTER;
         uint256 rewardBalanceAtStart = IERC20(REWARD_TOKEN).balanceOf(address(rewarder));
 
-        for (uint256 i = 0; i < 100; i++) {
+        for (uint256 i = 0; i < NUM_SAMPLES; i++) {
             skip(bound(skipTimes[i], 0, uint256(7 weeks)));
             if (nextSettlementDate <= block.timestamp) {
                 nextSettlementDate += Constants.QUARTER;

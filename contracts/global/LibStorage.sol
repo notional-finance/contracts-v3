@@ -351,7 +351,7 @@ library LibStorage {
     }
 
     function getRebalancingTargets() internal pure returns (
-        mapping(uint16 => mapping(address => uint8)) storage store
+        mapping(uint16 => mapping(address => RebalancingTargetData)) storage store
     ) {
         uint256 slot = _getStorageSlot(StorageId.RebalancingTargets);
         assembly { store.slot := slot }
@@ -383,4 +383,4 @@ library LibStorage {
         // because Solidity will do a range check on `storageId` during the cast.
         return uint256(storageId) + STORAGE_SLOT_BASE;
     }
-} 
+}
