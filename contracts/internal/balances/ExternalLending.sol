@@ -96,7 +96,7 @@ library ExternalLending {
             SafeUint256.min(maxExternalUnderlyingLend, oracleData.maxExternalDeposit)
         );
         // in case of redemption, make sure there is enough to withdraw, important for health check so that
-        // it does not trigger rebalances(redemptions) when there is nothing to redeem
+        // it does not trigger rebalances (redemptions) when there is nothing to redeem
         if (targetAmount < oracleData.currentExternalUnderlyingLend) {
             uint256 forRedemption = oracleData.currentExternalUnderlyingLend - targetAmount;
             if (oracleData.externalUnderlyingAvailableForWithdraw < forRedemption) {
@@ -177,6 +177,9 @@ library ExternalLending {
 
             if (
                 (data.rebasingTokenBalanceAdjustment != 0) &&
+                // This equation only makes sense when the "asset token" is a rebasing token
+                // in the same denomination as the underlying token. This will only be reached
+                // if the rebasingTokenBalanceAdjustment is set to a non-zero value
                 (underlyingBalanceChange != oldAssetBalance.sub(newAssetBalance))
             ) {
                 newAssetBalance = newAssetBalance.add(data.rebasingTokenBalanceAdjustment);
@@ -192,6 +195,8 @@ library ExternalLending {
         }
     }
 
+    /// @notice Executes deposits to an external lending protocol. Only called during a rebalance executed
+    /// by the TreasuryAction contract.
     function executeDeposits(Token memory underlyingToken, DepositData[] memory deposits) internal {
         for (uint256 i; i < deposits.length; i++) {
             DepositData memory depositData = deposits[i];
@@ -213,22 +218,27 @@ library ExternalLending {
             // Ensure that the underlying balance change matches the deposit amount
             uint256 newUnderlyingBalance = underlyingToken.balanceOf(address(this));
             uint256 underlyingBalanceChange = oldUnderlyingBalance.sub(newUnderlyingBalance);
-            // If the call is not the final deposit, then underlyingDepositAmount should
-            // be set to zero.
+            // Ensure that only the specified amount of underlying has left the protocol
             require(underlyingBalanceChange <= depositData.underlyingDepositAmount);
+
             // Measure and update the asset token
             uint256 newAssetBalance = IERC20(depositData.assetToken).balanceOf(address(this));
             require(oldAssetBalance <= newAssetBalance);
 
             if (
                 (depositData.rebasingTokenBalanceAdjustment != 0) &&
+                // This equation only makes sense when the "asset token" is a rebasing token
+                // in the same denomination as the underlying token. This will only be reached
+                // if the rebasingTokenBalanceAdjustment is set to a non-zero value
                 (underlyingBalanceChange != newAssetBalance.sub(oldAssetBalance))
             ) {
                 newAssetBalance = newAssetBalance.add(depositData.rebasingTokenBalanceAdjustment);
             }
 
             TokenHandler.updateStoredTokenBalance(depositData.assetToken, oldAssetBalance, newAssetBalance);
-            TokenHandler.updateStoredTokenBalance(underlyingToken.tokenAddress, oldUnderlyingBalance, newUnderlyingBalance);
+            TokenHandler.updateStoredTokenBalance(
+                underlyingToken.tokenAddress, oldUnderlyingBalance, newUnderlyingBalance
+            );
         }
     }
 

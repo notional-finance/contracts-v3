@@ -28,7 +28,6 @@ import {GenericToken} from "../../internal/balances/protocols/GenericToken.sol";
 
 import {ActionGuards} from "./ActionGuards.sol";
 import {NotionalTreasury} from "../../../interfaces/notional/NotionalTreasury.sol";
-import {Comptroller} from "../../../interfaces/compound/ComptrollerInterface.sol";
 import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -104,6 +103,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         // newBalance cannot be negative and is checked inside BalanceHandler.setReserveCashBalance
         BalanceHandler.setReserveCashBalance(currencyId, newBalance);
     }
+
     /// @notice Sets the rebalancing parameters that define how often a token is rebalanced. Rebalancing targets a
     /// specific Prime Cash utilization while ensuring that we have the ability to withdraw from an external money
     /// market if we need to.
@@ -208,7 +208,9 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         }
     }
 
-    /// @notice redeems and transfers tokens to the treasury manager contract
+    /// @notice Redeems and transfers tokens to the treasury manager contract. This method is distinct from _skimInterest
+    /// because it redeems prime cash held by the protocol, _skimInterest transfers external lending tokens held by the
+    /// protocol.
     function _redeemAndTransfer(uint16 currencyId, int256 primeCashRedeemAmount) private returns (uint256) {
         PrimeRate memory primeRate = PrimeRateLib.buildPrimeRateStateful(currencyId);
         Emitter.emitTransferPrimeCash(Constants.FEE_RESERVE, treasuryManagerContract, currencyId, primeCashRedeemAmount);
@@ -254,7 +256,11 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     function checkRebalance() external view override returns (bool canExec, bytes memory execPayload) {
         mapping(uint16 => RebalancingContextStorage) storage contexts = LibStorage.getRebalancingContext();
         uint16[] memory currencyIds = new uint16[](maxCurrencyId);
+
+        // Counter is used to calculate the payload at the end of the method
         uint16 counter = 0;
+
+        // Currency ids are 1-indexed
         for (uint16 currencyId = 1; currencyId <= maxCurrencyId; currencyId++) {
             IPrimeCashHoldingsOracle oracle = PrimeCashExchangeRate.getPrimeCashHoldingsOracle(currencyId);
             address[] memory holdings = oracle.holdings();
@@ -262,10 +268,12 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
             RebalancingContextStorage storage context = contexts[currencyId];
             bool cooldownPassed = _hasCooldownPassed(context);
+            (PrimeRate memory pr, /* */) = PrimeCashExchangeRate.getPrimeCashRateView(currencyId, block.timestamp);
+            (bool isExternalLendingUnhealthy, /* */, /* */) = _isExternalLendingUnhealthy(currencyId, oracle, pr);
 
             // If external lending is unhealthy, the bot and rebalance the currency immediately and
             // bypass the cooldown.
-            if (cooldownPassed || _isExternalLendingUnhealthy(currencyId, oracle)) {
+            if (cooldownPassed || isExternalLendingUnhealthy) {
                 currencyIds[counter] = currencyId;
                 counter++;
             }
@@ -288,11 +296,8 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         require(msg.sender == rebalancingBot, "Unauthorized");
 
         for (uint256 i; i < currencyIds.length; ++i) {
-            if (i != 0) {
-                // ensure currency ids are unique and sorted
-                require(currencyIds[i - 1] < currencyIds[i]);
-            }
-
+            // ensure currency ids are unique and sorted
+            if (i != 0) require(currencyIds[i - 1] < currencyIds[i]);
 
             // Rebalance each of the currencies provided. The gelato bot cannot skip the cooldown check.
             _rebalanceCurrency({currencyId: currencyIds[i], useCooldownCheck: true});
@@ -308,24 +313,30 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     /// @notice Executes the rebalancing of a single currency and updates the oracle supply rate.
     function _rebalanceCurrency(uint16 currencyId, bool useCooldownCheck) private {
         RebalancingContextStorage memory context = LibStorage.getRebalancingContext()[currencyId];
-        if (useCooldownCheck) {
-            require(
-                _hasCooldownPassed(context) ||
-                _isExternalLendingUnhealthy(currencyId,  PrimeCashExchangeRate.getPrimeCashHoldingsOracle(currencyId))
-            );
-        }
         // Accrues interest up to the current block before any rebalancing is executed
+        IPrimeCashHoldingsOracle oracle = PrimeCashExchangeRate.getPrimeCashHoldingsOracle(currencyId);
         PrimeRate memory pr = PrimeRateLib.buildPrimeRateStateful(currencyId);
 
-        // Updates the oracle supply rate as well as the last cooldown timestamp.
-        uint256 annualizedInterestRate = _updateOracleSupplyRate(
-            currencyId, pr, context.previousSupplyFactorAtRebalance, context.lastRebalanceTimestampInSeconds
-        );
+        bool hasCooldownPassed = _hasCooldownPassed(context);
+        (bool isExternalLendingUnhealthy, OracleData memory oracleData, uint256 targetAmount) = 
+            _isExternalLendingUnhealthy(currencyId, oracle, pr);
+
+        // Cooldown check is bypassed when the owner updates the rebalancing targets
+        if (useCooldownCheck) require(hasCooldownPassed || isExternalLendingUnhealthy);
+
+        // Updates the oracle supply rate as well as the last cooldown timestamp. Only update the oracle supply rate
+        // if the cooldown has passed. If not, the oracle supply rate won't change.
+        uint256 oracleSupplyRate = pr.oracleSupplyRate;
+        if (hasCooldownPassed) {
+            oracleSupplyRate = _updateOracleSupplyRate(
+                currencyId, pr, context.previousSupplyFactorAtRebalance, context.lastRebalanceTimestampInSeconds
+            );
+        }
 
         // External effects happen after the internal state has updated
-        _executeRebalance(currencyId, pr);
+        _executeRebalance(currencyId, oracle, pr, oracleData, targetAmount);
 
-        emit CurrencyRebalanced(currencyId, pr.supplyFactor.toUint(), annualizedInterestRate);
+        emit CurrencyRebalanced(currencyId, pr.supplyFactor.toUint(), oracleSupplyRate);
     }
 
     /// @notice Updates the oracle supply rate for Prime Cash. This oracle supply rate is used to value fCash that exists
@@ -365,67 +376,62 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     }
 
     /// @notice Calculates and executes the rebalancing of a single currency.
-    function _executeRebalance(uint16 currencyId, PrimeRate memory pr) private {
-        IPrimeCashHoldingsOracle oracle = PrimeCashExchangeRate.getPrimeCashHoldingsOracle(currencyId);
-        OracleData memory oracleData = oracle.getOracleData();
-
-        RebalancingTargetData memory rebalancingTargetData =
-            LibStorage.getRebalancingTargets()[currencyId][oracleData.holding];
-        PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
+    function _executeRebalance(
+        uint16 currencyId,
+        IPrimeCashHoldingsOracle oracle,
+        PrimeRate memory pr,
+        OracleData memory oracleData,
+        uint256 targetAmount
+    ) private {
         Token memory underlyingToken = TokenHandler.getUnderlyingToken(currencyId);
-
-        uint256 targetAmount = ExternalLending.getTargetExternalLendingAmount(
-            underlyingToken,
-            factors,
-            rebalancingTargetData,
-            oracleData,
-            pr
-        );
         RebalancingData memory data = _calculateRebalance(oracle, oracleData, targetAmount);
+        PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
 
         uint256 totalUnderlyingValueBefore =
             uint256(underlyingToken.convertToExternal(int256(factors.lastTotalUnderlyingValue)));
 
-        // Process redemptions first
+        // Both of these methods will short circuit if redeemData or depositData has a length of zero
         ExternalLending.executeMoneyMarketRedemptions(underlyingToken, data.redeemData);
         ExternalLending.executeDeposits(underlyingToken, data.depositData);
 
+        // Ensure that total value in underlying terms is not lost as a result of rebalancing.
         (uint256 totalUnderlyingValueAfter, /* */) = oracle.getTotalUnderlyingValueStateful();
-
         require(totalUnderlyingValueBefore <= totalUnderlyingValueAfter);
     }
 
-    function _isExternalLendingUnhealthy(uint16 currencyId, IPrimeCashHoldingsOracle oracle) internal view
-        returns (bool)
-    {
-        OracleData memory oracleData = oracle.getOracleData();
+    /// @notice Determines if external lending is unhealthy. If this is the case, then we will need to immediately
+    /// execute a rebalance.
+    function _isExternalLendingUnhealthy(
+        uint16 currencyId,
+        IPrimeCashHoldingsOracle oracle,
+        PrimeRate memory pr
+    ) internal view returns (bool isExternalLendingUnhealthy, OracleData memory oracleData, uint256 targetAmount) {
+        oracleData = oracle.getOracleData();
 
-        if (oracleData.currentExternalUnderlyingLend == 0) return false;
-
-        (PrimeRate memory pr, /* */) = PrimeCashExchangeRate.getPrimeCashRateView(currencyId, block.timestamp);
         RebalancingTargetData memory rebalancingTargetData =
             LibStorage.getRebalancingTargets()[currencyId][oracleData.holding];
         PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
         Token memory underlyingToken = TokenHandler.getUnderlyingToken(currencyId);
 
-        uint256 targetAmount = ExternalLending.getTargetExternalLendingAmount(
-            underlyingToken,
-            factors,
-            rebalancingTargetData,
-            oracleData,
-            pr
+        targetAmount = ExternalLending.getTargetExternalLendingAmount(
+            underlyingToken, factors, rebalancingTargetData, oracleData, pr
         );
 
-        uint256 offTargetPercentage = int256(oracleData.currentExternalUnderlyingLend)
-            .sub(int256(targetAmount))
-            .abs()
-            .toUint()
-            .mul(uint256(Constants.PERCENTAGE_DECIMALS))
-            .div(targetAmount.add(oracleData.currentExternalUnderlyingLend));
+        if (oracleData.currentExternalUnderlyingLend == 0) {
+            // If this is zero then there is no outstanding lending.
+            isExternalLendingUnhealthy = false;
+        } else {
+            uint256 offTargetPercentage = oracleData.currentExternalUnderlyingLend.toInt()
+                .sub(targetAmount.toInt()).abs()
+                .toUint()
+                .mul(uint256(Constants.PERCENTAGE_DECIMALS))
+                .div(targetAmount.add(oracleData.currentExternalUnderlyingLend));
 
-        // prevent rebalance if change is not greater than 1%, important for health check and avoiding triggering
-        // rebalance shortly after rebalance on minimum change
-        return (targetAmount < oracleData.currentExternalUnderlyingLend) && (offTargetPercentage > 0);
+            // prevent rebalance if change is not greater than 1%, important for health check and avoiding triggering
+            // rebalance shortly after rebalance on minimum change
+            isExternalLendingUnhealthy = 
+                (targetAmount < oracleData.currentExternalUnderlyingLend) && (offTargetPercentage > 0);
+        }
     }
 
     function _calculateRebalance(
@@ -436,18 +442,20 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         address holding = oracleData.holding;
         uint256 currentAmount = oracleData.currentExternalUnderlyingLend;
 
-        address[] memory redeemHoldings = new address[](1);
-        uint256[] memory redeemAmounts = new uint256[](1);
-        address[] memory depositHoldings = new address[](1);
-        uint256[] memory depositAmounts = new uint256[](1);
-
-        redeemHoldings[0] = holding;
-        depositHoldings[0] = holding;
-
         if (targetAmount < currentAmount) {
+            // If above the target amount then redeem
+            address[] memory redeemHoldings = new address[](1);
+            uint256[] memory redeemAmounts = new uint256[](1);
+
+            redeemHoldings[0] = holding;
             redeemAmounts[0] = currentAmount - targetAmount;
             rebalancingData.redeemData = oracle.getRedemptionCalldataForRebalancing(redeemHoldings, redeemAmounts);
         } else if (currentAmount < targetAmount) {
+            // If below the target amount then deposit
+            address[] memory depositHoldings = new address[](1);
+            uint256[] memory depositAmounts = new uint256[](1);
+
+            depositHoldings[0] = holding;
             depositAmounts[0] = targetAmount - currentAmount;
             rebalancingData.depositData = oracle.getDepositCalldataForRebalancing(depositHoldings, depositAmounts);
         }

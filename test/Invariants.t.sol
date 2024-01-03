@@ -34,7 +34,7 @@ contract InvariantsTest is NotionalBaseTest {
         uint256 maxActiveCurrenciesPerUser = 7;
         currencyId = uint16(bound(uint256(currencyId), 1, maxActiveCurrenciesPerUser));
 
-        (,, uint256 maxSupply, uint256 totalSupply) = NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
+        (,, uint256 maxSupply, uint256 totalSupply,,) = NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
         if (maxSupply == 0) {
             return;
         }

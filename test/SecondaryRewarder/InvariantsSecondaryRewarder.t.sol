@@ -97,7 +97,7 @@ abstract contract InvariantsSecondaryRewarder is SecondaryRewarderSetupTest {
     }
 
     function _deposit(address account, uint256 amount) internal {
-        (,, uint256 maxSupply, uint256 totalSupply) = NOTIONAL.getPrimeFactors(CURRENCY_ID, block.timestamp);
+        (,, uint256 maxSupply, uint256 totalSupply,,) = NOTIONAL.getPrimeFactors(CURRENCY_ID, block.timestamp);
         maxSupply = maxSupply * 999 / 1000;
         if (maxSupply == 0 || maxSupply < totalSupply) {
             return;
