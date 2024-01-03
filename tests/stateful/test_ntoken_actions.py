@@ -725,7 +725,7 @@ def test_mint_and_redeem_with_supply_caps(environment, accounts, useBitmap):
         environment.notional.enableBitmapCurrency(2, {"from": accounts[1]})
 
     factors = environment.notional.getPrimeFactorsStored(currencyId)
-    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 1e8)
+    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 1e8, 70)
 
     with brownie.reverts("Over Supply Cap"):
         environment.notional.batchBalanceAction(

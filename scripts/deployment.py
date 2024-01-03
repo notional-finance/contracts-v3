@@ -175,7 +175,7 @@ def deployNotionalContracts(deployer, **kwargs):
     contracts["LiquidateCurrencyAction"] = LiquidateCurrencyAction.deploy({"from": deployer})
     contracts["CalculationViews"] = CalculationViews.deploy({"from": deployer})
     contracts["LiquidatefCashAction"] = LiquidatefCashAction.deploy({"from": deployer})
-    contracts["TreasuryAction"] = TreasuryAction.deploy(kwargs["Comptroller"], {"from": deployer})
+    contracts["TreasuryAction"] = TreasuryAction.deploy({"from": deployer})
     contracts["VaultAction"] = VaultAction.deploy({"from": deployer})
     contracts["VaultAccountAction"] = VaultAccountAction.deploy({"from": deployer})
     contracts["VaultLiquidationAction"] = VaultLiquidationAction.deploy({"from": deployer})
