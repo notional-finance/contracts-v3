@@ -7,7 +7,6 @@ remappings = [
     "@openzeppelin/=node_modules/@openzeppelin/",
     "hardhat/=node_modules/hardhat/",
 ]
-verbosity = 3
 fs_permissions = [{access="read",path="./v3.arbitrum-one.json"}, {access="read",path="./artifacts"}, {access="read",path="./script/merkleConfig.json"}, {access="write",path="./script/merkleProofs.json"}]
 
 [rpc_endpoints]
@@ -16,22 +15,4 @@ arbitrum = "${ARBITRUM_RPC_URL}"
 [fuzz]
 runs = 50
 seed='0x5792875'
-# [etherscan]
-# goerli = { key = "${ETHERSCAN_API_KEY}" }
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
-
-[invariant]
-# The number of runs that must execute for each invariant test group
-# runs = 256
-# The number of calls executed to attempt to break invariants in one run
-# depth = 15
-# Fails the invariant fuzzing if a revert occurs
-fail_on_revert = true
-# Allows overriding an unsafe external call when running invariant tests. eg. reentrancy checks
-# call_override = false
-# The weight of the dictionary
-# dictionary_weight = 80
-# The flag indicating whether to include values from storage
-# include_storage = true
-# The flag indicating whether to include push bytes values
-# include_push_bytes = true

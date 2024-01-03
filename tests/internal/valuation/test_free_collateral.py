@@ -388,11 +388,11 @@ class TestFreeCollateral:
 
         # nTokenParameters (loaded if nTokens are in portfolio)
         if collateral > 0 and collateralBalance[2] > 0:
-            assert int(factors[5].hex()[8:10], 16) == freeCollateral.nTokenParameters[collateral][0]
-            assert int(factors[5].hex()[2:4], 16) == freeCollateral.nTokenParameters[collateral][1]
+            assert int(factors[5].hex()[6:8], 16) == freeCollateral.nTokenParameters[collateral][0]
+            assert int(factors[5].hex()[0:2], 16) == freeCollateral.nTokenParameters[collateral][1]
         elif collateral == 0 and localBalance[2] > 0:
-            assert int(factors[5].hex()[8:10], 16) == freeCollateral.nTokenParameters[local][0]
-            assert int(factors[5].hex()[2:4], 16) == freeCollateral.nTokenParameters[local][1]
+            assert int(factors[5].hex()[6:8], 16) == freeCollateral.nTokenParameters[local][0]
+            assert int(factors[5].hex()[0:2], 16) == freeCollateral.nTokenParameters[local][1]
         else:
             assert factors[5] == "0x000000000000"
 

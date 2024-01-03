@@ -53,11 +53,51 @@
                         "internalType": "address",
                         "name": "assetToken",
                         "type": "address"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "rebasingTokenBalanceAdjustment",
+                        "type": "uint8"
                     }
                 ],
                 "internalType": "struct DepositData[]",
                 "name": "depositData",
                 "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getOracleData",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "holding",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "externalUnderlyingAvailableForWithdraw",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "currentExternalUnderlyingLend",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "maxExternalDeposit",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct OracleData",
+                "name": "",
+                "type": "tuple"
             }
         ],
         "stateMutability": "view",
@@ -94,6 +134,11 @@
                         "internalType": "address",
                         "name": "assetToken",
                         "type": "address"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "rebasingTokenBalanceAdjustment",
+                        "type": "uint8"
                     }
                 ],
                 "internalType": "struct RedeemData[]",
@@ -140,6 +185,11 @@
                         "internalType": "address",
                         "name": "assetToken",
                         "type": "address"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "rebasingTokenBalanceAdjustment",
+                        "type": "uint8"
                     }
                 ],
                 "internalType": "struct RedeemData[]",

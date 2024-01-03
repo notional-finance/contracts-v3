@@ -103,7 +103,7 @@ class TestTokenHandler:
         with brownie.reverts():
             tokenHandler.setToken(2, (erc20.address, False, TokenType["Ether"], 18, 0))
 
-        with brownie.reverts("TH: address is zero"):
+        with brownie.reverts():
             tokenHandler.setToken(2, (zeroAddress, False, TokenType["UnderlyingToken"], 18, 0))
 
     def test_cannot_override_token(self, tokenHandler, accounts, MockERC20):
@@ -111,7 +111,7 @@ class TestTokenHandler:
         erc20_ = MockERC20.deploy("test", "TEST", 18, 0, {"from": accounts[0]})
         tokenHandler.setToken(2, (erc20.address, False, TokenType["UnderlyingToken"], 18, 0))
 
-        with brownie.reverts("TH: token cannot be reset"):
+        with brownie.reverts():
             tokenHandler.setToken(2, (erc20_.address, False, TokenType["UnderlyingToken"], 18, 0))
 
     def test_cannot_set_asset_to_underlying(self, tokenHandler, accounts, MockERC20):

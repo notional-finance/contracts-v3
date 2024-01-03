@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BSUL-1.1
-pragma solidity =0.8.17;
+pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import {UnderlyingHoldingsOracle} from "./UnderlyingHoldingsOracle.sol";
+import {SafeUint256} from "../../math/SafeUint256.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
 import {ERC4626AssetAdapter} from "./adapters/ERC4626AssetAdapter.sol";
 import {DepositData, RedeemData} from "../../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
@@ -13,6 +15,8 @@ struct ERC4626DeploymentParams {
 }
 
 contract ERC4626HoldingsOracle is UnderlyingHoldingsOracle {
+    using SafeUint256 for uint256;
+
     uint8 private constant NUM_ASSET_TOKENS = 1;
     address internal immutable ASSET_TOKEN;
 
@@ -42,7 +46,7 @@ contract ERC4626HoldingsOracle is UnderlyingHoldingsOracle {
         tokens[1] = ASSET_TOKEN;
 
         uint256[] memory balances = NOTIONAL.getStoredTokenBalances(tokens);
-        return _assetUnderlyingValue(balances[1]) + balances[0];
+        return _assetUnderlyingValue(balances[1]).add(balances[0]);
     }
 
     function _assetUnderlyingValue(uint256 assetBalance) internal view returns (uint256) {
@@ -50,7 +54,7 @@ contract ERC4626HoldingsOracle is UnderlyingHoldingsOracle {
             assetToken: ASSET_TOKEN,
             assetBalance: assetBalance
         });
-    } 
+    }
 
     /// @notice Returns calldata for how to withdraw an amount
     function _getRedemptionCalldata(uint256 withdrawAmount) internal view virtual override returns (
