@@ -244,7 +244,7 @@ contract VaultLiquidationAction is ActionGuards, IVaultLiquidationAction {
 
         Emitter.emitTransferPrimeCash(vault, liquidator, f.excessCashCurrencyId, cashToLiquidator);
         TokenHandler.withdrawPrimeCash(
-            liquidator, f.excessCashCurrencyId, netCashToAccount, f.excessCashPR, false
+            liquidator, liquidator, f.excessCashCurrencyId, netCashToAccount, f.excessCashPR, false
         );
         Emitter.emitVaultMintOrBurnCash(account, vault, f.excessCashCurrencyId, vaultAccount.maturity, netCashToAccount);
 

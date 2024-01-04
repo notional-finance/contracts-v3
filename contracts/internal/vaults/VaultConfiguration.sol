@@ -418,6 +418,7 @@ library VaultConfiguration {
     ) internal returns (uint256) {
         int256 underlyingExternalTransferred = TokenHandler.withdrawPrimeCash(
             receiver,
+            receiver,
             currencyId,
             cashToTransferInternal.neg(), // represents a withdraw
             primeRate,

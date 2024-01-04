@@ -224,6 +224,7 @@ library TokenHandler {
     /// negative to signify that tokens have left the protocol
     function withdrawPrimeCash(
         address account,
+        address receiver,
         uint16 currencyId,
         int256 primeCashToWithdraw,
         PrimeRate memory primeRate,
@@ -243,9 +244,9 @@ library TokenHandler {
         ExternalLending.redeemMoneyMarketIfRequired(currencyId, underlying, withdrawAmount);
 
         if (underlying.tokenType == TokenType.Ether) {
-            GenericToken.transferNativeTokenOut(account, withdrawAmount, withdrawWrappedNativeToken);
+            GenericToken.transferNativeTokenOut(receiver, withdrawAmount, withdrawWrappedNativeToken);
         } else {
-            GenericToken.safeTransferOut(underlying.tokenAddress, account, withdrawAmount);
+            GenericToken.safeTransferOut(underlying.tokenAddress, receiver, withdrawAmount);
         }
 
         _postTransferPrimeCashUpdate(account, currencyId, netTransferExternal, underlying, primeRate);
