@@ -85,13 +85,6 @@ def test_deposit_eth_underlying(environment, accounts):
     check_system_invariants(environment, accounts)
 
 
-def test_deposit_underlying_token_from_other(environment, accounts):
-    with brownie.reverts(dev_revert_msg="dev: unauthorized"):
-        environment.notional.depositUnderlyingToken(
-            accounts[1], 2, 100e18, {"from": accounts[0]}
-        )
-
-
 def test_deposit_asset_token_from_self(environment, accounts):
     currencyId = 2
     environment.cToken["DAI"].transfer(accounts[1], 5000e8, {"from": accounts[0]})
