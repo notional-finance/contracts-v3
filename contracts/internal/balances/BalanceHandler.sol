@@ -109,7 +109,7 @@ library BalanceHandler {
         AccountContext memory accountContext
     ) internal {
         require(balanceState.primeCashWithdraw == 0);
-        _finalize(balanceState, account, accountContext, false, false);
+        _finalize(balanceState, account, account, accountContext, false, false);
     }
 
     /// @notice Calls finalize without any withdraws. Allows the withdrawWrapped flag to be hardcoded to false.
@@ -119,7 +119,7 @@ library BalanceHandler {
         AccountContext memory accountContext
     ) internal {
         require(balanceState.primeCashWithdraw == 0);
-        _finalize(balanceState, account, accountContext, false, true);
+        _finalize(balanceState, account, account, accountContext, false, true);
     }
 
     /// @notice Finalizes an account's balances with withdraws, returns the actual amount of underlying tokens transferred
@@ -130,7 +130,19 @@ library BalanceHandler {
         AccountContext memory accountContext,
         bool withdrawWrapped
     ) internal returns (int256 transferAmountExternal) {
-        return _finalize(balanceState, account, accountContext, withdrawWrapped, true);
+        return _finalize(balanceState, account, account, accountContext, withdrawWrapped, true);
+    }
+
+    /// @notice Finalizes an account's balances with withdraws, returns the actual amount of underlying tokens transferred
+    /// back to the account
+    function finalizeWithWithdrawReceiver(
+        BalanceState memory balanceState,
+        address account,
+        address receiver,
+        AccountContext memory accountContext,
+        bool withdrawWrapped
+    ) internal returns (int256 transferAmountExternal) {
+        return _finalize(balanceState, account, receiver, accountContext, withdrawWrapped, true);
     }
 
     /// @notice Finalizes an account's balances, handling any transfer logic required
@@ -139,6 +151,7 @@ library BalanceHandler {
     function  _finalize(
         BalanceState memory balanceState,
         address account,
+        address receiver,
         AccountContext memory accountContext,
         bool withdrawWrapped,
         bool checkAllowPrimeBorrow
@@ -150,41 +163,44 @@ library BalanceHandler {
         // round down to zero. This returns the actual net transfer in internal precision as well.
         transferAmountExternal = TokenHandler.withdrawPrimeCash(
             account,
+            receiver,
             balanceState.currencyId,
             balanceState.primeCashWithdraw,
             balanceState.primeRate,
             withdrawWrapped // if true, withdraws ETH as WETH
         );
 
-        // No changes to total cash after this point
-        int256 totalCashChange = balanceState.netCashChange.add(balanceState.primeCashWithdraw);
+        {
+            // No changes to total cash after this point
+            int256 totalCashChange = balanceState.netCashChange.add(balanceState.primeCashWithdraw);
 
-        if (
-            checkAllowPrimeBorrow &&
-            totalCashChange < 0 &&
-            balanceState.storedCashBalance.add(totalCashChange) < 0
-        ) {
-            // If the total cash change is negative and it causes the stored cash balance to become negative,
-            // the account must allow prime debt. This is a safety check to ensure that accounts do not
-            // accidentally borrow variable through a withdraw or a batch transaction.
-            
-            // Accounts can still incur negative cash during fCash settlement, that will bypass this check.
-            
-            // During liquidation, liquidated accounts can have a negative cash balance during negative local fCash
-            // liquidation and a collateral liquidation and forces an interest rate swap. In the first case, 
-            // setBalanceStorageForfCashLiquidation is called instead of this method. In the second, this method
-            // is called but checkAllowPrimeBorrow is set to false.
+            if (
+                checkAllowPrimeBorrow &&
+                totalCashChange < 0 &&
+                balanceState.storedCashBalance.add(totalCashChange) < 0
+            ) {
+                // If the total cash change is negative and it causes the stored cash balance to become negative,
+                // the account must allow prime debt. This is a safety check to ensure that accounts do not
+                // accidentally borrow variable through a withdraw or a batch transaction.
+                
+                // Accounts can still incur negative cash during fCash settlement, that will bypass this check.
+                
+                // During liquidation, liquidated accounts can have a negative cash balance during negative local fCash
+                // liquidation and a collateral liquidation and forces an interest rate swap. In the first case, 
+                // setBalanceStorageForfCashLiquidation is called instead of this method. In the second, this method
+                // is called but checkAllowPrimeBorrow is set to false.
 
-            // During liquidation, liquidators may have negative net cash change a token has transfer fees, however, in
-            // LiquidationHelpers.finalizeLiquidatorLocal they are not allowed to go into debt.
-            require(accountContext.allowPrimeBorrow, "No Prime Borrow");
-            checkDebtCap = true;
-        }
+                // During liquidation, liquidators may have negative net cash change a token has transfer fees, however, in
+                // LiquidationHelpers.finalizeLiquidatorLocal they are not allowed to go into debt.
+                require(accountContext.allowPrimeBorrow, "No Prime Borrow");
+                checkDebtCap = true;
+            }
 
 
-        if (totalCashChange != 0) {
-            balanceState.storedCashBalance = balanceState.storedCashBalance.add(totalCashChange);
-            mustUpdate = true;
+            if (totalCashChange != 0) {
+                balanceState.storedCashBalance = balanceState.storedCashBalance.add(totalCashChange);
+                mustUpdate = true;
+            }
         }
 
         if (balanceState.netNTokenTransfer != 0 || balanceState.netNTokenSupplyChange != 0) {
