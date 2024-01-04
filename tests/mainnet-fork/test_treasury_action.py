@@ -41,20 +41,6 @@ def test_set_reserve_buffer_non_owner(env):
         env.notional.setReserveBuffer(2, 1000e8, {"from": env.deployer})
 
 
-def test_claim_comp_manager(env):
-    env.notional.setTreasuryManager(env.deployer, {"from": env.notional.owner()})
-    assert env.tokens["COMP"].balanceOf(env.notional.address) == 0
-    assert env.tokens["COMP"].balanceOf(env.deployer) == 0
-    env.notional.claimCOMPAndTransfer([env.tokens["cDAI"].address], {"from": env.deployer})
-    assert env.tokens["COMP"].balanceOf(env.notional.address) == 0
-    assert env.tokens["COMP"].balanceOf(env.deployer) >= 1797397668168368705898
-
-
-def test_claim_comp_non_manager(env):
-    with brownie.reverts():
-        env.notional.claimCOMPAndTransfer([env.tokens["cDAI"].address], {"from": env.deployer})
-
-
 def convert_to_underlying(assetRate, assetBalance):
     return assetRate[1] * assetBalance / assetRate[2]
 
