@@ -2,7 +2,7 @@ import json
 
 from brownie import accounts, cTokenLegacyAggregator, cTokenV2Aggregator, network
 from brownie.network.contract import Contract
-from brownie.project import ContractsV2Project
+from brownie.project import ContractsV3Project
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
     with open(output_file, "r") as f:
         output = json.load(f)
 
-    notionalInterfaceABI = ContractsV2Project._build.get("NotionalProxy")["abi"]
+    notionalInterfaceABI = ContractsV3Project._build.get("NotionalProxy")["abi"]
     notional = Contract.from_abi("Notional", output["notional"], abi=notionalInterfaceABI)
 
     for (i, symbol) in enumerate(["ETH", "DAI", "USDC", "WBTC"]):

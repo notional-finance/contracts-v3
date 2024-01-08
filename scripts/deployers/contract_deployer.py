@@ -5,7 +5,7 @@ from scripts.common import getDependencies
 
 class ContractDeployer:
     def __init__(self, deployer, context=None, libs=None) -> None:
-        self.project = project.ContractsV2Project
+        self.project = project.ContractsV3Project
         self.deployer = deployer
         self.context = context
         if self.context == None:
