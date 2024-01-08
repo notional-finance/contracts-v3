@@ -48,7 +48,7 @@ from brownie.convert.datatypes import HexString
 from brownie.network import Rpc, web3
 from brownie.network.contract import Contract
 from brownie.network.state import Chain
-from brownie.project import ContractsV2Project
+from brownie.project import ContractsV3Project
 from scripts.config import (
     CompoundConfig,
     CurrencyDefaults,
@@ -230,7 +230,7 @@ def deployNotional(deployer, guardianAddress, comptroller):
         router.address, initializeData, {"from": deployer}  # Deployer is set to owner
     )
 
-    notionalInterfaceABI = ContractsV2Project._build.get("NotionalProxy")["abi"]
+    notionalInterfaceABI = ContractsV3Project._build.get("NotionalProxy")["abi"]
     notional = Contract.from_abi(
         "Notional", proxy.address, abi=notionalInterfaceABI, owner=deployer
     )
