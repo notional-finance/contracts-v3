@@ -23,28 +23,41 @@ def main():
     # )
     # assert MockERC20.at(eth.NTOKEN_ADDRESS()).symbol() == 'nETH'
     # assert eth.emissionRatePerYear() == 0
+    arb = MockERC20.at(ARB)
 
+    arb.transfer(REWARDERS['ETH'], 218e18, {"from": notional.owner()})
     SecondaryRewarder.at(REWARDERS['ETH']).setIncentiveEmissionRate(
         10_909e8, END_TIME, {"from": notional.owner()}
     )
+
+    arb.transfer(REWARDERS['DAI'], 90.9e18, {"from": notional.owner()})
     SecondaryRewarder.at(REWARDERS['DAI']).setIncentiveEmissionRate(
         4_545e8, END_TIME, {"from": notional.owner()}
     )
+
+    arb.transfer(REWARDERS['USDC'], 218e18, {"from": notional.owner()})
     SecondaryRewarder.at(REWARDERS['USDC']).setIncentiveEmissionRate(
         10_909e8, END_TIME, {"from": notional.owner()}
     )
+
+    arb.transfer(REWARDERS['WBTC'], 18e18, {"from": notional.owner()})
     SecondaryRewarder.at(REWARDERS['WBTC']).setIncentiveEmissionRate(
         909e8, END_TIME, {"from": notional.owner()}
     )
+
+    arb.transfer(REWARDERS['wstETH'], 90.9e18, {"from": notional.owner()})
     SecondaryRewarder.at(REWARDERS['wstETH']).setIncentiveEmissionRate(
         4_545e8, END_TIME, {"from": notional.owner()}
     )
+    arb.transfer(REWARDERS['FRAX'], 90.9e18, {"from": notional.owner()})
     SecondaryRewarder.at(REWARDERS['FRAX']).setIncentiveEmissionRate(
         4_545e8, END_TIME, {"from": notional.owner()}
     )
+    arb.transfer(REWARDERS['rETH'], 90.9e18, {"from": notional.owner()})
     SecondaryRewarder.at(REWARDERS['rETH']).setIncentiveEmissionRate(
         4_545e8, END_TIME, {"from": notional.owner()}
     )
+    arb.transfer(REWARDERS['USDT'], 90.9e18, {"from": notional.owner()})
     SecondaryRewarder.at(REWARDERS['USDT']).setIncentiveEmissionRate(
         4_545e8, END_TIME, {"from": notional.owner()}
     )
