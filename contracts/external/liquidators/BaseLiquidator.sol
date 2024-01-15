@@ -164,7 +164,7 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
 
         // Will withdraw entire cash balance. Don't redeem local currency here because it has been flash
         // borrowed and we need to redeem the entire balance to underlying for the flash loan repayment.
-        _redeemAndWithdraw(liquidation.localCurrency, uint96(netNTokens), false);
+        _redeemAndWithdraw(liquidation.localCurrency, uint96(netNTokens), true);
     }
 
     function _liquidateCollateral(LiquidationAction memory action, address[] memory assets)
@@ -207,7 +207,7 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
 
         // Will withdraw all cash balance, no need to redeem local currency, it will be
         // redeemed later
-        if (action.hasTransferFee) _redeemAndWithdraw(liquidation.localCurrency, 0, false);
+        if (action.hasTransferFee) _redeemAndWithdraw(liquidation.localCurrency, 0, true);
     }
 
     function _liquidateLocalfCash(LiquidationAction memory action, address[] memory assets)
