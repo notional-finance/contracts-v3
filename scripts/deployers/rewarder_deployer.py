@@ -1,7 +1,10 @@
+import json
+from itertools import chain
+
 from brownie import SecondaryRewarder, accounts, MockERC20
 from scripts.inspect import get_addresses
 
-END_TIME = 1705708800 # Jan 20
+END_TIME = 1705968000 # Jan 23
 ARB = '0x912CE59144191C1204E64559FE8253a0e49E6548'
 REWARDERS = {
     "ETH": "0x3987F211d4BA25B6FF163B56051651bF6c6c5e54",
@@ -15,59 +18,82 @@ REWARDERS = {
     "cbETH": "0x9Bfbd9DF9E5f0bA9B43843bf89B590e41Ac01174"
 }
 
+batchBase = {
+    "version": "1.0",
+    "chainId": "42161",
+    "createdAt": 1692567274357,
+    "meta": {
+        "name": "Transactions Batch",
+        "description": "",
+        "txBuilderVersion": "1.16.1"
+    },
+    "transactions": []
+}
+
+DRY_RUN = True
+
+def transfer_and_set(symbol, currencyId, transferAmount, emissionRate, notional):
+    arb = MockERC20.at(ARB)
+    rewarder = SecondaryRewarder.at(REWARDERS[symbol])
+    tx = []
+    
+    tx.append({
+        "to": arb.address,
+        "value": "0",
+        "data": arb.transfer.encode_input(REWARDERS[symbol], transferAmount),
+        "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
+        "contractInputsValues": None
+    })
+
+    tx.append({
+        "to": rewarder.address,
+        "value": "0",
+        "data": rewarder.setIncentiveEmissionRate.encode_input(emissionRate, END_TIME),
+        "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
+        "contractInputsValues": None
+    })
+
+    # if symbol != 'USDT':
+    #     tx.append({
+    #         "to": notional.address,
+    #         "value": "0",
+    #         "data": notional.setSecondaryIncentiveRewarder.encode_input(currencyId, rewarder),
+    #         "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
+    #         "contractInputsValues": None
+    #     })
+
+    # Transfer
+    if DRY_RUN:
+        arb.transfer(REWARDERS[symbol], transferAmount, {"from": notional.owner()})
+        rewarder.setIncentiveEmissionRate(emissionRate, END_TIME, {"from": notional.owner()})
+        # if symbol != 'USDT':
+        #     notional.setSecondaryIncentiveRewarder(currencyId, rewarder, {"from": notional.owner()})
+
+    return tx
+
+
 def main():
     (_, notional, *_) = get_addresses()
+    txns = []
 
     # eth = SecondaryRewarder.deploy(
     #     notional.address, 1, ARB, 0, END_TIME, {"from": deployer}
     # )
     # assert MockERC20.at(eth.NTOKEN_ADDRESS()).symbol() == 'nETH'
     # assert eth.emissionRatePerYear() == 0
-    arb = MockERC20.at(ARB)
 
-    arb.transfer(REWARDERS['ETH'], 218e18, {"from": notional.owner()})
-    SecondaryRewarder.at(REWARDERS['ETH']).setIncentiveEmissionRate(
-        10_909e8, END_TIME, {"from": notional.owner()}
-    )
+    txns.append(transfer_and_set('ETH',    1, 4_855e18, 249_600e8, notional))
+    txns.append(transfer_and_set('DAI',    2, 2_025e18, 104_000e8, notional))
+    txns.append(transfer_and_set('USDC',   3, 4_855e18, 249_600e8, notional))
+    txns.append(transfer_and_set('WBTC',   4,   405e18,  20_800e8, notional))
+    txns.append(transfer_and_set('wstETH', 5, 2_025e18, 104_000e8, notional))
+    txns.append(transfer_and_set('FRAX',   6, 2_025e18, 104_000e8, notional))
+    txns.append(transfer_and_set('rETH',   7, 2_025e18, 104_000e8, notional))
+    txns.append(transfer_and_set('USDT',   8, 2_025e18, 104_000e8, notional))
+    # txns.append(transfer_and_set('cbETH', 9, 0e18, 0, notional))
+    
+    flattened_list = list(chain.from_iterable(map(lambda x: x, txns)))
 
-    arb.transfer(REWARDERS['DAI'], 90.9e18, {"from": notional.owner()})
-    SecondaryRewarder.at(REWARDERS['DAI']).setIncentiveEmissionRate(
-        4_545e8, END_TIME, {"from": notional.owner()}
-    )
+    batchBase['transactions'] = flattened_list
 
-    arb.transfer(REWARDERS['USDC'], 218e18, {"from": notional.owner()})
-    SecondaryRewarder.at(REWARDERS['USDC']).setIncentiveEmissionRate(
-        10_909e8, END_TIME, {"from": notional.owner()}
-    )
-
-    arb.transfer(REWARDERS['WBTC'], 18e18, {"from": notional.owner()})
-    SecondaryRewarder.at(REWARDERS['WBTC']).setIncentiveEmissionRate(
-        909e8, END_TIME, {"from": notional.owner()}
-    )
-
-    arb.transfer(REWARDERS['wstETH'], 90.9e18, {"from": notional.owner()})
-    SecondaryRewarder.at(REWARDERS['wstETH']).setIncentiveEmissionRate(
-        4_545e8, END_TIME, {"from": notional.owner()}
-    )
-    arb.transfer(REWARDERS['FRAX'], 90.9e18, {"from": notional.owner()})
-    SecondaryRewarder.at(REWARDERS['FRAX']).setIncentiveEmissionRate(
-        4_545e8, END_TIME, {"from": notional.owner()}
-    )
-    arb.transfer(REWARDERS['rETH'], 90.9e18, {"from": notional.owner()})
-    SecondaryRewarder.at(REWARDERS['rETH']).setIncentiveEmissionRate(
-        4_545e8, END_TIME, {"from": notional.owner()}
-    )
-    arb.transfer(REWARDERS['USDT'], 90.9e18, {"from": notional.owner()})
-    SecondaryRewarder.at(REWARDERS['USDT']).setIncentiveEmissionRate(
-        4_545e8, END_TIME, {"from": notional.owner()}
-    )
-
-    notional.setSecondaryIncentiveRewarder(1, REWARDERS['ETH'], {"from": notional.owner()})
-    notional.setSecondaryIncentiveRewarder(2, REWARDERS['DAI'], {"from": notional.owner()})
-    notional.setSecondaryIncentiveRewarder(3, REWARDERS['USDC'], {"from": notional.owner()})
-    notional.setSecondaryIncentiveRewarder(4, REWARDERS['WBTC'], {"from": notional.owner()})
-    notional.setSecondaryIncentiveRewarder(5, REWARDERS['wstETH'], {"from": notional.owner()})
-    notional.setSecondaryIncentiveRewarder(6, REWARDERS['FRAX'], {"from": notional.owner()})
-    notional.setSecondaryIncentiveRewarder(7, REWARDERS['rETH'], {"from": notional.owner()})
-    # USDT is already set
-    # notional.setSecondaryIncentive(9, REWARDERS['cbETH'])
+    json.dump(batchBase, open("rewarders.json", "w"))
