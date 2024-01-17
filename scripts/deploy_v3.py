@@ -12,13 +12,13 @@ def deployNotional(deployer, networkName, dryRun):
     notional.deployAuthorizedCallbacks()
 
 
-def main(dryRun=True):
+def main(dryRun="LFG"):
     networkName = network.show_active()
     if networkName in ["mainnet-fork", "mainnet-current"]:
         networkName = "mainnet"
     elif networkName in ["arbitrum-fork", "arbitrum-current"]:
         networkName = "arbitrum-one"
-    deployer = accounts.load(networkName.upper() + "_DEPLOYER")
+    deployer = accounts.load("DEPLOY_3")
     print("Deployer Address: ", deployer.address)
 
     if dryRun == "LFG":
