@@ -10,7 +10,8 @@ import {
     nTokenPortfolio,
     PortfolioState,
     PortfolioAsset,
-    AssetStorageState
+    AssetStorageState,
+    InterestRateParameters
 } from "../../global/Types.sol";
 import {Constants} from "../../global/Constants.sol";
 import {SafeInt256} from "../../math/SafeInt256.sol";
@@ -183,16 +184,11 @@ library nTokenMintAction {
 
         // Defensive check to ensure that we do not somehow accrue negative residual cash.
         require(residualCash >= 0, "Negative residual cash");
-        // This will occur if the three month market is over levered and we cannot lend into it
         if (residualCash > 0) {
-            // Any remaining residual cash will be put into the nToken balance and added as liquidity on the
-            // next market initialization
-            nToken.cashBalance = nToken.cashBalance.add(residualCash);
-            BalanceHandler.setBalanceStorageForNToken(
-                nToken.tokenAddress,
-                nToken.cashGroup.currencyId,
-                nToken.cashBalance
-            );
+            // Any residual cash is donated to the fee reserve rather than the nToken. Because of
+            // the restrictions inside the deleverage buffer, this residual cash amount will be
+            // only dust balances.
+            BalanceHandler.incrementFeeToReserve(nToken.cashGroup.currencyId, residualCash);
         }
     }
 
@@ -315,23 +311,67 @@ library nTokenMintAction {
             int256 perMarketDepositUnderlying =
                 cashGroup.primeRate.convertToUnderlying(perMarketDeposit);
             // NOTE: cash * exchangeRate = fCash
-            fCashAmount = perMarketDepositUnderlying.mulInRatePrecision(assumedExchangeRate);
+            int256 fCashAmountAssumed = perMarketDepositUnderlying.mulInRatePrecision(assumedExchangeRate);
+            fCashAmount = _getActualfCashAmount(
+                cashGroup, marketIndex, timeToMaturity, perMarketDepositUnderlying
+            );
+
+            // fCash amount actual cannot be negative or zero. Negative would represent something very wrong
+            // since we are lending here. Zero would represent a failed trade.
+            require(0 < fCashAmount, "Deleverage Buffer");
+
+            // Want to limit the amount of residuals as a result of purchasing fCash for the fixed amount of
+            // perMarketDeposit. If perMarketDeposit = 1 and fCashAmountAssumed = 1.01 and fCashAmountActual = 1.02
+            // this means that the exchange rates are:
+            //      assumed: 0.99
+            //      actual:  0.98
+            // If the actual exchange rate is cheaper, than we will be able to buy more fCash than we assume
+            // and therefore we will end up with a cash residual. We do not want that so we revert.
+
+            // If the exchange rates are reversed:
+            //      assumed: 0.98
+            //      actual:  0.99
+            // Then we will not have enough cash to purchase the assumed amount of fCash. We can purchase
+            // only fCashAmountActual and we will not have any residual.
+            require(fCashAmount <= fCashAmountAssumed, "Deleverage Buffer");
         }
 
         (int256 netPrimeCash, /* */) = market.executeTrade(
             tokenAddress, cashGroup, fCashAmount, timeToMaturity, marketIndex
         );
 
-        // This means that the trade failed
-        if (netPrimeCash == 0) {
-            return (perMarketDeposit, 0);
-        } else {
-            // Ensure that net the per market deposit figure does not drop below zero, this should not be possible
-            // given how we've calculated the exchange rate but extra caution here
-            int256 residual = perMarketDeposit.add(netPrimeCash);
-            require(residual >= 0); // dev: insufficient cash
-            return (residual, fCashAmount);
-        }
+        // This means that the trade failed. We do not allowed failed trades in this method.
+        require(netPrimeCash != 0, "Deleverage Buffer");
+
+        // Ensure that net the per market deposit figure does not drop below zero, this should not be possible
+        // given how we've calculated the exchange rate but extra caution here
+        int256 residual = perMarketDeposit.add(netPrimeCash);
+        require(residual >= 0); // dev: insufficient cash
+        return (residual, fCashAmount);
+    }
+
+    /// @notice Returns the amount of fCash that will be purchased for the given per market deposit, is used
+    /// to reduce the potential of residual cash as a result of lending during deleverage.
+    function _getActualfCashAmount(
+        CashGroupParameters memory cashGroup,
+        uint256 marketIndex,
+        uint256 timeToMaturity,
+        int256 perMarketDepositUnderlying
+    ) private returns (int256) {
+        MarketParameters memory market;
+        cashGroup.loadMarket(market, marketIndex, false, block.timestamp);
+        InterestRateParameters memory irParams = InterestRateCurve.getActiveInterestRateParameters(
+            cashGroup.currencyId, marketIndex
+        );
+
+        return InterestRateCurve.getfCashGivenCashAmount(
+            irParams,
+            market.totalfCash,
+            // Negative is used for lending, will return a positive fCash amount
+            perMarketDepositUnderlying.neg(),
+            cashGroup.primeRate.convertToUnderlying(market.totalPrimeCash),
+            timeToMaturity
+        );
     }
 
     /// @notice If a nToken incurs a negative fCash residual as a result of lending, this means
