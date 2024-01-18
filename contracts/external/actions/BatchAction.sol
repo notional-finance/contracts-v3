@@ -376,7 +376,6 @@ contract BatchAction is StorageLayoutV1, ActionGuards {
             depositType == DepositActionType.ConvertCashToNToken
         ) {
             balanceState.netCashChange = balanceState.netCashChange.sub(primeCashDeposited);
-            revert("Disabled");
 
             // Converts a given amount of cash (denominated in internal precision) into nTokens
             int256 tokensMinted = nTokenMintAction.nTokenMint(
