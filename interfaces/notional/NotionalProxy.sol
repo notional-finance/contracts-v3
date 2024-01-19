@@ -107,9 +107,7 @@ interface NotionalProxy is
     function nTokenRedeem(
         address redeemer,
         uint16 currencyId,
-        uint96 tokensToRedeem_,
-        bool sellTokenAssets,
-        bool acceptResidualAssets
+        uint96 tokensToRedeem_
     ) external returns (int256);
 
     function enablePrimeBorrow(bool allowPrimeBorrow) external;

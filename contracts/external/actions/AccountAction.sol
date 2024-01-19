@@ -214,6 +214,47 @@ contract AccountAction is ActionGuards {
         return underlyingWithdrawnExternal.neg().toUint();
     }
 
+    /// @notice Allows accounts to redeem nTokens to prime cash while the supply cap is breached. This
+    /// method does not withdraw any tokens from the contract. Will revert if fCash cannot be sold back
+    /// into the market.
+    /// @param redeemer the address that holds the nTokens to redeem
+    /// @param currencyId the currency associated the nToken
+    /// @param tokensToRedeem_ the amount of nTokens to convert to cash
+    /// @dev auth:msg.sender auth:ERC1155
+    /// @return total amount of prime cash redeemed
+    function nTokenRedeem(
+        address redeemer,
+        uint16 currencyId,
+        uint96 tokensToRedeem_
+    ) external nonReentrant returns (int256) {
+        // ERC1155 can call this method during a post transfer event
+        require(msg.sender == redeemer || msg.sender == address(this), "Unauthorized caller");
+        int256 tokensToRedeem = int256(tokensToRedeem_);
+
+        (AccountContext memory context, /* didSettle */) = _settleAccountIfRequired(redeemer);
+
+        BalanceState memory balance;
+        balance.loadBalanceState(redeemer, currencyId, context);
+
+        require(balance.storedNTokenBalance >= tokensToRedeem, "Insufficient tokens");
+        balance.netNTokenSupplyChange = tokensToRedeem.neg();
+
+        int256 totalPrimeCash = nTokenRedeemAction.nTokenRedeemViaBatch(
+            redeemer, currencyId, tokensToRedeem
+        );
+
+        // Set balances before transferring assets
+        balance.netCashChange = totalPrimeCash;
+        balance.finalizeNoWithdraw(redeemer, context);
+
+        context.setAccountContext(redeemer);
+        if (context.hasDebt != 0x00) {
+            FreeCollateralExternal.checkFreeCollateralAndRevert(redeemer);
+        }
+
+        return totalPrimeCash;
+    }
+
     /// @notice Settle the account if required, returning a reference to the account context. Also
     /// returns a boolean to indicate if it did settle.
     function _settleAccountIfRequired(address account)
@@ -229,11 +270,12 @@ contract AccountAction is ActionGuards {
     }
 
     /// @notice Get a list of deployed library addresses (sorted by library name)
-    function getLibInfo() external pure returns (address, address, address) {
+    function getLibInfo() external pure returns (address, address, address, address) {
         return (
             address(FreeCollateralExternal),
-            address(MigrateIncentives),
-            address(SettleAssetsExternal)
+            address(MigrateIncentives), 
+            address(SettleAssetsExternal), 
+            address(nTokenRedeemAction)
         );
     }
 }

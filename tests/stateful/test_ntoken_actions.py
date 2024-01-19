@@ -774,12 +774,7 @@ def test_mint_and_redeem_with_supply_caps(environment, accounts, useBitmap):
 
     # Neither of these methods have supply cap checks
     environment.notional.nTokenRedeem(
-        accounts[0],
-        currencyId,
-        500e8,
-        True,
-        False,
-        {"from": accounts[0]},
+        accounts[0], currencyId, 500e8, {"from": accounts[0]},
     )
     environment.notional.withdraw(currencyId, 2 ** 88 - 1, True, {"from": accounts[0]})
 

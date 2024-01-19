@@ -100,9 +100,10 @@ class RedeemChecker():
     residualType=strategy("uint8", min_value=0, max_value=2),
     marketResiduals=strategy("bool"),
     canSellResiduals=strategy("bool"),
+    useAccountAction=strategy("bool")
 )
 def test_redeem_ntoken_batch_balance_action(
-    environment, accounts, residualType, marketResiduals, canSellResiduals
+    environment, accounts, residualType, marketResiduals, canSellResiduals, useAccountAction
 ):
     currencyId = 2
     redeemAmount = 98_000e8 * environment.primeCashScalars["DAI"]
@@ -120,14 +121,24 @@ def test_redeem_ntoken_batch_balance_action(
 
     if not canSellResiduals and marketResiduals:
         with brownie.reverts():
-            environment.notional.batchBalanceAction(
-                accounts[2].address, [action], {"from": accounts[2]}
-            )
+            if useAccountAction:
+                environment.notional.nTokenRedeem(
+                    accounts[2].address, 2, redeemAmount, {"from": accounts[2]}
+                )
+            else: 
+                environment.notional.batchBalanceAction(
+                    accounts[2].address, [action], {"from": accounts[2]}
+                )
     else:
         with EventChecker(environment, 'Redeem nToken', nTokensRedeemed=redeemAmount) as c:
-            c['txn'] = environment.notional.batchBalanceAction(
-                accounts[2].address, [action], {"from": accounts[2]}
-            )
+            if useAccountAction:
+                c['txn'] = environment.notional.nTokenRedeem(
+                    accounts[2].address, 2, redeemAmount, {"from": accounts[2]}
+                )
+            else:
+                c['txn'] = environment.notional.batchBalanceAction(
+                    accounts[2].address, [action], {"from": accounts[2]}
+                )
 
     # Account should have redeemed around the ifCash residual
     portfolio = environment.notional.getAccountPortfolio(accounts[2])
