@@ -340,7 +340,10 @@ library nTokenMintAction {
         // Ensure that net the per market deposit figure does not drop below zero, this should not be possible
         // given how we've calculated the exchange rate but extra caution here
         int256 residual = perMarketDeposit.add(netPrimeCash);
-        require(residual >= 0); // dev: insufficient cash
+
+        // The residual remaining should never be more than a dust amount due to how the fCashAmount is
+        // calculated above.
+        require(0 <= residual && residual < 500, "Deleverage Buffer");
         return (residual, fCashAmount);
     }
 
