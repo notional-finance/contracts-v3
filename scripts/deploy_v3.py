@@ -18,7 +18,7 @@ def main(dryRun="LFG"):
         networkName = "mainnet"
     elif networkName in ["arbitrum-fork", "arbitrum-current"]:
         networkName = "arbitrum-one"
-    deployer = accounts.load("DEPLOY_3")
+    deployer = accounts.load(networkName.upper() + "_DEPLOYER")
     print("Deployer Address: ", deployer.address)
 
     if dryRun == "LFG":
