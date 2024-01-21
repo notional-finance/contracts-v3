@@ -179,7 +179,7 @@ def get_lend_slippage(environment, currencyId, marketIndex, depositAmount):
 
 @pytest.mark.only
 @given(
-    marketDeposit=strategy("uint256", min_value=100e18, max_value=100_000e18),
+    marketDeposit=strategy("uint256", min_value=100, max_value=100_000),
 )
 def test_deleverage_markets_lend_fails_too_large(environment, accounts, marketDeposit):
     # Lending does not succeed when markets are over levered, cash goes into cash balance
@@ -201,6 +201,7 @@ def test_deleverage_markets_lend_fails_too_large(environment, accounts, marketDe
         {"from": accounts[0]}
     )
 
+    marketDeposit = marketDeposit * 1e18
     leverageRatioBefore = get_leverage_ratio(environment, currencyId, 1)
     slippage = get_lend_slippage(environment, currencyId, 1, marketDeposit)
     depositAmount = math.floor(marketDeposit * 1e8 / depositShare[0])
