@@ -8,7 +8,7 @@ ChainlinkOracles = {
     "FRAX/USD": "0x0809e3d38d1b4214958faf06d8b1b1a2b73f2ab8",
     "stETH/ETH": "0xded2c52b75b24732e9107377b7ba93ec1ffa4baf",
     "wstETH/stETH": "0xb1552c5e96b312d0bf8b554186f846c40614a540",
-    "rETH/ETH": "0xf3272cafe65b190e76caaf483db13424a3e23dd2",
+    "rETH/ETH": "0xD6aB2298946840262FcC278fF31516D39fF611eF",
     "USDT/USD": "0x3f3f5df88dc9f13eac63df89ec16ef6e7e25dde7",
     "cbETH/ETH": "0xa668682974e3f121185a3cd94f00322bec674275",
     "GMX/USD": "0xdb98056fecfff59d032ab628337a4887110df3db",
