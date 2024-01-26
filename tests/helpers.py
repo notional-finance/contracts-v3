@@ -591,12 +591,9 @@ def setup_residual_environment(
     if not canSellResiduals:
         # Redeem the vast majority of the nTokens
         balance = environment.notional.getAccountBalance(currencyId, accounts[0])
-        environment.notional.nTokenRedeem(
+        environment.notional.batchBalanceAction(
             accounts[0].address,
-            currencyId,
-            math.floor(balance[1] * 0.9),
-            True,
-            True,
+            [ get_balance_action(currencyId, "RedeemNToken", depositActionAmount=math.floor(balance[1] * 0.9), redeemToUnderlying=True)],
             {"from": accounts[0]},
         )
 

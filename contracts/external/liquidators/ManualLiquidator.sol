@@ -100,21 +100,6 @@ contract ManualLiquidator is FlashLiquidatorBase, AccessControl, Initializable {
         NOTIONAL.batchBalanceAction(address(this), actions);
     }
 
-    function nTokenRedeem(
-        uint96 tokensToRedeem,
-        bool sellTokenAssets,
-        bool acceptResidualAssets
-    ) external ownerOrUser returns (int256) {
-        return
-            NOTIONAL.nTokenRedeem(
-                address(this),
-                ifCashCurrencyId,
-                tokensToRedeem,
-                sellTokenAssets,
-                acceptResidualAssets
-            );
-    }
-
     function withdrawFromNotional(
         uint16 currencyId,
         uint88 amountInternalPrecision,
@@ -216,7 +201,7 @@ contract ManualLiquidator is FlashLiquidatorBase, AccessControl, Initializable {
         uint96 nTokenBalance,
         bool redeemToUnderlying
     ) internal override {
-        NOTIONAL.nTokenRedeem(address(this), nTokenCurrencyId, nTokenBalance, true, true);
+        NOTIONAL.nTokenRedeem(address(this), nTokenCurrencyId, nTokenBalance);
 
         // prettier-ignore
         (
