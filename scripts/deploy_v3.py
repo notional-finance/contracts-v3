@@ -12,7 +12,7 @@ def deployNotional(deployer, networkName, dryRun):
     notional.deployAuthorizedCallbacks()
 
 
-def main(dryRun="LFG"):
+def main(dryRun=True):
     networkName = network.show_active()
     if networkName in ["mainnet-fork", "mainnet-current"]:
         networkName = "mainnet"
