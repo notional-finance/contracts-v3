@@ -5,7 +5,7 @@
         "CalculationViews": "0x1fc8F62c75f7d5F031dB78277bA64C3E20ca1a0a",
         "ERC1155Action": "0xBE71FAf1Ab80eb98D2Abd7647151e72DdEb042B9",
         "GovernanceAction": "0xb7dCfEDE88405E0B4B75ff6829ae2f1f73D2294a",
-        "InitializeMarketsAction": "0x7226545a15C6048833644B992cD88393415341dD",
+        "InitializeMarketsAction": "0x11F94B7B80Cd5385e3CF71524E515CdfFB4b55C4",
         "LiquidateCurrencyAction": "0xcfbAFCe23e55EC0E6f864a3C16ADf2744D0Cb1f2",
         "LiquidatefCashAction": "0x75903cdcA9c84955A2319F559AD90002994823FF",
         "TreasuryAction": "0xD45Df6e08425DC619F18C7eB8De4016BC52e3569",
@@ -43,7 +43,7 @@
     "notional": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
     "routers": {
         "PauseRouter": "0x3A571c167190d42a6aB822823d52b53D9a78Be95",
-        "Router": "0x82FbC7Ce812b72Aa7721b2F6FFc220FE58A61144"
+        "Router": "0xf015d53469ef6c3a9b9F0065e09Cc0deD42c558C"
     },
     "startBlock": 86540849,
     "tokens": {
