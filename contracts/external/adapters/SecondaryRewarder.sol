@@ -5,6 +5,7 @@ import {GenericToken} from "../../internal/balances/protocols/GenericToken.sol";
 import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";
+import {IEIP20NonStandard} from "../../../interfaces/IEIP20NonStandard.sol";
 import {Constants} from "../../global/Constants.sol";
 import {SafeInt256} from "../../math/SafeInt256.sol";
 import {SafeUint256} from "../../math/SafeUint256.sol";
@@ -228,8 +229,13 @@ contract SecondaryRewarder is IRewarder {
             .toUint128();
 
         if (0 < rewardToClaim) {
-            GenericToken.safeTransferOut(REWARD_TOKEN, account, rewardToClaim);
-            emit RewardTransfer(REWARD_TOKEN, account, rewardToClaim);
+            try IEIP20NonStandard(REWARD_TOKEN).transfer(account, rewardToClaim) {
+                bool success = checkReturnCode();
+                if (success) {
+                    emit RewardTransfer(REWARD_TOKEN, account, rewardToClaim);
+                }
+            // ignore failed reward transfers
+            } catch {}
         }
     }
 
@@ -296,5 +302,25 @@ contract SecondaryRewarder is IRewarder {
         bytes32 leaf = keccak256(abi.encodePacked(account, balance));
         bool isValidLeaf = MerkleProof.verify(proof, merkleRoot, leaf);
         require(isValidLeaf, "NotInMerkle");
+    }
+
+    function checkReturnCode() private pure returns(bool success) {
+        uint256[1] memory result;
+        assembly {
+            switch returndatasize()
+                case 0 {
+                    // This is a non-standard ERC-20
+                    success := 1 // set success to true
+                }
+                case 32 {
+                    // This is a compliant ERC-20
+                    returndatacopy(result, 0, 32)
+                    success := mload(result) // Set `success = returndata` of external call
+                }
+                default {
+                    // This is an excessively non-compliant ERC-20.
+                    success := 0
+                }
+        }
     }
 }
