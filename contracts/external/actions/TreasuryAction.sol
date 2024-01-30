@@ -422,15 +422,16 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
             // If this is zero then there is no outstanding lending.
             isExternalLendingUnhealthy = false;
         } else {
+            // offTargetPercentage = |currentExternalUnderlyingLend - targetAmount| * 100 / targetAmount
             uint256 offTargetPercentage = oracleData.currentExternalUnderlyingLend.toInt()
                 .sub(targetAmount.toInt()).abs()
                 .toUint()
                 .mul(uint256(Constants.PERCENTAGE_DECIMALS))
-                .div(targetAmount.add(oracleData.currentExternalUnderlyingLend));
+                .div(targetAmount + 1); // add 1 to prevent dividing by zero
 
-            // prevent rebalance if change is not greater than 1%, important for health check and avoiding triggering
+            // prevent rebalance if change is not equal or greater than 1%, important for health check and to avoiding triggering
             // rebalance shortly after rebalance on minimum change
-            isExternalLendingUnhealthy = 
+            isExternalLendingUnhealthy =
                 (targetAmount < oracleData.currentExternalUnderlyingLend) && (offTargetPercentage > 0);
         }
     }
