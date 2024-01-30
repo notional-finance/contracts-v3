@@ -92,8 +92,7 @@ library ExternalLending {
             // is floored at zero.
             uint256(underlyingToken.convertToExternal(targetExternalUnderlyingLend)),
             // maxExternalUnderlyingLend is limit enforced by setting externalWithdrawThreshold
-            // maxExternalDeposit is limit due to the supply cap on external pools
-            SafeUint256.min(maxExternalUnderlyingLend, oracleData.maxExternalDeposit)
+            maxExternalUnderlyingLend
         );
         // in case of redemption, make sure there is enough to withdraw, important for health check so that
         // it does not trigger rebalances (redemptions) when there is nothing to redeem
@@ -104,6 +103,14 @@ library ExternalLending {
                 targetAmount = targetAmount.add(
                     // unchecked - is safe here, overflow is not possible due to above if conditional
                     forRedemption - oracleData.externalUnderlyingAvailableForWithdraw
+                );
+            }
+        } else if (targetAmount > oracleData.currentExternalUnderlyingLend) { 
+            // in case of deposit , check maxExternalDeposit (limit due to the supply cap on external pools)
+            uint256 forDeposit = targetAmount - oracleData.currentExternalUnderlyingLend;
+            if (forDeposit > oracleData.maxExternalDeposit) {
+                targetAmount = targetAmount.sub(
+                    forDeposit - oracleData.maxExternalDeposit
                 );
             }
         }
