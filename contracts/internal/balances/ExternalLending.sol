@@ -40,12 +40,8 @@ library ExternalLending {
         OracleData memory oracleData,
         PrimeRate memory pr
     ) internal pure returns (uint256 targetAmount) {
-        // Short circuit a zero target
-        if (rebalancingTargetData.targetUtilization == 0) return 0;
-
         int256 totalPrimeCashInUnderlying = pr.convertToUnderlying(int256(factors.totalPrimeSupply));
         int256 totalPrimeDebtInUnderlying = pr.convertDebtStorageToUnderlying(int256(factors.totalPrimeDebt).neg()).abs();
-
         // The target amount to lend is based on a target "utilization" of the total prime supply. For example, for
         // a target utilization of 80%, if the prime cash utilization is 70% (totalPrimeSupply / totalPrimeDebt) then
         // we want to lend 10% of the total prime supply. This ensures that 20% of the totalPrimeSupply will not be held
@@ -77,7 +73,10 @@ library ExternalLending {
         //
         // maxExternalUnderlyingLend = excessFunds / externalWithdrawThreshold
         uint256 maxExternalUnderlyingLend;
-        if (oracleData.currentExternalUnderlyingLend < oracleData.externalUnderlyingAvailableForWithdraw) {
+        if (
+            (oracleData.currentExternalUnderlyingLend < oracleData.externalUnderlyingAvailableForWithdraw) &&
+            (rebalancingTargetData.externalWithdrawThreshold != 0)
+        ) {
             maxExternalUnderlyingLend =
                 (oracleData.externalUnderlyingAvailableForWithdraw - oracleData.currentExternalUnderlyingLend)
                 .mul(uint256(Constants.PERCENTAGE_DECIMALS))
