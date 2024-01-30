@@ -155,7 +155,7 @@ contract SecondaryRewarder is IRewarder {
             (bool status,) = msg.sender.call{value: amount}("");
             require(status);
         } else {
-            IERC20(token).transfer(msg.sender, amount);
+            GenericToken.safeTransferOut(token, msg.sender, amount);
         }
     }
 
