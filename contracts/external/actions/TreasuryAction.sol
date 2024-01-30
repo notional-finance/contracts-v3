@@ -124,7 +124,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
         require(config.holding == holding);
         require(config.targetUtilization < 100);
-        require(100 <= config.externalWithdrawThreshold);
+        require(100 < config.externalWithdrawThreshold);
 
         rebalancingTargets[holding] = RebalancingTargetData(config.targetUtilization, config.externalWithdrawThreshold);
 
