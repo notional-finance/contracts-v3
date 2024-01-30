@@ -18,6 +18,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
     using SafeUint256 for uint256;
     using SafeInt256 for int256;
 
+    event RewardTransfer(address indexed rewardToken, address indexed account, uint256 amount);
+
     SecondaryRewarder private rewarder;
     address private owner;
     uint16 private CURRENCY_ID;
@@ -144,6 +146,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
             assertEq(IERC20(REWARD_TOKEN).balanceOf(accounts[i].account), 0);
 
             vm.prank(accounts[i].account);
+            vm.expectEmit(true, true, true, true);
+            emit RewardTransfer(REWARD_TOKEN, accounts[i].account, reward);
             NOTIONAL.nTokenClaimIncentives();
 
             assertEq(IERC20(REWARD_TOKEN).balanceOf(accounts[i].account), reward);
@@ -162,6 +166,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
             assertEq(IERC20(REWARD_TOKEN).balanceOf(accounts[i].account), 0);
 
             vm.prank(accounts[i].account);
+            vm.expectEmit(true, true, true, true);
+            emit RewardTransfer(REWARD_TOKEN, accounts[i].account, reward);
             NOTIONAL.nTokenClaimIncentives();
 
             assertEq(IERC20(REWARD_TOKEN).balanceOf(accounts[i].account), reward);
@@ -176,6 +182,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
 
             vm.prank(accounts[i].account);
+            vm.expectEmit(true, true, true, true);
+            emit RewardTransfer(REWARD_TOKEN, accounts[i].account, reward);
             NOTIONAL.nTokenClaimIncentives();
 
             uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -196,6 +204,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
 
             // transfer should trigger claim
             vm.prank(accounts[i].account);
+            vm.expectEmit(true, true, true, true);
+            emit RewardTransfer(REWARD_TOKEN, accounts[i].account, reward);
             IERC20(NTOKEN).transfer(vm.addr(111111), 100);
 
             assertEq(IERC20(REWARD_TOKEN).balanceOf(accounts[i].account), reward);
@@ -227,6 +237,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
             assertEq(prevBal, 0);
 
             vm.prank(accounts[i].account);
+            vm.expectEmit(true, true, true, false);
+            emit RewardTransfer(REWARD_TOKEN, accounts[i].account, reward);
             NOTIONAL.nTokenClaimIncentives();
 
             uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -251,6 +263,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
 
             vm.prank(accounts[i].account);
+            vm.expectEmit(true, true, true, false);
+            emit RewardTransfer(REWARD_TOKEN, accounts[i].account, reward);
             NOTIONAL.nTokenClaimIncentives();
 
             uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -275,6 +289,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
 
             vm.prank(accounts[i].account);
+            vm.expectEmit(true, true, true, false);
+            emit RewardTransfer(REWARD_TOKEN, accounts[i].account, reward);
             NOTIONAL.nTokenClaimIncentives();
 
             uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
@@ -301,6 +317,8 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
             uint256 prevBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
 
             vm.prank(accounts[i].account);
+            vm.expectEmit(true, true, true, false);
+            emit RewardTransfer(REWARD_TOKEN, accounts[i].account, reward);
             NOTIONAL.nTokenClaimIncentives();
 
             uint256 newBal = IERC20(REWARD_TOKEN).balanceOf(accounts[i].account);
