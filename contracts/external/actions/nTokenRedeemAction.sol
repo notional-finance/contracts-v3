@@ -49,33 +49,14 @@ library nTokenRedeemAction {
         external
         returns (int256)
     {
-        (int256 totalPrimeCash, PortfolioAsset[] memory newifCashAssets) = _redeem(
-            account, currencyId, tokensToRedeem, true, false
-        );
+        (int256 totalPrimeCash, PortfolioAsset[] memory newifCashAssets) = _redeem({
+            account: account, currencyId: currencyId, tokensToRedeem: tokensToRedeem,
+            sellTokenAssets: true,
+            acceptResidualAssets: false
+        });
 
         require(newifCashAssets.length == 0, "Cannot redeem via batch, residual");
         return totalPrimeCash;
-    }
-
-    /// @notice Redeems nTokens for asset cash and fCash
-    /// @param currencyId the currency associated the nToken
-    /// @param tokensToRedeem the amount of nTokens to convert to cash
-    /// @param sellTokenAssets attempt to sell residual fCash and convert to cash, if unsuccessful then place
-    /// back into the account's portfolio
-    /// @param acceptResidualAssets if true, then ifCash residuals will be placed into the account and there will
-    /// be no penalty assessed
-    /// @return totalPrimeCash positive amount of asset cash to the account
-    /// @return newifCashAssets an array of fCash asset residuals to place into the account
-    function redeem(
-        address account,
-        uint16 currencyId,
-        int256 tokensToRedeem,
-        bool sellTokenAssets,
-        bool acceptResidualAssets
-    ) external returns (int256 totalPrimeCash, PortfolioAsset[] memory newifCashAssets) {
-        (totalPrimeCash, newifCashAssets) = _redeem(
-            account, currencyId, tokensToRedeem, sellTokenAssets, acceptResidualAssets
-        );
     }
 
     function _redeem(
@@ -162,11 +143,7 @@ library nTokenRedeemAction {
             totalPrimeCash = totalPrimeCash.add(primeCash);
         }
 
-        if (netfCashRemaining) {
-            // If the account is unwilling to accept residuals then will fail here.
-            newifCashAssets = _addResidualsToAssets(nToken.portfolioState.storedAssets, newifCashAssets, netfCash);
-            require(acceptResidualAssets || newifCashAssets.length == 0, "Residuals");
-        }
+        require(netfCashRemaining == false, "Residuals");
 
         return (totalPrimeCash, newifCashAssets);
     }

@@ -200,7 +200,8 @@ library nTokenCalculations {
         (
             int256 totalPrimeValueInMarkets,
             int256[] memory netfCash
-        ) = getNTokenMarketValue({nToken: nToken, blockTime: blockTime, useOracleRate: true});
+        // Need to use market values here to match the withdraw amounts on minting
+        ) = getNTokenMarketValue({nToken: nToken, blockTime: blockTime, useOracleRate: false});
         int256[] memory tokensToWithdraw = new int256[](netfCash.length);
 
         // NOTE: this total portfolio asset value does not include any cash balance the nToken may hold.

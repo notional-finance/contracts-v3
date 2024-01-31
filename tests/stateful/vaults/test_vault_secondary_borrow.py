@@ -8,7 +8,7 @@ from brownie.network.state import Chain
 from fixtures import *
 from tests.constants import PRIME_CASH_VAULT_MATURITY
 from tests.internal.vaults.fixtures import get_vault_config, set_flags
-from tests.helpers import get_balance_trade_action
+from tests.helpers import get_balance_trade_action, get_lend_action
 from tests.snapshot import EventChecker
 from tests.stateful.invariants import check_system_invariants
 from tests.stateful.test_settlement import settle_all_other_accounts
@@ -255,9 +255,15 @@ def test_vault_exit_at_zero_interest(accounts, multiCurrencyVault, environment):
 
     vaultAccountBefore = environment.notional.getVaultAccount(accounts[1], multiCurrencyVault)
 
-    # Reduce liquidity in ETH so lending fails on exit
-    environment.notional.nTokenRedeem(
-        accounts[0], 1, 44_500e8, True, True, {"from": accounts[0]}
+    # Buy all the fCash in market one to reduce the interest rate
+    totalfCash = environment.notional.getActiveMarkets(1)[0][2]
+    environment.notional.batchBalanceAndTradeAction(
+        accounts[0], [get_balance_trade_action(
+            1, "DepositUnderlying",
+            [{"tradeActionType": "Lend", "marketIndex": 1, "notional": totalfCash * 0.99, "minSlippage": 0}],
+            depositActionAmount=totalfCash * 1e10
+        )],
+        {"from": accounts[0], "value": totalfCash * 1e10}
     )
     (amountAsset, _, _, _) = environment.notional.getDepositFromfCashLend(
         1, 9e8, maturity, 0, chain.time()

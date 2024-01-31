@@ -214,25 +214,19 @@ contract AccountAction is ActionGuards {
         return underlyingWithdrawnExternal.neg().toUint();
     }
 
-    /// @notice Allows accounts to redeem nTokens into constituent assets and then absorb the assets
-    /// into their portfolio. Due to the complexity here, it is not allowed to be called during a batch trading
-    /// operation and must be done separately.
+    /// @notice Allows accounts to redeem nTokens to prime cash while the supply cap is breached. This
+    /// method does not withdraw any tokens from the contract. Will revert if fCash cannot be sold back
+    /// into the market.
     /// @param redeemer the address that holds the nTokens to redeem
     /// @param currencyId the currency associated the nToken
     /// @param tokensToRedeem_ the amount of nTokens to convert to cash
-    /// @param sellTokenAssets attempt to sell residual fCash and convert to cash
-    /// @param acceptResidualAssets if true, will place any residual fCash that could not be sold (either due to slippage
-    /// or because it was idiosyncratic) into the account's portfolio
     /// @dev auth:msg.sender auth:ERC1155
-    /// @return total amount of asset cash redeemed
-    /// @return true or false if there were residuals that were placed into the portfolio
+    /// @return total amount of prime cash redeemed
     function nTokenRedeem(
         address redeemer,
         uint16 currencyId,
-        uint96 tokensToRedeem_,
-        bool sellTokenAssets,
-        bool acceptResidualAssets
-    ) external nonReentrant returns (int256, bool) {
+        uint96 tokensToRedeem_
+    ) external nonReentrant returns (int256) {
         // ERC1155 can call this method during a post transfer event
         require(msg.sender == redeemer || msg.sender == address(this), "Unauthorized caller");
         int256 tokensToRedeem = int256(tokensToRedeem_);
@@ -245,30 +239,20 @@ contract AccountAction is ActionGuards {
         require(balance.storedNTokenBalance >= tokensToRedeem, "Insufficient tokens");
         balance.netNTokenSupplyChange = tokensToRedeem.neg();
 
-        (int256 totalPrimeCash, PortfolioAsset[] memory assets) = nTokenRedeemAction.redeem(
-            redeemer, currencyId, tokensToRedeem, sellTokenAssets, acceptResidualAssets
+        int256 totalPrimeCash = nTokenRedeemAction.nTokenRedeemViaBatch(
+            redeemer, currencyId, tokensToRedeem
         );
 
         // Set balances before transferring assets
         balance.netCashChange = totalPrimeCash;
         balance.finalizeNoWithdraw(redeemer, context);
 
-        // The hasResidual flag is only set to true if selling residuals has failed, checking
-        // if the length of assets is greater than zero will detect the presence of ifCash
-        // assets that have not been sold.
-        if (assets.length > 0) {
-            // This method will store assets and return the memory location of the new account
-            // context.
-            address nTokenAddress = nTokenHandler.nTokenAddress(currencyId);
-            context = SettleAssetsExternal.placeAssetsInAccount(redeemer, nTokenAddress, context, assets);
-        }
-
         context.setAccountContext(redeemer);
         if (context.hasDebt != 0x00) {
             FreeCollateralExternal.checkFreeCollateralAndRevert(redeemer);
         }
 
-        return (totalPrimeCash, assets.length > 0);
+        return totalPrimeCash;
     }
 
     /// @notice Settle the account if required, returning a reference to the account context. Also
