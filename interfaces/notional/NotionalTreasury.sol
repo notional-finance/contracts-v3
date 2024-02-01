@@ -50,7 +50,7 @@ interface NotionalTreasury {
 
     function checkRebalance() external returns (bool canExec, bytes memory execPayload);
 
-    function rebalance(uint16[] calldata currencyId) external;
+    function rebalance(uint16 currencyId) external;
 
     function updateIncentiveEmissionRate(uint16 currencyId, uint32 newEmissionRate) external;
 

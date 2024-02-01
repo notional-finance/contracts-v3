@@ -288,21 +288,16 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         }
     }
 
-    /// @notice Rebalances the given currency ids. Can only be called by the rebalancing bot. Under normal operating
+    /// @notice Rebalances the given currency id. Can only be called by the rebalancing bot. Under normal operating
     /// conditions this can only be called once the cool down period has passed between rebalances, however, if the
     /// external lending is unhealthy we can bypass that cool down period. The logic for when rebalance is called is
     /// defined above in `checkRebalance`.
-    /// @param currencyIds sorted array of unique currency id
-    function rebalance(uint16[] calldata currencyIds) external override nonReentrant {
+    /// @param currencyId currency id
+    function rebalance(uint16 currencyId) external override nonReentrant {
         require(msg.sender == rebalancingBot, "Unauthorized");
 
-        for (uint256 i; i < currencyIds.length; ++i) {
-            // ensure currency ids are unique and sorted
-            if (i != 0) require(currencyIds[i - 1] < currencyIds[i]);
-
-            // Rebalance each of the currencies provided. The gelato bot cannot skip the cooldown check.
-            _rebalanceCurrency({currencyId: currencyIds[i], useCooldownCheck: true});
-        }
+        // The gelato bot cannot skip the cooldown check.
+        _rebalanceCurrency({currencyId: currencyId, useCooldownCheck: true});
     }
 
     /// @notice Returns when sufficient time has passed since the last rebalancing cool down.
