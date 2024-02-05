@@ -269,8 +269,10 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
             RebalancingContextStorage storage context = contexts[currencyId];
             bool cooldownPassed = _hasCooldownPassed(context);
-            (PrimeRate memory pr, /* */) = PrimeCashExchangeRate.getPrimeCashRateView(currencyId, block.timestamp);
-            (bool isExternalLendingUnhealthy, /* */, /* */) = _isExternalLendingUnhealthy(currencyId, oracle, pr);
+            (PrimeRate memory rate, PrimeCashFactors memory factors) =
+                PrimeCashExchangeRate.getPrimeCashRateView(currencyId, block.timestamp);
+            (bool isExternalLendingUnhealthy, /* */, /* */) =
+                _isExternalLendingUnhealthy(currencyId, oracle, rate, factors);
 
             // If external lending is unhealthy, the bot and rebalance the currency immediately and
             // bypass the cooldown.
@@ -317,10 +319,11 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         // Accrues interest up to the current block before any rebalancing is executed
         IPrimeCashHoldingsOracle oracle = PrimeCashExchangeRate.getPrimeCashHoldingsOracle(currencyId);
         PrimeRate memory pr = PrimeRateLib.buildPrimeRateStateful(currencyId);
+        PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
 
         bool hasCooldownPassed = _hasCooldownPassed(context);
         (bool isExternalLendingUnhealthy, OracleData memory oracleData, uint256 targetAmount) = 
-            _isExternalLendingUnhealthy(currencyId, oracle, pr);
+            _isExternalLendingUnhealthy(currencyId, oracle, pr, factors);
 
         // Cooldown check is bypassed when the owner updates the rebalancing targets
         if (useCooldownCheck) require(hasCooldownPassed || isExternalLendingUnhealthy);
@@ -405,13 +408,13 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     function _isExternalLendingUnhealthy(
         uint16 currencyId,
         IPrimeCashHoldingsOracle oracle,
-        PrimeRate memory pr
+        PrimeRate memory pr,
+        PrimeCashFactors memory factors
     ) internal view returns (bool isExternalLendingUnhealthy, OracleData memory oracleData, uint256 targetAmount) {
         oracleData = oracle.getOracleData();
 
         RebalancingTargetData memory rebalancingTargetData =
             LibStorage.getRebalancingTargets()[currencyId][oracleData.holding];
-        PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
         Token memory underlyingToken = TokenHandler.getUnderlyingToken(currencyId);
 
         targetAmount = ExternalLending.getTargetExternalLendingAmount(
