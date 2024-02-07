@@ -253,12 +253,12 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
      * Rebalancing Bot Methods               *
      *****************************************/
 
-    /// @notice View method used by Gelato to check if rebalancing can be executed and get the execution payload.
-    function checkRebalance() external view override returns (bool canExec, bytes memory execPayload) {
+    /// @notice View method to check which currencies can be rebalanced
+    function checkRebalance() external view override returns (uint16[] memory currencyIdsForRebalance) {
         mapping(uint16 => RebalancingContextStorage) storage contexts = LibStorage.getRebalancingContext();
         uint16[] memory currencyIds = new uint16[](maxCurrencyId);
 
-        // Counter is used to calculate the payload at the end of the method
+        // Counter is used to slice the currencyIds array at the end of the method
         uint16 counter = 0;
 
         // Currency ids are 1-indexed
@@ -281,10 +281,8 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         }
 
         if (counter != 0) {
-            uint16[] memory slicedCurrencyIds = new uint16[](counter);
-            for (uint16 i = 0; i < counter; i++) slicedCurrencyIds[i] = currencyIds[i];
-            canExec = true;
-            execPayload = abi.encodeWithSelector(NotionalTreasury.rebalance.selector, slicedCurrencyIds);
+            currencyIdsForRebalance = new uint16[](counter);
+            for (uint16 i = 0; i < counter; i++) currencyIdsForRebalance[i] = currencyIds[i];
         }
     }
 
