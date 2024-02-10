@@ -338,7 +338,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         }
 
         // External effects happen after the internal state has updated
-        _executeRebalance(currencyId, oracle, pr, oracleData, targetAmount);
+        _executeRebalance(currencyId, oracle, factors, oracleData, targetAmount);
 
         emit CurrencyRebalanced(currencyId, pr.supplyFactor.toUint(), oracleSupplyRate);
     }
@@ -383,13 +383,12 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     function _executeRebalance(
         uint16 currencyId,
         IPrimeCashHoldingsOracle oracle,
-        PrimeRate memory pr,
+        PrimeCashFactors memory factors,
         OracleData memory oracleData,
         uint256 targetAmount
     ) private {
         Token memory underlyingToken = TokenHandler.getUnderlyingToken(currencyId);
         RebalancingData memory data = _calculateRebalance(oracle, oracleData, targetAmount);
-        PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
 
         uint256 totalUnderlyingValueBefore =
             uint256(underlyingToken.convertToExternal(int256(factors.lastTotalUnderlyingValue)));
