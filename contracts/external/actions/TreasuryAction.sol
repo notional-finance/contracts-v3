@@ -422,17 +422,23 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
             // If this is zero then there is no outstanding lending.
             isExternalLendingUnhealthy = false;
         } else {
-            // offTargetPercentage = |currentExternalUnderlyingLend - targetAmount| * 100 / targetAmount
-            uint256 offTargetPercentage = oracleData.currentExternalUnderlyingLend.toInt()
+            // minimal difference we should care about is 1 basis point of 1 underlying token
+            // to prevent rebalancing when difference between target and currentExternalUnderlyingLend
+            // is small in absolute but large in relative terms eg. (0, 1), (1, 2)...
+            uint256 minDiff = uint256(10 ** uint256(underlyingToken.decimals)).mulInRatePrecision(Constants.BASIS_POINT);
+            // lendTargetDiff = |currentExternalUnderlyingLend - targetAmount|
+            uint256 lendTargetDiff = oracleData.currentExternalUnderlyingLend.toInt()
                 .sub(targetAmount.toInt()).abs()
-                .toUint()
+                .toUint();
+            // offTargetPercentage = lendTargetDiff * 100 / targetAmount
+            uint256 offTargetPercentage = (minDiff < lendTargetDiff ? lendTargetDiff : 0)
                 .mul(uint256(Constants.PERCENTAGE_DECIMALS))
                 .div(targetAmount + 1); // add 1 to prevent dividing by zero
 
             // prevent rebalance if change is not equal or greater than 1%, important for health check and to avoiding triggering
             // rebalance shortly after rebalance on minimum change
             isExternalLendingUnhealthy =
-                (targetAmount < oracleData.currentExternalUnderlyingLend) && (offTargetPercentage > 0);
+                (targetAmount < oracleData.currentExternalUnderlyingLend) && (0 < offTargetPercentage);
         }
     }
 
