@@ -99,19 +99,18 @@ library ExternalLending {
         if (targetAmount < oracleData.currentExternalUnderlyingLend) {
             uint256 forRedemption = oracleData.currentExternalUnderlyingLend - targetAmount;
             if (oracleData.externalUnderlyingAvailableForWithdraw < forRedemption) {
-                // increase target amount so that redemptions amount match externalUnderlyingAvailableForWithdraw
-                targetAmount = targetAmount.add(
-                    // unchecked - is safe here, overflow is not possible due to above if conditional
-                    forRedemption - oracleData.externalUnderlyingAvailableForWithdraw
-                );
+                // adapt target amount so that redemptions amount match externalUnderlyingAvailableForWithdraw
+                // unchecked - is safe here, overflow is not possible due to above if conditionals
+                targetAmount = oracleData.currentExternalUnderlyingLend - oracleData.externalUnderlyingAvailableForWithdraw;
             }
-        } else if (targetAmount > oracleData.currentExternalUnderlyingLend) { 
+        } else if (oracleData.currentExternalUnderlyingLend < targetAmount) {
             // in case of deposit , check maxExternalDeposit (limit due to the supply cap on external pools)
+            // underflow not possible due to above if conditional
             uint256 forDeposit = targetAmount - oracleData.currentExternalUnderlyingLend;
-            if (forDeposit > oracleData.maxExternalDeposit) {
-                targetAmount = targetAmount.sub(
-                    forDeposit - oracleData.maxExternalDeposit
-                );
+            if (oracleData.maxExternalDeposit < forDeposit) {
+                // adapt target amount so we don't hit supply cap on external pools
+                // overflow not possible due to above if conditional
+                targetAmount = oracleData.currentExternalUnderlyingLend + oracleData.maxExternalDeposit;
             }
         }
     }
