@@ -7,7 +7,7 @@ import {Script} from "forge-std/Script.sol";
 import {AaveV3HoldingsOracle} from "../contracts/external/pCash/AaveV3HoldingsOracle.sol";
 import {IPrimeCashHoldingsOracle} from "../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 import {NotionalProxy} from "../interfaces/notional/NotionalProxy.sol";
-import {IAavePool} from "../interfaces/aave/IAavePool.sol";
+import {ILendingPool} from "../interfaces/aave/ILendingPool.sol";
 
 contract DeployAaveHoldingOracles is Script {
     function run() external {
@@ -24,7 +24,7 @@ contract DeployAaveHoldingOracles is Script {
         require(0 < currencyId && currencyId <= NOTIONAL.getMaxCurrencyId(), "Wrong currency id");
 
         address underlying = IPrimeCashHoldingsOracle(NOTIONAL.getPrimeCashHoldingsOracle(currencyId)).underlying();
-        address aToken = IAavePool(AAVE_LENDING_POOL).getReserveData(underlying).aTokenAddress;
+        address aToken = ILendingPool(AAVE_LENDING_POOL).getReserveData(underlying).aTokenAddress;
 
         require(aToken != address(0), "Token not supported");
 

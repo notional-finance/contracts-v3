@@ -9,7 +9,7 @@ import {Constants} from "../contracts/global/Constants.sol";
 import {TokenHandler} from "../contracts/internal/balances/TokenHandler.sol";
 import {Deployments} from "../contracts/global/Deployments.sol";
 import {IPrimeCashHoldingsOracle, OracleData} from "../interfaces/notional/IPrimeCashHoldingsOracle.sol";
-import {IAavePool} from "../interfaces/aave/IAavePool.sol";
+import {ILendingPool} from "../interfaces/aave/ILendingPool.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 import {
     Token,
@@ -205,9 +205,9 @@ contract NotionalBaseTest is Test {
         address underlyingToken = _getUnderlying(currencyId);
         address aToken;
         if (currencyId == 1) {
-            aToken = IAavePool(AAVE_LENDING_POOL).getReserveData(address(Deployments.WETH)).aTokenAddress;
+            aToken = ILendingPool(AAVE_LENDING_POOL).getReserveData(address(Deployments.WETH)).aTokenAddress;
         } else {
-            aToken = IAavePool(AAVE_LENDING_POOL).getReserveData(underlyingToken).aTokenAddress;
+            aToken = ILendingPool(AAVE_LENDING_POOL).getReserveData(underlyingToken).aTokenAddress;
         }
         if (aToken == address(0)) {
             return;
