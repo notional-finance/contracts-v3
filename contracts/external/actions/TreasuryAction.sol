@@ -253,12 +253,12 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
      * Rebalancing Bot Methods               *
      *****************************************/
 
-    /// @notice View method used by Gelato to check if rebalancing can be executed and get the execution payload.
-    function checkRebalance() external view override returns (bool canExec, bytes memory execPayload) {
+    /// @notice View method to check which currencies can be rebalanced
+    function checkRebalance() external view override returns (uint16[] memory currencyIdsForRebalance) {
         mapping(uint16 => RebalancingContextStorage) storage contexts = LibStorage.getRebalancingContext();
         uint16[] memory currencyIds = new uint16[](maxCurrencyId);
 
-        // Counter is used to calculate the payload at the end of the method
+        // Counter is used to slice the currencyIds array at the end of the method
         uint16 counter = 0;
 
         // Currency ids are 1-indexed
@@ -283,28 +283,21 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         }
 
         if (counter != 0) {
-            uint16[] memory slicedCurrencyIds = new uint16[](counter);
-            for (uint16 i = 0; i < counter; i++) slicedCurrencyIds[i] = currencyIds[i];
-            canExec = true;
-            execPayload = abi.encodeWithSelector(NotionalTreasury.rebalance.selector, slicedCurrencyIds);
+            currencyIdsForRebalance = new uint16[](counter);
+            for (uint16 i = 0; i < counter; i++) currencyIdsForRebalance[i] = currencyIds[i];
         }
     }
 
-    /// @notice Rebalances the given currency ids. Can only be called by the rebalancing bot. Under normal operating
+    /// @notice Rebalances the given currency id. Can only be called by the rebalancing bot. Under normal operating
     /// conditions this can only be called once the cool down period has passed between rebalances, however, if the
     /// external lending is unhealthy we can bypass that cool down period. The logic for when rebalance is called is
     /// defined above in `checkRebalance`.
-    /// @param currencyIds sorted array of unique currency id
-    function rebalance(uint16[] calldata currencyIds) external override nonReentrant {
+    /// @param currencyId currency id
+    function rebalance(uint16 currencyId) external override nonReentrant {
         require(msg.sender == rebalancingBot, "Unauthorized");
 
-        for (uint256 i; i < currencyIds.length; ++i) {
-            // ensure currency ids are unique and sorted
-            if (i != 0) require(currencyIds[i - 1] < currencyIds[i]);
-
-            // Rebalance each of the currencies provided. The gelato bot cannot skip the cooldown check.
-            _rebalanceCurrency({currencyId: currencyIds[i], useCooldownCheck: true});
-        }
+        // The gelato bot cannot skip the cooldown check.
+        _rebalanceCurrency({currencyId: currencyId, useCooldownCheck: true});
     }
 
     /// @notice Returns when sufficient time has passed since the last rebalancing cool down.
