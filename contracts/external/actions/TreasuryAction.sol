@@ -124,7 +124,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
         require(config.holding == holding);
         require(config.targetUtilization < 100);
-        require(100 <= config.externalWithdrawThreshold);
+        require(100 < config.externalWithdrawThreshold);
 
         rebalancingTargets[holding] = RebalancingTargetData(config.targetUtilization, config.externalWithdrawThreshold);
 
@@ -253,12 +253,12 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
      * Rebalancing Bot Methods               *
      *****************************************/
 
-    /// @notice View method used by Gelato to check if rebalancing can be executed and get the execution payload.
-    function checkRebalance() external view override returns (bool canExec, bytes memory execPayload) {
+    /// @notice View method to check which currencies can be rebalanced
+    function checkRebalance() external view override returns (uint16[] memory currencyIdsForRebalance) {
         mapping(uint16 => RebalancingContextStorage) storage contexts = LibStorage.getRebalancingContext();
         uint16[] memory currencyIds = new uint16[](maxCurrencyId);
 
-        // Counter is used to calculate the payload at the end of the method
+        // Counter is used to slice the currencyIds array at the end of the method
         uint16 counter = 0;
 
         // Currency ids are 1-indexed
@@ -269,8 +269,10 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
 
             RebalancingContextStorage storage context = contexts[currencyId];
             bool cooldownPassed = _hasCooldownPassed(context);
-            (PrimeRate memory pr, /* */) = PrimeCashExchangeRate.getPrimeCashRateView(currencyId, block.timestamp);
-            (bool isExternalLendingUnhealthy, /* */, /* */) = _isExternalLendingUnhealthy(currencyId, oracle, pr);
+            (PrimeRate memory rate, PrimeCashFactors memory factors) =
+                PrimeCashExchangeRate.getPrimeCashRateView(currencyId, block.timestamp);
+            (bool isExternalLendingUnhealthy, /* */, /* */) =
+                _isExternalLendingUnhealthy(currencyId, oracle, rate, factors);
 
             // If external lending is unhealthy, the bot and rebalance the currency immediately and
             // bypass the cooldown.
@@ -281,28 +283,21 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         }
 
         if (counter != 0) {
-            uint16[] memory slicedCurrencyIds = new uint16[](counter);
-            for (uint16 i = 0; i < counter; i++) slicedCurrencyIds[i] = currencyIds[i];
-            canExec = true;
-            execPayload = abi.encodeWithSelector(NotionalTreasury.rebalance.selector, slicedCurrencyIds);
+            currencyIdsForRebalance = new uint16[](counter);
+            for (uint16 i = 0; i < counter; i++) currencyIdsForRebalance[i] = currencyIds[i];
         }
     }
 
-    /// @notice Rebalances the given currency ids. Can only be called by the rebalancing bot. Under normal operating
+    /// @notice Rebalances the given currency id. Can only be called by the rebalancing bot. Under normal operating
     /// conditions this can only be called once the cool down period has passed between rebalances, however, if the
     /// external lending is unhealthy we can bypass that cool down period. The logic for when rebalance is called is
     /// defined above in `checkRebalance`.
-    /// @param currencyIds sorted array of unique currency id
-    function rebalance(uint16[] calldata currencyIds) external override nonReentrant {
+    /// @param currencyId currency id
+    function rebalance(uint16 currencyId) external override nonReentrant {
         require(msg.sender == rebalancingBot, "Unauthorized");
 
-        for (uint256 i; i < currencyIds.length; ++i) {
-            // ensure currency ids are unique and sorted
-            if (i != 0) require(currencyIds[i - 1] < currencyIds[i]);
-
-            // Rebalance each of the currencies provided. The gelato bot cannot skip the cooldown check.
-            _rebalanceCurrency({currencyId: currencyIds[i], useCooldownCheck: true});
-        }
+        // The gelato bot cannot skip the cooldown check.
+        _rebalanceCurrency({currencyId: currencyId, useCooldownCheck: true});
     }
 
     /// @notice Returns when sufficient time has passed since the last rebalancing cool down.
@@ -317,10 +312,11 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         // Accrues interest up to the current block before any rebalancing is executed
         IPrimeCashHoldingsOracle oracle = PrimeCashExchangeRate.getPrimeCashHoldingsOracle(currencyId);
         PrimeRate memory pr = PrimeRateLib.buildPrimeRateStateful(currencyId);
+        PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
 
         bool hasCooldownPassed = _hasCooldownPassed(context);
         (bool isExternalLendingUnhealthy, OracleData memory oracleData, uint256 targetAmount) = 
-            _isExternalLendingUnhealthy(currencyId, oracle, pr);
+            _isExternalLendingUnhealthy(currencyId, oracle, pr, factors);
 
         // Cooldown check is bypassed when the owner updates the rebalancing targets
         if (useCooldownCheck) require(hasCooldownPassed || isExternalLendingUnhealthy);
@@ -335,7 +331,7 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
         }
 
         // External effects happen after the internal state has updated
-        _executeRebalance(currencyId, oracle, pr, oracleData, targetAmount);
+        _executeRebalance(currencyId, oracle, factors, oracleData, targetAmount);
 
         emit CurrencyRebalanced(currencyId, pr.supplyFactor.toUint(), oracleSupplyRate);
     }
@@ -380,13 +376,12 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     function _executeRebalance(
         uint16 currencyId,
         IPrimeCashHoldingsOracle oracle,
-        PrimeRate memory pr,
+        PrimeCashFactors memory factors,
         OracleData memory oracleData,
         uint256 targetAmount
     ) private {
         Token memory underlyingToken = TokenHandler.getUnderlyingToken(currencyId);
         RebalancingData memory data = _calculateRebalance(oracle, oracleData, targetAmount);
-        PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
 
         uint256 totalUnderlyingValueBefore =
             uint256(underlyingToken.convertToExternal(int256(factors.lastTotalUnderlyingValue)));
@@ -405,13 +400,13 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
     function _isExternalLendingUnhealthy(
         uint16 currencyId,
         IPrimeCashHoldingsOracle oracle,
-        PrimeRate memory pr
+        PrimeRate memory pr,
+        PrimeCashFactors memory factors
     ) internal view returns (bool isExternalLendingUnhealthy, OracleData memory oracleData, uint256 targetAmount) {
         oracleData = oracle.getOracleData();
 
         RebalancingTargetData memory rebalancingTargetData =
             LibStorage.getRebalancingTargets()[currencyId][oracleData.holding];
-        PrimeCashFactors memory factors = PrimeCashExchangeRate.getPrimeCashFactors(currencyId);
         Token memory underlyingToken = TokenHandler.getUnderlyingToken(currencyId);
 
         targetAmount = ExternalLending.getTargetExternalLendingAmount(
@@ -422,16 +417,23 @@ contract TreasuryAction is StorageLayoutV2, ActionGuards, NotionalTreasury {
             // If this is zero then there is no outstanding lending.
             isExternalLendingUnhealthy = false;
         } else {
-            uint256 offTargetPercentage = oracleData.currentExternalUnderlyingLend.toInt()
+            // minimal difference we should care about is 1 basis point of 1 underlying token
+            // to prevent rebalancing when difference between target and currentExternalUnderlyingLend
+            // is small in absolute but large in relative terms eg. (0, 1), (1, 2)...
+            uint256 minDiff = uint256(10 ** uint256(underlyingToken.decimals)).mulInRatePrecision(Constants.BASIS_POINT);
+            // lendTargetDiff = |currentExternalUnderlyingLend - targetAmount|
+            uint256 lendTargetDiff = oracleData.currentExternalUnderlyingLend.toInt()
                 .sub(targetAmount.toInt()).abs()
-                .toUint()
+                .toUint();
+            // offTargetPercentage = lendTargetDiff * 100 / targetAmount
+            uint256 offTargetPercentage = (minDiff < lendTargetDiff ? lendTargetDiff : 0)
                 .mul(uint256(Constants.PERCENTAGE_DECIMALS))
-                .div(targetAmount.add(oracleData.currentExternalUnderlyingLend));
+                .div(targetAmount + 1); // add 1 to prevent dividing by zero
 
-            // prevent rebalance if change is not greater than 1%, important for health check and avoiding triggering
+            // prevent rebalance if change is not equal or greater than 1%, important for health check and to avoiding triggering
             // rebalance shortly after rebalance on minimum change
-            isExternalLendingUnhealthy = 
-                (targetAmount < oracleData.currentExternalUnderlyingLend) && (offTargetPercentage > 0);
+            isExternalLendingUnhealthy =
+                (targetAmount < oracleData.currentExternalUnderlyingLend) && (0 < offTargetPercentage);
         }
     }
 

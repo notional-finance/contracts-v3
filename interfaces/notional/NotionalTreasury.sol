@@ -48,9 +48,9 @@ interface NotionalTreasury {
 
     function setRebalancingCooldown(uint16 currencyId, uint40 cooldownTimeInSeconds) external;
 
-    function checkRebalance() external returns (bool canExec, bytes memory execPayload);
+    function checkRebalance() external returns (uint16[] memory currencyIds);
 
-    function rebalance(uint16[] calldata currencyId) external;
+    function rebalance(uint16 currencyId) external;
 
     function updateIncentiveEmissionRate(uint16 currencyId, uint32 newEmissionRate) external;
 

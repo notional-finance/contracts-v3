@@ -15,6 +15,8 @@ import {SafeUint256} from "../../math/SafeUint256.sol";
 contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
     using SafeUint256 for uint256;
 
+    uint256 internal constant RAY = 1e27;
+    uint256 internal constant HALF_RAY = 0.5e27;
     address internal immutable ASSET_TOKEN;
     address internal immutable LENDING_POOL;
     address internal immutable POOL_DATA_PROVIDER;
@@ -148,16 +150,24 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
         (/* */, uint256 supplyCap) = IPoolDataProvider(POOL_DATA_PROVIDER).getReserveCaps(underlying);
         // Supply caps are returned as whole token values
         supplyCap = supplyCap * UNDERLYING_PRECISION;
-        uint256 aTokenSupply = IPoolDataProvider(POOL_DATA_PROVIDER).getATokenTotalSupply(underlying);
-
         // If supply cap is zero, that means there is no cap on the pool
         if (supplyCap == 0) {
             oracleData.maxExternalDeposit = type(uint256).max;
-        } else if (supplyCap <= aTokenSupply) {
-            oracleData.maxExternalDeposit = 0;
         } else {
-            // underflow checked as consequence of if / else statement
-            oracleData.maxExternalDeposit = supplyCap - aTokenSupply;
+            (/* */, uint256 accruedToTreasury, uint256 aTokenSupply,/* */,/* */,/* */,/* */,/* */,/* */,/* */,/* */,/* */) =
+                IPoolDataProvider(POOL_DATA_PROVIDER).getReserveData(underlying);
+            uint256 income = ILendingPool(LENDING_POOL).getReserveNormalizedIncome(underlying);
+
+            // this calculation is not exactly correct since accruedToTreasury is not updated to current block
+            // but it is a gas efficient way to approximately calculate current supply which is enough to
+            // prevent system from hitting Aave pool supply cap
+            uint256 currentSupply = (aTokenSupply + rayMul(accruedToTreasury, income)) * 1001 / 1000;
+            if (supplyCap <= currentSupply) {
+                oracleData.maxExternalDeposit = 0;
+            } else {
+                // underflow checked as consequence of if / else statement
+                oracleData.maxExternalDeposit = supplyCap - currentSupply;
+            }
         }
 
         oracleData.holding = ASSET_TOKEN;
@@ -165,5 +175,16 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
         oracleData.externalUnderlyingAvailableForWithdraw = IERC20(underlying).balanceOf(ASSET_TOKEN);
         // This is the returned stored token balance of the aToken
         oracleData.currentExternalUnderlyingLend = _holdingValuesInUnderlying()[0];
+    }
+
+    function rayMul(uint256 a, uint256 b) private pure returns (uint256 c) {
+        // to avoid overflow, a <= (type(uint256).max - HALF_RAY) / b
+        assembly {
+            if iszero(or(iszero(b), iszero(gt(a, div(sub(not(0), HALF_RAY), b))))) {
+                revert(0, 0)
+            }
+
+            c := div(add(mul(a, b), HALF_RAY), RAY)
+        }
     }
 }
