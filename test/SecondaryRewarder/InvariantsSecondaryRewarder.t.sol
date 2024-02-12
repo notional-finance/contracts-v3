@@ -90,7 +90,7 @@ abstract contract InvariantsSecondaryRewarder is SecondaryRewarderSetupTest {
     function _redeem(address account, uint256 amount) internal {
         uint256 maxAmount = IERC20(NTOKEN).balanceOf(account);
         // if min is less "Insufficient free collateral" error is thrown for DAI-ARB pair
-        uint256 minAmount = 3;
+        uint256 minAmount = 4;
         if (maxAmount < minAmount) return;
         amount = bound(amount, minAmount, maxAmount);
 
