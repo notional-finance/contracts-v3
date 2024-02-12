@@ -99,19 +99,25 @@ library ExternalLending {
             // is floored at zero.
             uint256(underlyingToken.convertToExternal(targetExternalUnderlyingLend)),
             // maxExternalUnderlyingLend is limit enforced by setting externalWithdrawThreshold
-            // maxExternalDeposit is limit due to the supply cap on external pools
-            SafeUint256.min(maxExternalUnderlyingLend, oracleData.maxExternalDeposit)
+            maxExternalUnderlyingLend
         );
         // in case of redemption, make sure there is enough to withdraw, important for health check so that
         // it does not trigger rebalances (redemptions) when there is nothing to redeem
         if (targetAmount < oracleData.currentExternalUnderlyingLend) {
             uint256 forRedemption = oracleData.currentExternalUnderlyingLend - targetAmount;
             if (oracleData.externalUnderlyingAvailableForWithdraw < forRedemption) {
-                // increase target amount so that redemptions amount match externalUnderlyingAvailableForWithdraw
-                targetAmount = targetAmount.add(
-                    // unchecked - is safe here, overflow is not possible due to above if conditional
-                    forRedemption - oracleData.externalUnderlyingAvailableForWithdraw
-                );
+                // adapt target amount so that redemptions amount match externalUnderlyingAvailableForWithdraw
+                // unchecked - is safe here, overflow is not possible due to above if conditionals
+                targetAmount = oracleData.currentExternalUnderlyingLend - oracleData.externalUnderlyingAvailableForWithdraw;
+            }
+        } else if (oracleData.currentExternalUnderlyingLend < targetAmount) {
+            // in case of deposit , check maxExternalDeposit (limit due to the supply cap on external pools)
+            // underflow not possible due to above if conditional
+            uint256 forDeposit = targetAmount - oracleData.currentExternalUnderlyingLend;
+            if (oracleData.maxExternalDeposit < forDeposit) {
+                // adapt target amount so we don't hit supply cap on external pools
+                // overflow not possible due to above if conditional
+                targetAmount = oracleData.currentExternalUnderlyingLend + oracleData.maxExternalDeposit;
             }
         }
     }
