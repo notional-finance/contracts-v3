@@ -77,10 +77,17 @@ library ExternalLending {
             (oracleData.currentExternalUnderlyingLend < oracleData.externalUnderlyingAvailableForWithdraw) &&
             (rebalancingTargetData.externalWithdrawThreshold != 0)
         ) {
-            maxExternalUnderlyingLend =
-                (oracleData.externalUnderlyingAvailableForWithdraw - oracleData.currentExternalUnderlyingLend)
+            // T as the externalWithdrawThreshold
+            // L as the currentExternalUnderlyingLend
+            // W as the externalUnderlyingAvailableForWithdraw
+            // D as the Deposit (the variable we want to solve for)
+            // T / 100 = (W + D) / (L + D)
+            // D = (100 * W - L * T) / (T - 100)
+            maxExternalUnderlyingLend = oracleData.externalUnderlyingAvailableForWithdraw
                 .mul(uint256(Constants.PERCENTAGE_DECIMALS))
-                .div(rebalancingTargetData.externalWithdrawThreshold);
+                .sub(oracleData.currentExternalUnderlyingLend.mul(rebalancingTargetData.externalWithdrawThreshold))
+                // underflow is checked when externalWithdrawThreshold is set
+                .div(uint256(rebalancingTargetData.externalWithdrawThreshold - Constants.PERCENTAGE_DECIMALS));
         } else {
             maxExternalUnderlyingLend = 0;
         }
