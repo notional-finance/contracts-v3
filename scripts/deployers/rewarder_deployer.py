@@ -4,7 +4,7 @@ from itertools import chain
 from brownie import SecondaryRewarder, accounts, MockERC20
 from scripts.inspect import get_addresses
 
-END_TIME = 1707782400 # Feb 13
+END_TIME = 1708387200 # Feb 20
 ARB = '0x912CE59144191C1204E64559FE8253a0e49E6548'
 REWARDERS = {
     "ETH": "0x3987F211d4BA25B6FF163B56051651bF6c6c5e54",
@@ -87,7 +87,7 @@ def main():
     txns.append(transfer_and_set('USDC',   3, 12_000e18, 624_000e8, notional))
     txns.append(transfer_and_set('WBTC',   4,  1_000e18,   52_000e8, notional))
     txns.append(transfer_and_set('wstETH', 5,  5_000e18,  260_000e8, notional))
-    txns.append(transfer_and_set('FRAX',   6,  5_000e18,  330_489e8, notional))
+    txns.append(transfer_and_set('FRAX',   6,  5_000e18,  307_073e8, notional))
     txns.append(transfer_and_set('rETH',   7,  5_000e18,  260_000e8, notional))
     txns.append(transfer_and_set('USDT',   8,  5_000e18,  260_000e8, notional))
     # txns.append(transfer_and_set('cbETH', 9, 0e18, 0, notional))
