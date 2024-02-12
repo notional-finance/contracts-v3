@@ -2041,6 +2041,11 @@
                 "internalType": "address",
                 "name": "account",
                 "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "checkDebtCap",
+                "type": "bool"
             }
         ],
         "name": "checkVaultAccountCollateralRatio",
@@ -4300,6 +4305,16 @@
             {
                 "internalType": "uint256",
                 "name": "totalUnderlyingSupply",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "maxUnderlyingDebt",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "totalUnderlyingDebt",
                 "type": "uint256"
             }
         ],
@@ -6631,6 +6646,11 @@
                 "internalType": "uint256",
                 "name": "maxUnderlyingSupply",
                 "type": "uint256"
+            },
+            {
+                "internalType": "uint8",
+                "name": "maxPrimeDebtUtilization",
+                "type": "uint8"
             }
         ],
         "name": "setMaxUnderlyingSupply",
@@ -7572,6 +7592,45 @@
             }
         ],
         "name": "withdraw",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint16",
+                "name": "currencyId",
+                "type": "uint16"
+            },
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "receiver",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint88",
+                "name": "withdrawAmountPrimeCash",
+                "type": "uint88"
+            }
+        ],
+        "name": "withdrawViaProxy",
         "outputs": [
             {
                 "internalType": "uint256",
