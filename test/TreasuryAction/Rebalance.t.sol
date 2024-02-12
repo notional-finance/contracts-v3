@@ -30,7 +30,7 @@ abstract contract RebalanceDefaultTest is NotionalBaseTest {
 
     function testFork_RevertIf_NotRebalanceBot() public {
         vm.expectRevert("Unauthorized");
-        NOTIONAL.rebalance(_toUint16Array(CURRENCY_ID));
+        NOTIONAL.rebalance(CURRENCY_ID);
     }
 
     function testFork_RevertIf_RebalanceBeforeCooldown() public {
@@ -41,7 +41,7 @@ abstract contract RebalanceDefaultTest is NotionalBaseTest {
 
         vm.expectRevert();
         vm.startPrank(REBALANCE_BOT);
-        NOTIONAL.rebalance(_toUint16Array(CURRENCY_ID));
+        NOTIONAL.rebalance(CURRENCY_ID);
     }
 
     function testFork_RebalanceAfterRebalanceCooldown() public {
@@ -88,87 +88,6 @@ abstract contract RebalanceDefaultTest is NotionalBaseTest {
 
         uint256 deltaA = _getRebalanceDelta(midABalance);
         assertApproxEqAbs(endABalance, (midABalance * rateChange) / RATE_PRECISION, deltaA, "5");
-    }
-
-    function testFork_CheckRebalanceAllCurrencies() public {
-        vm.startPrank(owner);
-        uint40 cooldown = 5 hours;
-        uint16 maxCurrency = NOTIONAL.getMaxCurrencyId();
-
-        for (uint16 i = 1; i <= maxCurrency; i++) {
-            NOTIONAL.setRebalancingCooldown(i, cooldown);
-        }
-        vm.stopPrank();
-
-        vm.startPrank(REBALANCE_BOT);
-        (bool canExec, bytes memory execPayload) = NOTIONAL.checkRebalance();
-        assertTrue(canExec, "Rebalance should be ready");
-
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = address(NOTIONAL).call(execPayload);
-        assertTrue(success, "Rebalance should be executed successfully");
-
-        (canExec, execPayload) = NOTIONAL.checkRebalance();
-        assertFalse(canExec, "Rebalance should not be ready");
-    }
-
-    function testFork_checkRebalance_ShouldBeAbleToRebalanceIfLendingIsUnhealthy() public {
-        uint40 cooldown = 5 hours;
-        uint16 maxCurrency = NOTIONAL.getMaxCurrencyId();
-
-        for (uint16 i = 1; i <= maxCurrency; i++) {
-            vm.prank(owner);
-            NOTIONAL.setRebalancingCooldown(i, cooldown);
-            _setSingleTargetRateAndRebalance(CURRENCY_ID, ATOKEN, 80);
-        }
-
-        (bool canExec, bytes memory execPayload) = NOTIONAL.checkRebalance();
-        assertFalse(canExec, "Rebalance should not be ready");
-
-        // force external lending into unhealthy state
-        address underlying = UNDERLYING;
-        uint256 underlyingNotionalBalance;
-        if (CURRENCY_ID == 1) {
-            underlying = address(Deployments.WETH);
-            underlyingNotionalBalance = address(NOTIONAL).balance;
-        } else {
-            underlyingNotionalBalance = IERC20(underlying).balanceOf(address(NOTIONAL));
-        }
-        vm.startPrank(ATOKEN);
-        uint256 externalLend = IERC20(ATOKEN).balanceOf(address(NOTIONAL));
-        uint256 availableForWithdrawOnAave = IERC20(underlying).balanceOf(ATOKEN);
-        // leave half of what we lend on Aave available for withdraw
-        IERC20(underlying).transfer(
-            makeAddr("burn"),
-            availableForWithdrawOnAave - externalLend / 2
-        );
-        vm.stopPrank();
-
-        (canExec, execPayload) = NOTIONAL.checkRebalance();
-        assertTrue(canExec, "Rebalance should be ready");
-
-        vm.startPrank(REBALANCE_BOT);
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = address(NOTIONAL).call(execPayload);
-        assertTrue(success, "Rebalance should be executed successfully");
-
-        uint256 externalLendAfter = IERC20(ATOKEN).balanceOf(address(NOTIONAL));
-        assertApproxEqAbs(externalLendAfter * 2, externalLend, externalLend / 10000, "1");
-        uint256 underlyingNotionalBalanceAfter;
-        if (CURRENCY_ID == 1) {
-            underlyingNotionalBalanceAfter = address(NOTIONAL).balance;
-        } else {
-            underlyingNotionalBalanceAfter = IERC20(underlying).balanceOf(address(NOTIONAL));
-        }
-        assertApproxEqAbs(
-            underlyingNotionalBalance + externalLend / 2,
-            underlyingNotionalBalanceAfter,
-            underlyingNotionalBalanceAfter / 10000,
-            "2"
-        );
-
-        (canExec, execPayload) = NOTIONAL.checkRebalance();
-        assertFalse(canExec, "Rebalance should not be ready");
     }
 
     function testFork_RebalanceShouldNotRevertWhenRedemptionFails() public {
