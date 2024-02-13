@@ -34,7 +34,6 @@ import {nTokenHandler} from "../internal/nToken/nTokenHandler.sol";
 import {nTokenCalculations} from "../internal/nToken/nTokenCalculations.sol";
 import {AssetHandler} from "../internal/valuation/AssetHandler.sol";
 
-import {MigrateIncentives} from "./MigrateIncentives.sol";
 import {nTokenMintAction} from "./actions/nTokenMintAction.sol";
 import {NotionalCalculations} from "../../interfaces/notional/NotionalCalculations.sol";
 
@@ -569,10 +568,5 @@ contract CalculationViews is StorageLayoutV1, NotionalCalculations {
         );
 
         fCashAmount = uint88(absfCash);
-    }
-
-    /// @notice Get a list of deployed library addresses (sorted by library name)
-    function getLibInfo() external pure returns (address) {
-        return (address(MigrateIncentives));
     }
 }

@@ -12,7 +12,6 @@ from brownie import (
     InitializeMarketsAction,
     LiquidateCurrencyAction,
     LiquidatefCashAction,
-    MigrateIncentives,
     PauseRouter,
     Router,
     SettleAssetsExternal,
@@ -118,7 +117,6 @@ class NotionalDeployer:
         self._deployLib(deployer, TradingAction)
         self._deployLib(deployer, nTokenMintAction)
         self._deployLib(deployer, nTokenRedeemAction)
-        self._deployLib(deployer, MigrateIncentives)
 
     def _deployAction(self, deployer, contract, args=None):
         if contract._name in self.actions:
