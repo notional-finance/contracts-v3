@@ -1,20 +1,5 @@
 {
     "actions": {
-        "AccountAction": "0x62E7Efb55dd01BE1c79e92cfB110ad1A395a4ceD",
-        "BatchAction": "0x761DAB87194a161af8e4e2D710CD7A63CF3a6724",
-        "CalculationViews": "0x1fc8F62c75f7d5F031dB78277bA64C3E20ca1a0a",
-        "ERC1155Action": "0xBE71FAf1Ab80eb98D2Abd7647151e72DdEb042B9",
-        "GovernanceAction": "0xb7dCfEDE88405E0B4B75ff6829ae2f1f73D2294a",
-        "InitializeMarketsAction": "0x11F94B7B80Cd5385e3CF71524E515CdfFB4b55C4",
-        "LiquidateCurrencyAction": "0xcfbAFCe23e55EC0E6f864a3C16ADf2744D0Cb1f2",
-        "LiquidatefCashAction": "0x75903cdcA9c84955A2319F559AD90002994823FF",
-        "TreasuryAction": "0xD45Df6e08425DC619F18C7eB8De4016BC52e3569",
-        "VaultAccountAction": "0xC799d098669623d631e1F43659Bf51E776e23B3A",
-        "VaultAccountHealth": "0x37c3D118A10AC099127cfddb4058135E279523F3",
-        "VaultAction": "0xE1ca019F84Df3e02943b54255Af709699fa13168",
-        "VaultLiquidationAction": "0x825fe7a917E56D1f5E1758ae3c4df92E60659a17",
-        "Views": "0x357409FdF4960391b76f78E4DF6697E9dE66CEA6",
-        "nTokenAction": "0xA6A6e303032A52c5A1fB4fe9962DD705ca54f7C5"
     },
     "beacons": {
         "PrimeCashProxy": "0x382173438e47b0c1F5dF9928F0e1f301b50Ed669",
@@ -31,12 +16,7 @@
     "deployer": "0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3",
     "guardian": "",
     "libs": {
-        "FreeCollateralExternal": "0x50DA106863b47882e4eEfaE2303770019648Bd6f",
-        "MigrateIncentives": "0xF3101e69B3D14B611037F47CD169ad60991c64f2",
-        "SettleAssetsExternal": "0x65BA68d83F74D60c9e2270b05A2627a7C34F4bC4",
-        "TradingAction": "0xcC7cdD6a8655a70054de07D6c89996e371961Ecb",
-        "nTokenMintAction": "0x480C01F339B921AD12af6E4ACa283110cb12F6Ec",
-        "nTokenRedeemAction": "0x97bEC9e81017dE18936FF986F2648aD7D02d69Ae"
+        "MigrateIncentives": "0xF3101e69B3D14B611037F47CD169ad60991c64f2"
     },
     "networkName": "arbitrum-one",
     "note": "0x019bE259BC299F3F653688c7655C87F998Bc7bC1",

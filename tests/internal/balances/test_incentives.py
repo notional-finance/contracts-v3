@@ -8,8 +8,7 @@ from tests.helpers import get_balance_state
 @pytest.mark.balances
 class TestIncentives:
     @pytest.fixture(scope="module", autouse=True)
-    def incentives(self, MockIncentives, MigrateIncentives, accounts):
-        MigrateIncentives.deploy({"from": accounts[0]})
+    def incentives(self, MockIncentives, accounts):
         mock = MockIncentives.deploy({"from": accounts[0]})
         mock.setNTokenAddress(1, accounts[9])
 

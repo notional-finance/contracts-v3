@@ -53,7 +53,6 @@ def get_contracts(router):
     batchAction = Contract.from_abi("BatchAction", contracts["BatchAction"], BatchAction.abi)
     (
         contracts["FreeCollateral"],
-        contracts["MigrateIncentives"],
         contracts["SettleAssets"],
         contracts["TradingAction"],
         contracts["nTokenMint"],
@@ -122,7 +121,7 @@ def validate_libs(contracts):
     print("Validating Libraries...\n")
 
     c = Contract.from_abi("", contracts["Views"], Views.abi)
-    assert (contracts["FreeCollateral"], contracts["MigrateIncentives"]) == c.getLibInfo()
+    assert (contracts["FreeCollateral"]) == c.getLibInfo()
 
     c = Contract.from_abi("", contracts["InitializeMarket"], InitializeMarketsAction.abi)
     assert (contracts["nTokenMint"]) == c.getLibInfo()
@@ -130,14 +129,12 @@ def validate_libs(contracts):
     c = Contract.from_abi("", contracts["nTokenActions"], nTokenAction.abi)
     assert (
         contracts["FreeCollateral"],
-        contracts["MigrateIncentives"],
         contracts["SettleAssets"],
     ) == c.getLibInfo()
 
     c = Contract.from_abi("", contracts["BatchAction"], BatchAction.abi)
     assert (
         contracts["FreeCollateral"],
-        contracts["MigrateIncentives"],
         contracts["SettleAssets"],
         contracts["TradingAction"],
         contracts["nTokenMint"],
@@ -147,7 +144,6 @@ def validate_libs(contracts):
     c = Contract.from_abi("", contracts["AccountAction"], AccountAction.abi)
     assert (
         contracts["FreeCollateral"],
-        contracts["MigrateIncentives"],
         contracts["SettleAssets"],
         contracts["nTokenRedeem"],
     ) == c.getLibInfo()
@@ -156,13 +152,12 @@ def validate_libs(contracts):
     assert (contracts["FreeCollateral"], contracts["SettleAssets"]) == c.getLibInfo()
 
     c = Contract.from_abi("", contracts["LiquidateCurrency"], LiquidateCurrencyAction.abi)
-    assert (contracts["FreeCollateral"], contracts["MigrateIncentives"]) == c.getLibInfo()
+    assert (contracts["FreeCollateral"]) == c.getLibInfo()
 
     c = Contract.from_abi("", contracts["LiquidatefCash"], LiquidatefCashAction.abi)
     assert (contracts["FreeCollateral"], contracts['SettleAssets']) == c.getLibInfo()
 
     c = Contract.from_abi("", contracts["CalculationViews"], CalculationViews.abi)
-    assert (contracts["MigrateIncentives"]) == c.getLibInfo()
 
     c = Contract.from_abi("", contracts["VaultAccountAction"], VaultAccountAction.abi)
     assert (contracts["TradingAction"]) == c.getLibInfo()

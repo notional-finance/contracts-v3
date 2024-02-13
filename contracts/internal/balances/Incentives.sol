@@ -13,7 +13,6 @@ import {TokenHandler} from "./TokenHandler.sol";
 import {nTokenHandler} from "../nToken/nTokenHandler.sol";
 import {nTokenSupply} from "../nToken/nTokenSupply.sol";
 
-import {MigrateIncentives} from "../../external/MigrateIncentives.sol";
 import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";
 
 library Incentives {
@@ -29,25 +28,7 @@ library Incentives {
         uint256 accumulatedNOTEPerNToken,
         uint256 finalNTokenBalance
     ) internal view returns (uint256 incentivesToClaim) {
-        if (balanceState.lastClaimTime > 0) {
-            // If lastClaimTime is set then the account had incentives under the
-            // previous regime. Will calculate the final amount of incentives to claim here
-            // under the previous regime.
-            incentivesToClaim = MigrateIncentives.migrateAccountFromPreviousCalculation(
-                tokenAddress,
-                balanceState.storedNTokenBalance.toUint(),
-                balanceState.lastClaimTime,
-                // In this case the accountIncentiveDebt is stored as lastClaimIntegralSupply under
-                // the old calculation
-                balanceState.accountIncentiveDebt
-            );
-
-            // This marks the account as migrated and lastClaimTime will no longer be used
-            balanceState.lastClaimTime = 0;
-            // This value will be set immediately after this, set this to zero so that the calculation
-            // establishes a new baseline.
-            balanceState.accountIncentiveDebt = 0;
-        }
+        require(balanceState.lastClaimTime == 0);
 
         // If an account was migrated then they have no accountIncentivesDebt and should accumulate
         // incentives based on their share since the new regime calculation started.

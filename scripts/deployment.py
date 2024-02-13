@@ -15,7 +15,6 @@ from brownie import (
     InitializeMarketsAction,
     LiquidateCurrencyAction,
     LiquidatefCashAction,
-    MigrateIncentives,
     MockAggregator,
     CompoundV2HoldingsOracle,
     MockERC20,
@@ -153,7 +152,6 @@ def deployNotionalContracts(deployer, **kwargs):
     contracts["TradingAction"] = TradingAction.deploy({"from": deployer})
     contracts["nTokenMintAction"] = nTokenMintAction.deploy({"from": deployer})
     contracts["nTokenRedeemAction"] = nTokenRedeemAction.deploy({"from": deployer})
-    contracts["MigrateIncentives"] = MigrateIncentives.deploy({"from": deployer})
 
     # Deploy logic contracts
     contracts["Governance"] = GovernanceAction.deploy({"from": deployer})

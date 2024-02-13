@@ -2,7 +2,7 @@ from scripts.inspect import get_addresses, get_router_args
 from brownie import (
     Router, BatchAction, AccountAction, nTokenMintAction,
     nTokenRedeemAction, FreeCollateralExternal, TradingAction,
-    MigrateIncentives, SettleAssetsExternal
+    SettleAssetsExternal
 )
 
 # NOTE: before you run this set your chainId in the hardhat.config.js to the following
@@ -25,7 +25,6 @@ module.exports = {
 def main():
     (_, notional, _, router, *_) = get_addresses()
     FreeCollateralExternal.at("0x50DA106863b47882e4eEfaE2303770019648Bd6f")
-    MigrateIncentives.at("0xF3101e69B3D14B611037F47CD169ad60991c64f2")
     SettleAssetsExternal.at("0x65BA68d83F74D60c9e2270b05A2627a7C34F4bC4")
     TradingAction.at("0xcC7cdD6a8655a70054de07D6c89996e371961Ecb")
     nTokenMint = nTokenMintAction.deploy({"from": notional.owner()})
