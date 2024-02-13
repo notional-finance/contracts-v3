@@ -523,7 +523,7 @@ abstract contract ClaimRewards is SecondaryRewarderSetupTest {
             uint256 prevNTokenBal = IERC20(NTOKEN).balanceOf(account);
             // trigger claim
             vm.prank(account);
-            NOTIONAL.nTokenRedeem(account, CURRENCY_ID, 100, true, true);
+            NOTIONAL.nTokenRedeem(account, CURRENCY_ID, 100);
 
             uint256 newNTokenBal = IERC20(NTOKEN).balanceOf(account);
 
