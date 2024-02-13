@@ -95,7 +95,8 @@ abstract contract InvariantsSecondaryRewarder is SecondaryRewarderSetupTest {
         amount = bound(amount, minAmount, maxAmount);
 
         vm.prank(account);
-        NOTIONAL.nTokenRedeem(account, CURRENCY_ID, uint96(amount), true, true);
+        // TODO: this will fail on an error "Residuals" if the amount is too large.
+        NOTIONAL.nTokenRedeem(account, CURRENCY_ID, uint96(amount));
     }
 
     function _deposit(address account, uint256 amount) internal {
