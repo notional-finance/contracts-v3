@@ -233,6 +233,14 @@ contract GovernanceAction is StorageLayoutV2, NotionalGovernance, UUPSUpgradeabl
         emit DeployNToken(currencyId, address(proxy));
     }
 
+    /**
+     * @notice Sets the prime cash supply and debt caps for a given currency
+     * @param currencyId id of the currency
+     * @param maxUnderlyingSupply the maximum total supply of prime cash in underlying terms
+     * and 8 decimal precision. A value of zero means no cap.
+     * @param maxPrimeDebtUtilization the max utilization in PERCENTAGE_DECIMALS for prime
+     * debt. A value of zero means no cap.
+     */
     function setMaxUnderlyingSupply(
         uint16 currencyId,
         uint256 maxUnderlyingSupply,
@@ -377,7 +385,7 @@ contract GovernanceAction is StorageLayoutV2, NotionalGovernance, UUPSUpgradeabl
     /// be withheld at for this purpose.
     /// @param liquidationHaircutPercentage a percentage of nToken present value (> pvHaircutPercentage and <= 100) at which
     /// liquidators will purchase nTokens during liquidation
-    /// @param maxMintDeviationPercentage a limit on the deviation from the oracle rate valuation of the nToken during minting,
+    /// @param maxMintDeviation5BPS a limit on the deviation from the oracle rate valuation of the nToken during minting,
     /// cannot be greater than the difference between the liquidationHaircutPercentage and the pvHaircutPercentage
     function updateTokenCollateralParameters(
         uint16 currencyId,
@@ -386,7 +394,7 @@ contract GovernanceAction is StorageLayoutV2, NotionalGovernance, UUPSUpgradeabl
         uint8 residualPurchaseTimeBufferHours,
         uint8 cashWithholdingBuffer10BPS,
         uint8 liquidationHaircutPercentage,
-        uint8 maxMintDeviationPercentage
+        uint8 maxMintDeviation5BPS
     ) external override onlyOwner {
         _checkValidCurrency(currencyId);
         address nTokenAddress = nTokenHandler.nTokenAddress(currencyId);
@@ -399,7 +407,7 @@ contract GovernanceAction is StorageLayoutV2, NotionalGovernance, UUPSUpgradeabl
             residualPurchaseTimeBufferHours,
             cashWithholdingBuffer10BPS,
             liquidationHaircutPercentage,
-            maxMintDeviationPercentage
+            maxMintDeviation5BPS
         );
         emit UpdateTokenCollateralParameters(currencyId);
     }
