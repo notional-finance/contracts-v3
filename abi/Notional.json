@@ -2017,14 +2017,9 @@
         "name": "checkRebalance",
         "outputs": [
             {
-                "internalType": "bool",
-                "name": "canExec",
-                "type": "bool"
-            },
-            {
-                "internalType": "bytes",
-                "name": "execPayload",
-                "type": "bytes"
+                "internalType": "uint16[]",
+                "name": "currencyIds",
+                "type": "uint16[]"
             }
         ],
         "stateMutability": "nonpayable",
@@ -6017,16 +6012,6 @@
                 "internalType": "uint96",
                 "name": "tokensToRedeem_",
                 "type": "uint96"
-            },
-            {
-                "internalType": "bool",
-                "name": "sellTokenAssets",
-                "type": "bool"
-            },
-            {
-                "internalType": "bool",
-                "name": "acceptResidualAssets",
-                "type": "bool"
             }
         ],
         "name": "nTokenRedeem",
@@ -6435,9 +6420,9 @@
     {
         "inputs": [
             {
-                "internalType": "uint16[]",
+                "internalType": "uint16",
                 "name": "currencyId",
-                "type": "uint16[]"
+                "type": "uint16"
             }
         ],
         "name": "rebalance",
