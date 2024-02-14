@@ -16,14 +16,12 @@
     "deployer": "0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3",
     "guardian": "",
     "libs": {
-        "MigrateIncentives": "0xF3101e69B3D14B611037F47CD169ad60991c64f2"
     },
     "networkName": "arbitrum-one",
     "note": "0x019bE259BC299F3F653688c7655C87F998Bc7bC1",
     "notional": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
     "routers": {
-        "PauseRouter": "0x3A571c167190d42a6aB822823d52b53D9a78Be95",
-        "Router": "0xf015d53469ef6c3a9b9F0065e09Cc0deD42c558C"
+        "PauseRouter": "0x3A571c167190d42a6aB822823d52b53D9a78Be95"
     },
     "startBlock": 86540849,
     "tokens": {
