@@ -87,7 +87,7 @@ library ExternalLending {
                 .mul(uint256(Constants.PERCENTAGE_DECIMALS))
                 .sub(oracleData.currentExternalUnderlyingLend.mul(rebalancingTargetData.externalWithdrawThreshold))
                 // underflow is checked when externalWithdrawThreshold is set
-                .div(uint256(rebalancingTargetData.externalWithdrawThreshold - Constants.PERCENTAGE_DECIMALS));
+                .div(uint256(rebalancingTargetData.externalWithdrawThreshold));
         } else {
             maxExternalUnderlyingLend = 0;
         }
