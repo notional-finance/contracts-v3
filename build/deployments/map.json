@@ -272,7 +272,7 @@
             "0xCeF77C74C88B6deCeAF2E954038e7789A0F1bB33"
         ],
         "FreeCollateralExternal": [
-            "0x55b218799980b76eC41091441AA0860602549B2B"
+            "0xA69623e4C9B4a8377D8d06A83c8B348dD98582f9"
         ],
         "GovernanceAction": [
             "0xA1990ab84b6385f1EBc1b879e12a486AFE8B6E60",
@@ -355,10 +355,10 @@
             "0xe670942CE88d0ac8E655d30E5EF0229e969de26C"
         ],
         "SettleAssetsExternal": [
-            "0x00Dd43e8416C85103e1363B427a0e23acAA34d64"
+            "0x8D3fD274B5C1B818fFC46f38A0c27e9129f5775f"
         ],
         "TradingAction": [
-            "0x74D527679A9416Fd886bdEc4a2B103829fe3b4Fb"
+            "0x672aBf9EC1c9DacB74721DE96bedFf051dFd85F6"
         ],
         "TreasuryAction": [
             "0xD45Df6e08425DC619F18C7eB8De4016BC52e3569",
@@ -433,10 +433,10 @@
             "0x5902c25821fBaFF05d04E3FdDC7F852B4a8953fc"
         ],
         "nTokenMintAction": [
-            "0x31Fc1f78fbA706cA9A87b63C2686435d521604Ac"
+            "0xE9Ffd8d233057af80cD1F741F79730246725DDbe"
         ],
         "nTokenRedeemAction": [
-            "0x2aC5c5e6a8131A5fb9Bb0CE736e759E197D07953"
+            "0x0d561de686549aCf3c15f7f6f6E260F67c583d66"
         ]
     },
     "5": {
