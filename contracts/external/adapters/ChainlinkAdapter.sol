@@ -61,6 +61,18 @@ contract ChainlinkAdapter is AggregatorV2V3Interface {
         }
     }
 
+    function _getQuoteRate() internal view virtual returns (int256 quoteRate) {
+        (
+            /* roundId */,
+            quoteRate,
+            /* uint256 startedAt */,
+            /* updatedAt */,
+            /* answeredInRound */
+        ) = quoteToUSDOracle.latestRoundData();
+        require(quoteRate > 0, "Chainlink Rate Error");
+        if (invertQuote) quoteRate = (quoteToUSDDecimals * quoteToUSDDecimals) / quoteRate;
+    }
+
     function _calculateBaseToQuote() internal view returns (
         uint80 roundId,
         int256 answer,
@@ -82,15 +94,7 @@ contract ChainlinkAdapter is AggregatorV2V3Interface {
         // Overflow and div by zero not possible
         if (invertBase) baseToUSD = (baseToUSDDecimals * baseToUSDDecimals) / baseToUSD;
 
-        (
-            /* roundId */,
-            int256 quoteToUSD,
-            /* uint256 startedAt */,
-            /* updatedAt */,
-            /* answeredInRound */
-        ) = quoteToUSDOracle.latestRoundData();
-        require(quoteToUSD > 0, "Chainlink Rate Error");
-        if (invertQuote) quoteToUSD = (quoteToUSDDecimals * quoteToUSDDecimals) / quoteToUSD;
+        int256 quoteToUSD = _getQuoteRate();
 
         // To convert from USDC/USD (base) and ETH/USD (quote) to USDC/ETH we do:
         // (USDC/USD * quoteDecimals * 1e18) / (ETH/USD * baseDecimals)
