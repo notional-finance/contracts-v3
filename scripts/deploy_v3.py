@@ -15,7 +15,7 @@ def deployNotional(deployer, networkName, dryRun, isFork):
         notional.upgradeProxy()
 
 
-def main(dryRun=True):
+def main(dryRun="LFG"):
     networkName = network.show_active()
     isFork = False
     if networkName in ["mainnet-fork", "mainnet-current"]:
