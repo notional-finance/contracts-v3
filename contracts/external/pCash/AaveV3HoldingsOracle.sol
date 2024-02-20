@@ -21,12 +21,19 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
     address internal immutable LENDING_POOL;
     address internal immutable POOL_DATA_PROVIDER;
 
+    uint256 public maxDeposit;
+
     constructor(NotionalProxy notional, address underlying, address lendingPool, address aToken, address poolDataProvider)
         UnderlyingHoldingsOracle(notional, underlying)
     {
         LENDING_POOL = lendingPool;
         ASSET_TOKEN = aToken;
         POOL_DATA_PROVIDER = poolDataProvider;
+    }
+
+    function setMaxAbsoluteDeposit(uint256 _maxDeposit) external {
+        require(msg.sender == NOTIONAL.owner());
+        maxDeposit = _maxDeposit;
     }
 
     function _holdings() internal view virtual override returns (address[] memory) {
@@ -150,8 +157,16 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
         (/* */, uint256 supplyCap) = IPoolDataProvider(POOL_DATA_PROVIDER).getReserveCaps(underlying);
         // Supply caps are returned as whole token values
         supplyCap = supplyCap * UNDERLYING_PRECISION;
-        // If supply cap is zero, that means there is no cap on the pool
-        if (supplyCap == 0) {
+        // This is the returned stored token balance of the aToken
+        oracleData.currentExternalUnderlyingLend = _holdingValuesInUnderlying()[0];
+
+        // Sets a cap on the total deposits
+        if (0 < maxDeposit) {
+            oracleData.maxExternalDeposit =  oracleData.currentExternalUnderlyingLend < maxDeposit ?
+                maxDeposit - oracleData.currentExternalUnderlyingLend :
+                0;
+        } else if (supplyCap == 0) {
+            // If supply cap is zero, that means there is no cap on the pool
             oracleData.maxExternalDeposit = type(uint256).max;
         } else {
             (/* */, uint256 accruedToTreasury, uint256 aTokenSupply,/* */,/* */,/* */,/* */,/* */,/* */,/* */,/* */,/* */) =
@@ -173,8 +188,6 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
         oracleData.holding = ASSET_TOKEN;
         // The balance of the underlying on the aToken contract is the maximum that can be withdrawn
         oracleData.externalUnderlyingAvailableForWithdraw = IERC20(underlying).balanceOf(ASSET_TOKEN);
-        // This is the returned stored token balance of the aToken
-        oracleData.currentExternalUnderlyingLend = _holdingValuesInUnderlying()[0];
     }
 
     function rayMul(uint256 a, uint256 b) private pure returns (uint256 c) {
