@@ -21,20 +21,12 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
     address internal immutable LENDING_POOL;
     address internal immutable POOL_DATA_PROVIDER;
 
-    /// @notice Maximum external available override to be used for testing
-    uint256 public maxExternalAvailable;
-
     constructor(NotionalProxy notional, address underlying, address lendingPool, address aToken, address poolDataProvider)
         UnderlyingHoldingsOracle(notional, underlying)
     {
         LENDING_POOL = lendingPool;
         ASSET_TOKEN = aToken;
         POOL_DATA_PROVIDER = poolDataProvider;
-    }
-
-    function setMaxExternalAvailable(uint256 _maxExternalAvailable) external {
-        require(msg.sender == NOTIONAL.owner());
-        maxExternalAvailable = _maxExternalAvailable;
     }
 
     function _holdings() internal view virtual override returns (address[] memory) {
@@ -179,13 +171,8 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
         }
 
         oracleData.holding = ASSET_TOKEN;
-        // This can be set by the owner to override the maximum external value
-        uint256 maxOverride = maxExternalAvailable;
         // The balance of the underlying on the aToken contract is the maximum that can be withdrawn
-        uint256 assetBalance = IERC20(underlying).balanceOf(ASSET_TOKEN);
-        oracleData.externalUnderlyingAvailableForWithdraw = 0 < maxOverride && maxOverride < assetBalance ?
-            maxOverride : assetBalance;
-
+        oracleData.externalUnderlyingAvailableForWithdraw = IERC20(underlying).balanceOf(ASSET_TOKEN);
         // This is the returned stored token balance of the aToken
         oracleData.currentExternalUnderlyingLend = _holdingValuesInUnderlying()[0];
     }
