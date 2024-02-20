@@ -141,10 +141,8 @@ def deployBeacons(deployer, notional):
     # NOTE: in testing these beacon addresses are hardcoded in Deployments.sol
     return (nTokenBeacon, pCashBeacon, pDebtBeacon)
 
-def deployNotionalContracts(deployer, **kwargs):
+def deployNotionalContracts(deployer):
     contracts = {}
-    if network.show_active() in ["goerli", "mainnet"]:
-        raise Exception("update governance deployment!")
 
     # Deploy Libraries
     contracts["SettleAssetsExternal"] = SettleAssetsExternal.deploy({"from": deployer})

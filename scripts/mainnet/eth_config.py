@@ -13,8 +13,6 @@ ChainlinkOracles = {
     "USDT/USD": "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
     "cbETH/ETH": "0xF017fcB346A1885194689bA23Eff2fE6fA5C483b",
     "ETH/DAI": "0x6085b0a8f4c7ffa2e8ca578037792d6535d1e29b", # Existing Chainlink Adapter
-    "wstETH/stETH": "", # TODO: need to call contract directly
-    "sDAI/DAI": "", # TODO: need to call contract direclty
 }
 
 CurrencyDefaults = {
@@ -38,6 +36,7 @@ CurrencyDefaults = {
     "residualPurchaseTimeBufferHours": 24,
     'cashWithholdingBuffer10BPS': 20,
     "liquidationHaircutPercentage": 98,
+    "maxMintDeviation5BPS": 40,
 
     "rateOracleTimeWindow": 72,
     "allowDebt": True
@@ -238,8 +237,8 @@ ListedTokens = {
         "name": "Wrapped Liquid Staked Ether",
         "decimals": 18,
 
-        "baseOracle": ChainlinkOracles["stETH/wstETH"],
-        "quoteOracle": ChainlinkOracles["stETH/ETH"],
+        "oracleType": "wstETH",
+        "baseOracle": ChainlinkOracles["stETH/ETH"],
         "invertBase": False,
         "invertQuote": False,
 
@@ -302,10 +301,24 @@ ListedTokens = {
         "address": "0x83F20F44975D03b1b09e64809B757c47f942BEeA",
         "name": "sDAI",
         "decimals": 18,
+        "oracleType": "ERC4626",
         "baseOracle": ChainlinkOracles["ETH/DAI"],
-        "quoteOracle": ChainlinkOracles["sDAI/DAI"],
-        "invertBase": True,
+        # This is the sDAI token address, it is used as its own oracle
+        "quoteOracle": "0x83F20F44975D03b1b09e64809B757c47f942BEeA",
+        "invertBase": False,
         "invertQuote": False,
+
+        # Prime Cash Curve
+        "primeCashCurve": {
+            "kinkUtilization1": 80,
+            "kinkUtilization2": 85,
+            "kinkRate1": 2,
+            "kinkRate2": 8,
+            "maxRate25BPS": 192,
+            "feeRatePercent": 20,
+            "minFeeRate5BPS": 10,
+            "maxFeeRate25BPS": 160
+        },
 
         "allowDebt": True,
         "buffer": 109,
