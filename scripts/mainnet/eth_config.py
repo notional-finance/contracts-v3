@@ -47,26 +47,6 @@ PrimeOnlyDefaults = {
     "primeRateOracleTimeWindow5Min": 72,
 }
 
-LST_fCash = [{
-    "kinkUtilization1": 15,
-    "kinkUtilization2": 70,
-    "kinkRate1": 17,
-    "kinkRate2": 51,
-    "maxRate25BPS": 120,
-    "feeRatePercent": 8,
-    "minFeeRate5BPS": 3,
-    "maxFeeRate25BPS": 8
-}, {
-    "kinkUtilization1": 15,
-    "kinkUtilization2": 70,
-    "kinkRate1": 20,
-    "kinkRate2": 61,
-    "maxRate25BPS": 100,
-    "feeRatePercent": 8,
-    "minFeeRate5BPS": 3,
-    "maxFeeRate25BPS": 8
-}]
-
 LST_Curve = {
     "primeCashCurve": {
         "kinkUtilization1": 70,
@@ -214,7 +194,7 @@ ListedTokens = {
         # Wrapped BTC / BTC / ETH Oracle
         "ethOracle": "0xf9dd33af680d707efdec21332f249ae28cc13727",
 
-        "buffer": 124,
+        "buffer": 120,
         "haircut": 84,
         "liquidationDiscount": 105,
         "maxUnderlyingSupply": 1e8,
@@ -226,7 +206,7 @@ ListedTokens = {
             "kinkUtilization2": 70,
             "kinkRate1": 3,
             "kinkRate2": 6,
-            "maxRate25BPS": 255,
+            "maxRate25BPS": 225,
             "feeRatePercent": 20,
             "minFeeRate5BPS": 10,
             "maxFeeRate25BPS": 160
