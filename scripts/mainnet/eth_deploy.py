@@ -1,4 +1,4 @@
-from brownie import ZERO_ADDRESS, Contract, accounts,  EmptyProxy, nProxy, interface, history, Router
+from brownie import ZERO_ADDRESS, Contract, accounts,  EmptyProxy, nProxy, interface, history, Router, network, UpgradeableBeacon, MockERC20
 from brownie.network import Chain
 from scripts.arbitrum.arb_deploy import deploy_beacons, initialize_markets, list_currency, set_beacons
 from scripts.deploy_v3 import deployNotional
@@ -68,11 +68,21 @@ def main():
     #         erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
     #         erc20.transfer(fundingAccount, 10 ** erc20.decimals(), {"from": WHALES[c]})
     #     list_currency(c, notional, deployer, fundingAccount, ListedTokens)
+    #     try:
+    #         nToken = MockERC20.at(notional.nTokenAddress(id))
+    #         print("nToken: ", nToken.symbol(), nToken.name())
+    #     except:
+    #         pass
+    #     pCash = MockERC20.at(notional.pCashAddress(id))
+    #     print("pCash: ", pCash.symbol(), pCash.name())
+    #     pDebt = MockERC20.at(notional.pDebtAddress(id))
+    #     print("pCash: ", pDebt.symbol(), pDebt.name())
+    #     id += 1
 
     # initialize_markets(notional, fundingAccount, ListedOrder, ListedTokens)
 
     # # Deployer needs to transfer ownership to the owner
-    # notional.transferOwnership(owner, False, {"from": deployer})
+    # notional.transferOwnership(OWNER, False, {"from": deployer})
     # assert notional.owner() == deployer
 
     # for (i, symbol) in enumerate(ListedOrder):

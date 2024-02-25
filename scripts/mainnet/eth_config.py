@@ -279,7 +279,7 @@ ListedTokens = {
     },
     'sDAI': PrimeOnlyDefaults | {
         "address": "0x83F20F44975D03b1b09e64809B757c47f942BEeA",
-        "name": "sDAI",
+        "name": "Savings Dai",
         "decimals": 18,
         "oracleType": "ERC4626",
         "baseOracle": ChainlinkOracles["ETH/DAI"],
