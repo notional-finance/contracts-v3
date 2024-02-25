@@ -1,3 +1,4 @@
+import json
 from brownie import (
     ZERO_ADDRESS,
     Contract, accounts,
@@ -139,12 +140,14 @@ def _to_interest_rate_curve(params):
 
 def _list_currency(symbol, notional, deployer, pCashOracle, ethOracle, fundingAccount, config):
     token = config[symbol]
+    # Minimum underlying held is 0.05e8 in internal decimals
     if symbol == 'ETH':
-        fundingAccount.transfer(notional, 0.01e18)
+        fundingAccount.transfer(notional, 0.05e18)
     else:
         erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
+        decimals = erc20.decimals()
         # Donate the initial balance
-        erc20.transfer(notional, erc20.balanceOf(fundingAccount) / 10, {"from": fundingAccount})
+        erc20.transfer(notional, 0.05 * 10 ** decimals, {"from": fundingAccount})
 
     txn = notional.listCurrency(
         (
@@ -242,8 +245,13 @@ def initialize_markets(notional, fundingAccount, order, config):
             initMarkets.append(i + 1)
 
     notional.batchBalanceAction(fundingAccount, actions, {"from": fundingAccount, "value": 0.5e18})
-    for i in initMarkets:
-        notional.initializeMarkets(i, True, {"from": fundingAccount})
+    calldata = [
+        (notional.address, notional.initializeMarkets.encode_input(i, True))
+        for i in initMarkets
+    ]
+    multicall_abi = json.load(open("./abi/Multicall3.json"))
+    multicall = Contract.from_abi("multicall", "0xcA11bde05977b3631167028862bE2a173976CA11", multicall_abi)
+    multicall.aggregate(calldata, {"from": fundingAccount})
 
 
 BeaconType = {

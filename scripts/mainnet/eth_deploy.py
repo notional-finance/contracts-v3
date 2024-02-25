@@ -29,68 +29,69 @@ WHALES = {
 }
 
 def main():
-    deployer = accounts.at(DEPLOYER, force=True)
-    beaconDeployer = accounts.at(BEACON_DEPLOYER, force=True)
-    # deployer = accounts.load("MAINNET_DEPLOYER")
+    # deployer = accounts.at(DEPLOYER, force=True)
+    # beaconDeployer = accounts.at(BEACON_DEPLOYER, force=True)
+    deployer = accounts.load("MAINNET_DEPLOYER")
     # beaconDeployer = accounts.load("BEACON_DEPLOYER")
-    # fundingAccount = accounts.at("0x7d7935EDd4b6cDB5f34B0E1cCEAF85a3C4A11254", force=True)
+    fundingAccount = deployer
 
     # This implementation doesn't actually matter for the beacon
-    impl = EmptyProxy.at("0x90c3c405716B8fF965dc905C91eee82A0b41A4fF")
-    (nTokenBeacon, pCashBeacon, pDebtBeacon, wfCashBeacon) = deploy_beacons(beaconDeployer, impl)
+    # impl = EmptyProxy.at("0x90c3c405716B8fF965dc905C91eee82A0b41A4fF")
+    # (nTokenBeacon, pCashBeacon, pDebtBeacon, wfCashBeacon) = deploy_beacons(beaconDeployer, impl)
 
-    n = deployNotional(deployer, "mainnet", False, True)
-    # (router, pauseRouter, contracts) = deployNotionalContracts(deployer)
-    router = Router.at(n.routers['Router'])
-    pauseRouter = n.routers['PauseRouter']
+    # n = deployNotional(deployer, "mainnet", False, True)
+    # # (router, pauseRouter, contracts) = deployNotionalContracts(deployer)
+    # router = Router.at(n.routers['Router'])
+    # pauseRouter = n.routers['PauseRouter']
 
-    calldata = router.initialize.encode_input(deployer, pauseRouter, PAUSE_GUARDIAN)
-    print("Beacon Deployer Nonce", beaconDeployer.nonce)
-    notional = nProxy.deploy(router, calldata, {"from": beaconDeployer})
-    assert notional.address == "0x6e7058c91F85E0F6db4fc9da2CA41241f5e4263f"
+    # calldata = router.initialize.encode_input(deployer, pauseRouter, PAUSE_GUARDIAN)
+    # print("Beacon Deployer Nonce", beaconDeployer.nonce)
+    # notional = nProxy.deploy(router, calldata, {"from": beaconDeployer})
+    # assert notional.address == "0x6e7058c91F85E0F6db4fc9da2CA41241f5e4263f"
 
-    proxy = Contract.from_abi("notional", notional.address, EmptyProxy.abi, deployer)
-    assert notional.getImplementation() == router.address
+    # proxy = Contract.from_abi("notional", notional.address, EmptyProxy.abi, deployer)
+    # assert notional.getImplementation() == router.address
 
-    try:
-        proxy.upgradeToAndCall.call(router, calldata, {"from": deployer})
-        assert False
-    except:
-        # Cannot Re-Initialize
-        assert True
+    # try:
+    #     proxy.upgradeToAndCall.call(router, calldata, {"from": deployer})
+    #     assert False
+    # except:
+    #     # Cannot Re-Initialize
+    #     assert True
 
-    notional = Contract.from_abi("notional", notional.address, interface.NotionalProxy.abi)
-    set_beacons(notional, beaconDeployer, nTokenBeacon, pCashBeacon, pDebtBeacon, deployer)
+    notional = Contract.from_abi("notional", "0x6e7058c91F85E0F6db4fc9da2CA41241f5e4263f", interface.NotionalProxy.abi)
+    # set_beacons(notional, beaconDeployer, nTokenBeacon, pCashBeacon, pDebtBeacon, deployer)
 
-    # for c in ListedOrder:
-    #     token = ListedTokens[c]
-    #     if c != "ETH":
-    #         erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
-    #         erc20.transfer(fundingAccount, 10 ** erc20.decimals(), {"from": WHALES[c]})
-    #     list_currency(c, notional, deployer, fundingAccount, ListedTokens)
-    #     try:
-    #         nToken = MockERC20.at(notional.nTokenAddress(id))
-    #         print("nToken: ", nToken.symbol(), nToken.name())
-    #     except:
-    #         pass
-    #     pCash = MockERC20.at(notional.pCashAddress(id))
-    #     print("pCash: ", pCash.symbol(), pCash.name())
-    #     pDebt = MockERC20.at(notional.pDebtAddress(id))
-    #     print("pCash: ", pDebt.symbol(), pDebt.name())
-    #     id += 1
+    id = 1
+    for c in ListedOrder:
+        # token = ListedTokens[c]
+        # if c != "ETH":
+        #     erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
+        #     erc20.transfer(fundingAccount, 10 ** erc20.decimals(), {"from": WHALES[c]})
+        list_currency(c, notional, deployer, fundingAccount, ListedTokens)
+        try:
+            nToken = MockERC20.at(notional.nTokenAddress(id))
+            print("nToken: ", nToken.symbol(), nToken.name())
+        except:
+            pass
+        pCash = MockERC20.at(notional.pCashAddress(id))
+        print("pCash: ", pCash.symbol(), pCash.name())
+        pDebt = MockERC20.at(notional.pDebtAddress(id))
+        print("pCash: ", pDebt.symbol(), pDebt.name())
+        id += 1
 
-    # initialize_markets(notional, fundingAccount, ListedOrder, ListedTokens)
+    initialize_markets(notional, fundingAccount, ListedOrder, ListedTokens)
 
-    # # Deployer needs to transfer ownership to the owner
+    # Deployer needs to transfer ownership to the owner
     # notional.transferOwnership(OWNER, False, {"from": deployer})
     # assert notional.owner() == deployer
 
-    # for (i, symbol) in enumerate(ListedOrder):
-    #     rates = [ m[5] / 1e9 for m in notional.getActiveMarkets(i + 1) ]
-    #     print("Market Rates for {}: {}".format(symbol, rates))
+    for (i, symbol) in enumerate(ListedOrder):
+        rates = [ m[5] / 1e9 for m in notional.getActiveMarkets(i + 1) ]
+        print("Market Rates for {}: {}".format(symbol, rates))
     
     print("Gas Costs")
-    gas_used("Beacon Deployer", beaconDeployer)
+    # gas_used("Beacon Deployer", beaconDeployer)
     gas_used("Contract Deployer", deployer)
     # gas_used("Owner", owner)
     # gas_used("Funding", fundingAccount)
