@@ -83,9 +83,9 @@ class NotionalDeployer:
             self.callbacks = self.config["callbacks"]
         if "notional" in self.config:
             self.notional = self.config["notional"]
-            self.proxy = loadContractFromABI(
-                "NotionalProxy", self.config["notional"], "abi/Notional.json"
-            )
+            # self.proxy = loadContractFromABI(
+            #     "NotionalProxy", self.config["notional"], "abi/Notional.json"
+            # )
 
     def _save(self):
         self.config["libs"] = self.libs
@@ -130,19 +130,7 @@ class NotionalDeployer:
         if self.dryRun:
             print("Will deploy action contract {}".format(contract._name))
         else:
-            # Brownie and Hardhat do not compile to the same bytecode for this contract, during mainnet
-            # deployment. Therefore, when we deploy to production we actually deploy the artifact generated
-            # by the hardhat deployment here.
-            if contract._name == "GovernanceAction":
-                deployed = deployArtifact(
-                    "./artifacts/contracts/external/actions/GovernanceAction.sol/GovernanceAction.json",
-                    [],
-                    deployer.deployer,
-                    "Governance"
-                )
-            else:
-                deployed = deployer.deploy(contract, args, "", True)
-
+            deployed = deployer.deploy(contract, args, "", True)
             self.actions[contract._name] = deployed.address
             self._save()
             self.verify(contract, deployed, [] if args is None else args)

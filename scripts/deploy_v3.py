@@ -8,11 +8,13 @@ def deployNotional(deployer, networkName, dryRun, isFork):
     notional.deployActions()
     notional.deployPauseRouter()
     notional.deployRouter()
-    notional.deployBeaconImplementation()
-    notional.deployAuthorizedCallbacks()
+    # notional.deployBeaconImplementation()
+    # notional.deployAuthorizedCallbacks()
 
-    if isFork:
-        notional.upgradeProxy()
+    # if isFork:
+    #     notional.upgradeProxy()
+    
+    return notional
 
 
 def main(dryRun=True):

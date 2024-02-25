@@ -61,13 +61,10 @@ def deploy_beacons(deployer, emptyProxy):
     assert pCashBeacon.address == "0x1F681977aF5392d9Ca5572FB394BC4D12939A6A9"
     pDebtBeacon = UpgradeableBeacon.deploy(emptyProxy, {"from": deployer})
     assert pDebtBeacon.address == "0xDF08039c0af34E34660aC7c2705C0Da953247640"
+    wfCashBeacon = UpgradeableBeacon.deploy(emptyProxy, {"from": deployer})
+    assert wfCashBeacon.address == "0xEBe1BF1653d55d31F6ED38B1A4CcFE2A92338f66"
 
-    # Nonce 103 and 104
-    # https://etherscan.io/tx/0x947d60c781254637c5b9e774d8910a1187a31de606b3d3a515b6981662536fd2I
-    # https://etherscan.io/tx/0x54c63544f562fd997d81fec94bc2189977b996e2ada8e3839e635aea513a6291
-    # wfCashBeacon = UpgradeableBeacon.deploy(impl, {"from": deployer})
-
-    return ( nTokenBeacon, pCashBeacon, pDebtBeacon )
+    return ( nTokenBeacon, pCashBeacon, pDebtBeacon, wfCashBeacon )
 
 def list_currency(symbol, notional, deployer, fundingAccount, config):
     pCashOracle = _deploy_pcash_oracle(symbol, notional, deployer, config)
@@ -261,9 +258,9 @@ def set_beacons(notional, beaconDeployer, nTokenBeacon, pCashBeacon, pDebtBeacon
     pCashBeacon.transferOwnership(notional.address, {"from": beaconDeployer})
     pDebtBeacon.transferOwnership(notional.address, {"from": beaconDeployer})
 
-    nTokenImpl = nTokenERC20Proxy.deploy(notional.address, {"from": beaconDeployer})
-    pCashImpl = PrimeCashProxy.deploy(notional.address, {"from": beaconDeployer})
-    pDebtImpl = PrimeDebtProxy.deploy(notional.address, {"from": beaconDeployer})
+    nTokenImpl = nTokenERC20Proxy.deploy(notional.address, {"from": deployer})
+    pCashImpl = PrimeCashProxy.deploy(notional.address, {"from": deployer})
+    pDebtImpl = PrimeDebtProxy.deploy(notional.address, {"from": deployer})
 
     notional.upgradeBeacon(BeaconType["NTOKEN"], nTokenImpl, {"from": deployer})
     notional.upgradeBeacon(BeaconType["PCASH"], pCashImpl, {"from": deployer})

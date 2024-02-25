@@ -10,9 +10,9 @@
     "guardian": "",
     "libs": {
     },
-    "networkName": "arbitrum-one",
+    "networkName": "mainnet",
     "note": "0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5",
-    "notional": "",
+    "notional": "0x6e7058c91F85E0F6db4fc9da2CA41241f5e4263f",
     "routers": {
     },
     "startBlock": 0
