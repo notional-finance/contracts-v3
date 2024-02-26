@@ -85,7 +85,7 @@ contract Router is StorageLayoutV1, IRouter {
         VAULT_LIQUIDATION_ACTION = contracts.vaultLiquidationAction;
         VAULT_ACCOUNT_HEALTH = contracts.vaultAccountHealth;
 
-        DEPLOYER = 0x0D251Bd6c14e02d34f68BFCB02c54cBa3D108122;
+        DEPLOYER = msg.sender;
         // This will lock everyone from calling initialize on the implementation contract
         hasInitialized = true;
     }

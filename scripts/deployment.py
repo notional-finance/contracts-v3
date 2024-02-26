@@ -212,11 +212,9 @@ def deployNotionalContracts(deployer):
     return (router, pauseRouter, contracts)
 
 
-def deployNotional(deployer, guardianAddress, comptroller):
+def deployNotional(deployer, guardianAddress):
     # NOTE: rebalancing strategy is only tested on mainnet fork
-    (router, pauseRouter, contracts) = deployNotionalContracts(
-        deployer, Comptroller=comptroller
-    )
+    (router, pauseRouter, contracts) = deployNotionalContracts(deployer)
 
     initializeData = web3.eth.contract(abi=Router.abi).encodeABI(
         fn_name="initialize", args=[deployer.address, pauseRouter.address, guardianAddress]
@@ -241,7 +239,7 @@ def deployArtifact(path, constructorArgs, deployer, name):
         artifact = json.load(a)
 
     createdContract = network.web3.eth.contract(abi=artifact["abi"], bytecode=artifact["bytecode"])
-    txn = createdContract.constructor(*constructorArgs).buildTransaction(
+    txn = createdContract.constructor(*constructorArgs).build_transaction(
         {"from": deployer.address, "nonce": deployer.nonce}
     )
     # This does a manual deployment of a contract
@@ -428,7 +426,7 @@ class TestEnvironment:
 
     def _deployNotional(self):
         (self.pauseRouter, self.router, self.proxy, self.notional, _) = deployNotional(
-            self.deployer, accounts[8].address, self.comptroller
+            self.deployer, accounts[8].address
         )
         self.enableCurrency("ETH", CurrencyDefaults)
 
