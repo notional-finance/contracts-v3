@@ -3,6 +3,7 @@ from brownie.network import Chain
 from scripts.arbitrum.arb_deploy import deploy_beacons, initialize_markets, list_currency, set_beacons
 from scripts.deploy_v3 import deployNotional
 from scripts.deployment import deployNotionalContracts
+from scripts.initializers.list_currency import check_trading_module_oracle
 from scripts.mainnet.eth_config import ListedOrder, ListedTokens
 
 chain = Chain()
@@ -29,10 +30,17 @@ WHALES = {
 }
 
 def main():
-    # deployer = accounts.at(DEPLOYER, force=True)
-    # beaconDeployer = accounts.at(BEACON_DEPLOYER, force=True)
-    deployer = accounts.load("MAINNET_DEPLOYER")
-    # beaconDeployer = accounts.load("BEACON_DEPLOYER")
+    networkName = network.show_active()
+    if networkName in ["mainnet-fork", "mainnet-current"]:
+        networkName = "mainnet"
+        isFork = True
+        deployer = accounts.at(DEPLOYER, force=True)
+        beaconDeployer = accounts.at(BEACON_DEPLOYER, force=True)
+    elif networkName == "mainnet":
+        isFork = False
+        deployer = accounts.load("MAINNET_DEPLOYER")
+        beaconDeployer = accounts.load("BEACON_DEPLOYER")
+
     fundingAccount = deployer
 
     # This implementation doesn't actually matter for the beacon
@@ -69,6 +77,7 @@ def main():
         #     erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
         #     erc20.transfer(fundingAccount, 10 ** erc20.decimals(), {"from": WHALES[c]})
         list_currency(c, notional, deployer, fundingAccount, ListedTokens)
+        check_trading_module_oracle(c, ListedTokens, isFork)
         try:
             nToken = MockERC20.at(notional.nTokenAddress(id))
             print("nToken: ", nToken.symbol(), nToken.name())

@@ -24,6 +24,10 @@
     "chainId": 1,
     "deployer": "0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3",
     "guardian": "",
+    "trading": {
+        "module": "0x594734c7e06C3D483466ADBCe401C6Bd269746C8",
+        "oracles": ["wstETH", "stETH", "BAL", "WBTC", "USDT", "USDC", "DAI", "WETH", "ETH"]
+    },
     "libs": {
         "FreeCollateralExternal": "0xeA7aa69DbEEA9deB4294109BD344F69c79c6FDF7",
         "SettleAssetsExternal": "0xe10836BA543Be91e978fC9b455BF483572a44B21",

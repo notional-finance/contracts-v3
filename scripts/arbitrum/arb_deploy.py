@@ -111,21 +111,6 @@ def _deploy_chainlink_oracle(symbol, deployer, config):
             {"from": deployer}
         )
 
-def deploy_chainlink_usd_oracle(symbol, deployer):
-    token = ListedTokens[symbol]
-    if symbol == "ETH":
-        return ZERO_ADDRESS
-    else:
-        return ChainlinkAdapter.deploy(
-            ChainlinkOracles["rETH/ETH"],
-            ChainlinkOracles["ETH/USD"],
-            False,
-            True,
-            "Notional rETH/USD Chainlink Adapter".format(symbol),
-            token['sequencerUptimeOracle'],
-            {"from": deployer}
-        )
-
 def _to_interest_rate_curve(params):
     return (
         params["kinkUtilization1"],

@@ -1,4 +1,4 @@
-from brownie import accounts, network, history, nTokenMintAction
+from brownie import accounts, network, history
 from scripts.deployers.notional_deployer import NotionalDeployer
 
 
@@ -18,8 +18,6 @@ def deployNotional(deployer, networkName, dryRun, isFork):
 
 def deployLiquidator(deployer, networkName, dryRun, isFork):
     pass
-
-
 
 def main(dryRun="LFG"):
     networkName = network.show_active()
