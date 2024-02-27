@@ -83,9 +83,9 @@ class NotionalDeployer:
             self.callbacks = self.config["callbacks"]
         if "notional" in self.config:
             self.notional = self.config["notional"]
-            # self.proxy = loadContractFromABI(
-            #     "NotionalProxy", self.config["notional"], "abi/Notional.json"
-            # )
+            self.proxy = loadContractFromABI(
+                "NotionalProxy", self.config["notional"], "abi/Notional.json"
+            )
 
     def _save(self):
         self.config["libs"] = self.libs
@@ -102,6 +102,9 @@ class NotionalDeployer:
     def _deployLib(self, deployer, contract):
         if contract._name in self.libs:
             print("{} deployed at {}".format(contract._name, self.libs[contract._name]))
+            # Adds the lib into the state in case it does not exist yet, prevents a lib not found
+            # error in brownie
+            contract.at(self.libs[contract._name])
             return
 
         # Make sure isLib is set to true

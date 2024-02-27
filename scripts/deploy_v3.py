@@ -1,4 +1,4 @@
-from brownie import accounts, network
+from brownie import accounts, network, history, nTokenMintAction
 from scripts.deployers.notional_deployer import NotionalDeployer
 
 
@@ -8,16 +8,17 @@ def deployNotional(deployer, networkName, dryRun, isFork):
     notional.deployActions()
     notional.deployPauseRouter()
     notional.deployRouter()
-    # notional.deployBeaconImplementation()
-    # notional.deployAuthorizedCallbacks()
-
-    # if isFork:
-    #     notional.upgradeProxy()
-    
-    return notional
+    notional.deployBeaconImplementation()
+    notional.deployAuthorizedCallbacks()
 
     if isFork:
         notional.upgradeProxy()
+    
+    return notional
+
+def deployLiquidator(deployer, networkName, dryRun, isFork):
+    pass
+
 
 
 def main(dryRun="LFG"):
@@ -44,5 +45,16 @@ def main(dryRun="LFG"):
         else:
             dryRun = False
 
-    deployNotional(deployer, networkName, dryRun, isFork)
+    notional = deployNotional(deployer, networkName, dryRun, isFork)
     # deployLiquidator(deployer, networkName, dryRun)
+
+    gas_used("Contract Deployer", deployer)
+
+def gas_used(label, account, gasPrice = 40):
+    print("{}: {:,} gas, {:,.4f} ETH @ {} gwei, {} txns".format(
+        label,
+        sum([ tx.gas_used for tx in history.from_sender(account) ]),
+        sum([ tx.gas_used for tx in history.from_sender(account) ]) * gasPrice * 1e9 / 1e18,
+        gasPrice,
+        len(history.from_sender(account))
+    ))
