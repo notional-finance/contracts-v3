@@ -21,8 +21,7 @@ zeroAddress = HexString(0, type_str="bytes20")
 @pytest.mark.balances
 class TestTokenHandler:
     @pytest.fixture(scope="module", autouse=True)
-    def tokenHandler(self, MockTokenHandler, MigrateIncentives, MockSettingsLib, accounts):
-        MigrateIncentives.deploy({"from": accounts[0]})
+    def tokenHandler(self, MockTokenHandler, MockSettingsLib, accounts):
         settingsLib = MockSettingsLib.deploy({"from": accounts[0]})
         mock = MockTokenHandler.deploy(settingsLib, {"from": accounts[0]})
         return Contract.from_abi(

@@ -52,7 +52,6 @@ import {NotionalViews} from "../../interfaces/notional/NotionalViews.sol";
 import {NotionalTreasury} from "../../interfaces/notional/NotionalTreasury.sol";
 import {IPrimeCashHoldingsOracle} from "../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 import {FreeCollateralExternal} from "./FreeCollateralExternal.sol";
-import {MigrateIncentives} from "./MigrateIncentives.sol";
 
 contract Views is StorageLayoutV2, NotionalViews {
     using CashGroup for CashGroupParameters;
@@ -660,8 +659,8 @@ contract Views is StorageLayoutV2, NotionalViews {
     }
 
     /// @notice Get a list of deployed library addresses (sorted by library name)
-    function getLibInfo() external pure returns (address, address) {
-        return (address(FreeCollateralExternal), address(MigrateIncentives));
+    function getLibInfo() external pure returns (address) {
+        return (address(FreeCollateralExternal));
     }
 
     fallback() external {

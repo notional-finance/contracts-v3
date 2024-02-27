@@ -25,7 +25,6 @@ import {ActionGuards} from "./ActionGuards.sol";
 import {nTokenRedeemAction} from "./nTokenRedeemAction.sol";
 import {SettleAssetsExternal} from "../SettleAssetsExternal.sol";
 import {FreeCollateralExternal} from "../FreeCollateralExternal.sol";
-import {MigrateIncentives} from "../MigrateIncentives.sol";
 
 contract AccountAction is ActionGuards {
     using BalanceHandler for BalanceState;
@@ -318,10 +317,9 @@ contract AccountAction is ActionGuards {
     }
 
     /// @notice Get a list of deployed library addresses (sorted by library name)
-    function getLibInfo() external pure returns (address, address, address, address) {
+    function getLibInfo() external pure returns (address, address, address) {
         return (
             address(FreeCollateralExternal),
-            address(MigrateIncentives), 
             address(SettleAssetsExternal), 
             address(nTokenRedeemAction)
         );

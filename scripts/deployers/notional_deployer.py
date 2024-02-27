@@ -1,7 +1,9 @@
 import json
 import subprocess
 
+from brownie.network.contract import Contract
 from brownie import (
+    interface,
     ZERO_ADDRESS,
     AccountAction,
     BatchAction,
@@ -12,7 +14,6 @@ from brownie import (
     InitializeMarketsAction,
     LiquidateCurrencyAction,
     LiquidatefCashAction,
-    MigrateIncentives,
     PauseRouter,
     Router,
     SettleAssetsExternal,
@@ -39,30 +40,32 @@ from scripts.deployment import deployArtifact
 
 
 class NotionalDeployer:
-    def __init__(self, network, deployer, dryRun, config=None, persist=True) -> None:
+    def __init__(self, network, deployer, dryRun, isFork=False, config=None, persist=True) -> None:
         self.config = config
         self.network = network
-        self.persist = persist
-        if self.network == "hardhat-fork" or self.network == "mainnet-fork":
-            self.network = "mainnet"
+        if isFork:
             self.persist = False
+        else:
+            self.persist = True
         self.libs = {}
         self.actions = {}
         self.routers = {}
         self.notional = None
         self.deployer = deployer
         self.dryRun = dryRun
+        self.isFork = isFork
         self._load()
 
     def verify(self, contract, deployed, args = []):
-        if not self.dryRun:
-            print("Verifying {} at {} with args {}".format(contract._name, deployed.address, args))
-            output = subprocess.check_output([
-                "npx", "hardhat", "verify",
-                "--network", self.network,
-                deployed.address
-            ] + args, encoding='utf-8')
-            print(output)
+        if self.dryRun or self.isFork:
+            return
+        print("Verifying {} at {} with args {}".format(contract._name, deployed.address, args))
+        output = subprocess.check_output([
+            "npx", "hardhat", "verify",
+            "--network", self.network,
+            deployed.address
+        ] + args, encoding='utf-8')
+        print(output)
 
     def _load(self):
         if self.config is None:
@@ -118,7 +121,6 @@ class NotionalDeployer:
         self._deployLib(deployer, TradingAction)
         self._deployLib(deployer, nTokenMintAction)
         self._deployLib(deployer, nTokenRedeemAction)
-        self._deployLib(deployer, MigrateIncentives)
 
     def _deployAction(self, deployer, contract, args=None):
         if contract._name in self.actions:
@@ -161,7 +163,7 @@ class NotionalDeployer:
         self._deployAction(deployer, LiquidateCurrencyAction)
         self._deployAction(deployer, CalculationViews)
         self._deployAction(deployer, LiquidatefCashAction)
-        self._deployAction(deployer, TreasuryAction, [ZERO_ADDRESS])
+        self._deployAction(deployer, TreasuryAction)
         self._deployAction(deployer, VaultAction)
         self._deployAction(deployer, VaultAccountAction)
         self._deployAction(deployer, VaultLiquidationAction)
@@ -277,9 +279,11 @@ class NotionalDeployer:
         deployer = ContractDeployer(self.deployer, self.callbacks)
         self._deployCallback(deployer, LeveragedNTokenAdapter, [self.notional])
 
-    def upgradeProxy(self, oldRouter):
-        print("Upgrading router from {} to {}".format(oldRouter, self.routers["Router"]))
-        self.proxy.upgradeTo(self.routers["Router"], {"from": self.deployer})
+    def upgradeProxy(self):
+        if self.isFork:
+            print("Upgrading router to {}".format(self.routers["Router"]))
+            n = Contract.from_abi("Notional", self.proxy, abi=interface.NotionalProxy.abi)
+            self.proxy.upgradeTo(self.routers["Router"], {"from": n.owner()})
 
     def deployProxy(self):
         # Already deployed
