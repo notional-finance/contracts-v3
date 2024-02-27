@@ -21,8 +21,7 @@ zeroAddress = HexString(0, type_str="bytes20")
 @pytest.mark.balances
 class TestTokenHandler:
     @pytest.fixture(scope="module", autouse=True)
-    def tokenHandler(self, MockTokenHandler, MigrateIncentives, MockSettingsLib, accounts):
-        MigrateIncentives.deploy({"from": accounts[0]})
+    def tokenHandler(self, MockTokenHandler, MockSettingsLib, accounts):
         settingsLib = MockSettingsLib.deploy({"from": accounts[0]})
         mock = MockTokenHandler.deploy(settingsLib, {"from": accounts[0]})
         return Contract.from_abi(
@@ -103,7 +102,7 @@ class TestTokenHandler:
         with brownie.reverts():
             tokenHandler.setToken(2, (erc20.address, False, TokenType["Ether"], 18, 0))
 
-        with brownie.reverts("TH: address is zero"):
+        with brownie.reverts():
             tokenHandler.setToken(2, (zeroAddress, False, TokenType["UnderlyingToken"], 18, 0))
 
     def test_cannot_override_token(self, tokenHandler, accounts, MockERC20):
@@ -111,7 +110,7 @@ class TestTokenHandler:
         erc20_ = MockERC20.deploy("test", "TEST", 18, 0, {"from": accounts[0]})
         tokenHandler.setToken(2, (erc20.address, False, TokenType["UnderlyingToken"], 18, 0))
 
-        with brownie.reverts("TH: token cannot be reset"):
+        with brownie.reverts():
             tokenHandler.setToken(2, (erc20_.address, False, TokenType["UnderlyingToken"], 18, 0))
 
     def test_cannot_set_asset_to_underlying(self, tokenHandler, accounts, MockERC20):
@@ -123,7 +122,7 @@ class TestTokenHandler:
     def test_deposit_respects_max_supply(self, tokens, accounts):
         tokenHandler = tokens["handler"]
         for (i, t) in enumerate(tokens["tokens"]):
-            tokenHandler.setMaxUnderlyingSupply(i + 1, 1500e8)
+            tokenHandler.setMaxUnderlyingSupply(i + 1, 1500e8, 100)
             decimals = 18 if i == 0 else t.decimals()
             balanceBefore = tokens["oracles"][i].getTotalUnderlyingValueView()
             depositExternal = Wei(400 * (10 ** decimals))
@@ -150,7 +149,7 @@ class TestTokenHandler:
                 )
 
             # Reduce supply balance
-            tokenHandler.setMaxUnderlyingSupply(i + 1, 1200e8)
+            tokenHandler.setMaxUnderlyingSupply(i + 1, 1200e8, 100)
 
             # Still cannot deposit
             with brownie.reverts("Over Supply Cap"):

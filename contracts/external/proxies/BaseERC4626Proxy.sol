@@ -162,19 +162,21 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
     /// for ERC4626 so that it is compatible with more use cases.
     function asset() external override view returns (address) { return underlying; }
 
-    /// @notice Returns the total present value of the nTokens held in native underlying token precision
+    /// @notice Returns the total present value of the assets held in native underlying token precision
     function totalAssets() public override view returns (uint256 totalManagedAssets) {
         totalManagedAssets = _getTotalValueExternal();
     }
 
-    /// @notice Converts an underlying token to an nToken denomination
     function convertToShares(uint256 assets) public override view returns (uint256 shares) {
         return assets.mul(EXCHANGE_RATE_PRECISION).div(exchangeRate());
     }
 
-    /// @notice Converts nToken denomination to underlying denomination
     function convertToAssets(uint256 shares) public override view returns (uint256 assets) {
-        return exchangeRate().mul(shares).div(EXCHANGE_RATE_PRECISION);
+        // Notional truncates balances below the 8th decimal place if they exist, so truncate
+        // those balances here as well.
+        uint256 truncate = 10 ** (nativeDecimals < 8 ? 0 : nativeDecimals - 8);
+        return shares.mul(exchangeRate()).div(EXCHANGE_RATE_PRECISION)
+            .div(truncate).mul(truncate);
     }
 
     /// @notice Gets the max underlying supply
@@ -184,7 +186,9 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
             /* */,
             /* */,
             uint256 maxUnderlyingSupply,
-            uint256 currentUnderlyingSupply
+            uint256 currentUnderlyingSupply,
+            /* */,
+            /* */
         ) = NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
 
         if (maxUnderlyingSupply == 0) {
@@ -215,36 +219,50 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         return convertToAssets(_balanceOf(owner));
     }
 
-    /// @notice Deposits are based on the conversion rate assets to shares
+    /// @notice Deposits are based on the conversion rate assets to shares.
+    /// @dev Will round down inside convertToShares. Deposits more closely match how
+    /// Notional processes minting within the protocol.
     function previewDeposit(uint256 assets) external override view returns (uint256 shares) {
+        // Rounds down so that the account receives less shares than assets. This calculation
+        // is only used as a view method.
         return convertToShares(assets);
     }
 
-    /// @notice Mints are based on the conversion rate from shares to assets
+    /// @notice Mints are based on the conversion rate from shares to assets.
+    /// @dev Will be called during `mint` to calculate how much assets to transfer. Therefore,
+    /// there may be some rounding errors when the number of shares minted does not match what
+    /// is requested.
     function previewMint(uint256 shares) public override view returns (uint256 assets) {
-        return convertToAssets(shares);
+        // convertToAssets will also convert the decimal basis to 8 decimal places. To round up,
+        // add one to the value with a smaller decimal basis.
+        return nativeDecimals < 8 ?
+            convertToAssets(shares).add(1) :
+            convertToAssets(shares.add(1));
     }
 
-    /// @notice Return value is an over-estimation of the assets that the user will receive via redemptions,
-    /// this method does not account for slippage and potential illiquid residuals. This method is not completely
-    /// ERC4626 compliant in that sense.
-    /// @dev Redemptions of nToken shares to underlying assets will experience slippage which is
-    /// not easily calculated. In some situations, slippage may be so great that the shares are not able
-    /// to be redeemed purely via the ERC4626 method and would require the account to call nTokenRedeem on
-    /// AccountAction and take on illiquid fCash residuals.
+    /// @notice Calculates how much assets will be returned when redeeming the given amount
+    /// of shares.
     function previewRedeem(uint256 shares) external view override returns (uint256 assets) {
+        // Rounds down so that the account receives less shares than assets. This calculation
+        // is only used as a view method.
         return convertToAssets(shares);
     }
 
-    /// @notice Return value is an under-estimation of the shares that the user will need to redeem to raise assets,
-    /// this method does not account for slippage and potential illiquid residuals. This method is not completely
-    /// ERC4626 compliant in that sense.
+    /// @notice Calculates how many shares need to be redeemed to receive the specified amount
+    /// of assets.
     function previewWithdraw(uint256 assets) public view override returns (uint256 shares) {
-        return convertToShares(assets);
+        // convertToShares will also convert the decimal basis to 8 decimal places. To round up,
+        // add one to the value with a larger decimal basis.
+        return nativeDecimals < 8 ?
+            convertToShares(assets.add(1)) :
+            convertToShares(assets).add(1);
     }
 
-    /// @notice Deposits assets into nToken for the receiver's account. Requires that the ERC4626 token has
-    /// approval to transfer assets from the msg.sender directly to Notional.
+    /// @notice Deposits assets into Notional and mints either prime cash or nTokens. Unlike the wrapped fCash
+    /// proxy this will not hold prime cash assets on the contract and wrap them, the assets will be deposited
+    /// directly into the user's account and may be used as collateral.
+    /// @dev The proxy contract will first transfer the assets to the contract and then transfer them
+    /// to Notional.
     function deposit(uint256 assets, address receiver) external override returns (uint256 shares) {
         uint256 msgValue;
         (assets, msgValue) = _transferAssets(assets);
@@ -254,8 +272,7 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
-    /// @notice Deposits assets into nToken for the receiver's account. Requires that the ERC4626 token has
-    /// approval to transfer assets from the msg.sender directly to Notional.
+    /// @notice Similar to deposit, however the amount of shares are specified instead.
     function mint(uint256 shares, address receiver) external override returns (uint256 assets) {
         uint256 msgValue;
         assets = previewMint(shares);
@@ -286,16 +303,15 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         }
     }
 
-    /// @notice Redeems assets from the owner and sends them to the receiver. WARNING: the assets provided as a value here
-    /// will not be what the method actually redeems due to estimation issues.
+    /// @notice Withdraws the asset from Notional and they will be transferred to the receiver.
     function withdraw(uint256 assets, address receiver, address owner) external override returns (uint256 shares) {
         // NOTE: this will return an under-estimated amount for assets so the end amount of assets redeemed will
         // be less than specified.
         shares = previewWithdraw(assets);
         uint256 balance = _balanceOf(owner);
-        if (shares > balance) shares = balance;
+        if (shares > balance) revert("Insufficient Balance");
 
-        // NOTE: if msg.sender != owner allowance checks must be done in_redeem
+        // Allowance checks when receiver != owner are done on the Notional proxy
         uint256 assetsFinal = _redeem(shares, receiver, owner);
         emit Transfer(owner, address(0), shares);
 
@@ -303,9 +319,9 @@ abstract contract BaseERC4626Proxy is IERC20, IERC4626, Initializable, ITransfer
         emit Withdraw(msg.sender, receiver, owner, assetsFinal, shares);
     }
 
-    /// @notice Redeems the specified amount of nTokens (shares) for some amount of assets.
+    /// @notice Redeems the asset from Notional and they will be transferred to the receiver.
     function redeem(uint256 shares, address receiver, address owner) external override returns (uint256 assets) {
-        // NOTE: if msg.sender != owner allowance checks must be done in_redeem
+        // Allowance checks when receiver != owner are done on the Notional proxy
         uint256 assetsFinal = _redeem(shares, receiver, owner);
         emit Transfer(owner, address(0), shares);
         emit Withdraw(msg.sender, receiver, owner, assetsFinal, shares);

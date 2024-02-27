@@ -15,7 +15,6 @@ from brownie import (
     InitializeMarketsAction,
     LiquidateCurrencyAction,
     LiquidatefCashAction,
-    MigrateIncentives,
     MockAggregator,
     CompoundV2HoldingsOracle,
     MockERC20,
@@ -48,7 +47,7 @@ from brownie.convert.datatypes import HexString
 from brownie.network import Rpc, web3
 from brownie.network.contract import Contract
 from brownie.network.state import Chain
-from brownie.project import ContractsV2Project
+from brownie.project import ContractsV3Project
 from scripts.config import (
     CompoundConfig,
     CurrencyDefaults,
@@ -153,7 +152,6 @@ def deployNotionalContracts(deployer, **kwargs):
     contracts["TradingAction"] = TradingAction.deploy({"from": deployer})
     contracts["nTokenMintAction"] = nTokenMintAction.deploy({"from": deployer})
     contracts["nTokenRedeemAction"] = nTokenRedeemAction.deploy({"from": deployer})
-    contracts["MigrateIncentives"] = MigrateIncentives.deploy({"from": deployer})
 
     # Deploy logic contracts
     contracts["Governance"] = GovernanceAction.deploy({"from": deployer})
@@ -175,7 +173,7 @@ def deployNotionalContracts(deployer, **kwargs):
     contracts["LiquidateCurrencyAction"] = LiquidateCurrencyAction.deploy({"from": deployer})
     contracts["CalculationViews"] = CalculationViews.deploy({"from": deployer})
     contracts["LiquidatefCashAction"] = LiquidatefCashAction.deploy({"from": deployer})
-    contracts["TreasuryAction"] = TreasuryAction.deploy(kwargs["Comptroller"], {"from": deployer})
+    contracts["TreasuryAction"] = TreasuryAction.deploy({"from": deployer})
     contracts["VaultAction"] = VaultAction.deploy({"from": deployer})
     contracts["VaultAccountAction"] = VaultAccountAction.deploy({"from": deployer})
     contracts["VaultLiquidationAction"] = VaultLiquidationAction.deploy({"from": deployer})
@@ -230,7 +228,7 @@ def deployNotional(deployer, guardianAddress, comptroller):
         router.address, initializeData, {"from": deployer}  # Deployer is set to owner
     )
 
-    notionalInterfaceABI = ContractsV2Project._build.get("NotionalProxy")["abi"]
+    notionalInterfaceABI = ContractsV3Project._build.get("NotionalProxy")["abi"]
     notional = Contract.from_abi(
         "Notional", proxy.address, abi=notionalInterfaceABI, owner=deployer
     )

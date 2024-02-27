@@ -66,16 +66,10 @@ library GenericToken {
     function executeLowLevelCall(
         address target,
         uint256 msgValue,
-        bytes memory callData,
-        bool allowFailure
-    ) internal returns (bool) {
+        bytes memory callData
+    ) internal  {
         (bool status, bytes memory returnData) = target.call{value: msgValue}(callData);
-        if (!allowFailure) {
-            require(status, checkRevertMessage(returnData));
-        } else {
-            emit LowLevelCallFailed(target, msgValue, callData, checkRevertMessage(returnData));
-        }
-        return status;
+        require(status, checkRevertMessage(returnData));
     }
 
     function checkRevertMessage(bytes memory returnData) internal pure returns (string memory) {

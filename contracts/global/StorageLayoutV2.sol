@@ -13,4 +13,6 @@ contract StorageLayoutV2 is StorageLayoutV1 {
 
     // Pending owner used in the transfer ownership / claim ownership pattern
     address internal pendingOwner;
+
+    address public rebalancingBot;
 }

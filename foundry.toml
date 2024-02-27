@@ -7,5 +7,12 @@ remappings = [
     "@openzeppelin/=node_modules/@openzeppelin/",
     "hardhat/=node_modules/hardhat/",
 ]
+fs_permissions = [{access="read",path="./v3.arbitrum-one.json"}, {access="read",path="./artifacts"}, {access="read",path="./script/merkleConfig.json"}, {access="write",path="./script/merkleProofs.json"}]
 
+[rpc_endpoints]
+arbitrum = "${ARBITRUM_RPC_URL}"
+
+[fuzz]
+runs = 50
+seed='0x5792875'
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

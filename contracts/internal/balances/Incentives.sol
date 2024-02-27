@@ -13,7 +13,6 @@ import {TokenHandler} from "./TokenHandler.sol";
 import {nTokenHandler} from "../nToken/nTokenHandler.sol";
 import {nTokenSupply} from "../nToken/nTokenSupply.sol";
 
-import {MigrateIncentives} from "../../external/MigrateIncentives.sol";
 import {IRewarder} from "../../../interfaces/notional/IRewarder.sol";
 
 library Incentives {
@@ -29,25 +28,7 @@ library Incentives {
         uint256 accumulatedNOTEPerNToken,
         uint256 finalNTokenBalance
     ) internal view returns (uint256 incentivesToClaim) {
-        if (balanceState.lastClaimTime > 0) {
-            // If lastClaimTime is set then the account had incentives under the
-            // previous regime. Will calculate the final amount of incentives to claim here
-            // under the previous regime.
-            incentivesToClaim = MigrateIncentives.migrateAccountFromPreviousCalculation(
-                tokenAddress,
-                balanceState.storedNTokenBalance.toUint(),
-                balanceState.lastClaimTime,
-                // In this case the accountIncentiveDebt is stored as lastClaimIntegralSupply under
-                // the old calculation
-                balanceState.accountIncentiveDebt
-            );
-
-            // This marks the account as migrated and lastClaimTime will no longer be used
-            balanceState.lastClaimTime = 0;
-            // This value will be set immediately after this, set this to zero so that the calculation
-            // establishes a new baseline.
-            balanceState.accountIncentiveDebt = 0;
-        }
+        require(balanceState.lastClaimTime == 0);
 
         // If an account was migrated then they have no accountIncentivesDebt and should accumulate
         // incentives based on their share since the new regime calculation started.
@@ -94,6 +75,7 @@ library Incentives {
     ) internal returns (uint256 incentivesToClaim) {
         uint256 blockTime = block.timestamp;
         address tokenAddress = nTokenHandler.nTokenAddress(balanceState.currencyId);
+        (uint256 priorNTokenSupply, /* */, /* */) = nTokenSupply.getStoredNTokenSupplyFactors(tokenAddress);
         // This will updated the nToken storage and return what the accumulatedNOTEPerNToken
         // is up until this current block time in 1e18 precision
         uint256 accumulatedNOTEPerNToken = nTokenSupply.changeNTokenSupply(
@@ -119,11 +101,7 @@ library Incentives {
                 // been updated to finalNTokenBalance yet so this is the balance before the change.
                 balanceState.storedNTokenBalance.toUint(),
                 finalNTokenBalance,
-                // When the rewarder is called, totalSupply has been updated already so may need to
-                // adjust its calculation using the net supply change figure here. Supply change
-                // may be zero when nTokens are transferred.
-                balanceState.netNTokenSupplyChange,
-                incentivesToClaim
+                priorNTokenSupply
             );
         }
 

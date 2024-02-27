@@ -22,11 +22,11 @@ import {BalanceHandler} from "../../internal/balances/BalanceHandler.sol";
 import {TokenHandler} from "../../internal/balances/TokenHandler.sol";
 import {PortfolioHandler} from "../../internal/portfolio/PortfolioHandler.sol";
 import {PrimeRateLib} from "../../internal/pCash/PrimeRateLib.sol";
+import {PrimeSupplyCap} from "../../internal/pCash/PrimeSupplyCap.sol";
 import {AccountContextHandler} from "../../internal/AccountContextHandler.sol";
 import {NotionalCallback} from "../../../interfaces/notional/NotionalCallback.sol";
 import {DeprecatedAssetRate} from "../../internal/markets/DeprecatedAssetRate.sol";
 
-import {MigrateIncentives} from "../MigrateIncentives.sol";
 import {TradingAction} from "./TradingAction.sol";
 import {ActionGuards} from "./ActionGuards.sol";
 import {nTokenMintAction} from "./nTokenMintAction.sol";
@@ -39,6 +39,7 @@ contract BatchAction is StorageLayoutV1, ActionGuards {
     using PortfolioHandler for PortfolioState;
     using AccountContextHandler for AccountContext;
     using PrimeRateLib for PrimeRate;
+    using PrimeSupplyCap for PrimeRate;
     using TokenHandler for Token;
     using SafeInt256 for int256;
 
@@ -504,10 +505,9 @@ contract BatchAction is StorageLayoutV1, ActionGuards {
     }
 
     /// @notice Get a list of deployed library addresses (sorted by library name)
-    function getLibInfo() external pure returns (address, address, address, address, address, address) {
+    function getLibInfo() external pure returns (address, address, address, address, address) {
         return (
             address(FreeCollateralExternal), 
-            address(MigrateIncentives), 
             address(SettleAssetsExternal), 
             address(TradingAction),
             address(nTokenMintAction), 

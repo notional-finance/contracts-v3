@@ -136,7 +136,7 @@ def ntoken_asserts(environment, currencyId, isFirstInit, accounts, wasInit=True)
     )
 
     (cashGroup, _) = environment.notional.getCashGroupAndAssetRate(currencyId)
-    (primeRate, _, _, _) = environment.notional.getPrimeFactors(currencyId, blockTime + 1)
+    (primeRate, _, _, _, _, _) = environment.notional.getPrimeFactors(currencyId, blockTime + 1)
     (portfolio, ifCashAssets) = environment.notional.getNTokenPortfolio(nTokenAddress)
     (depositShares, leverageThresholds) = environment.notional.getDepositParameters(currencyId)
     (_, proportions) = environment.notional.getInitializationParameters(currencyId)
@@ -397,13 +397,25 @@ def test_redeem_to_zero_fails(environment, accounts):
 
     balance = environment.notional.getAccountBalance(2, accounts[0])
     with brownie.reverts("Cannot redeem"):
-        environment.notional.nTokenRedeem(
-            accounts[0].address, currencyId, balance[1], True, False, {"from": accounts[0]}
+        environment.notional.batchBalanceAction(
+            accounts[0].address, 
+            [
+                get_balance_action(
+                    2, "RedeemNToken", depositActionAmount=balance[1], redeemToUnderlying=True
+                )
+            ],
+            {"from": accounts[0]}
         )
 
     # This can succeed
-    environment.notional.nTokenRedeem(
-        accounts[0].address, currencyId, balance[1] - 1e8, True, False, {"from": accounts[0]}
+    environment.notional.batchBalanceAction(
+        accounts[0].address, 
+        [
+            get_balance_action(
+                2, "RedeemNToken", depositActionAmount=balance[1] - 1e8, redeemToUnderlying=True
+            )
+        ],
+        {"from": accounts[0]}
     )
 
     nTokenAddress = environment.notional.nTokenAddress(currencyId)
@@ -452,8 +464,14 @@ def test_failing_initialize_time(environment, accounts):
         )
 
     with brownie.reverts("Requires settlement"):
-        environment.notional.nTokenRedeem(
-            accounts[0].address, currencyId, 100e8, True, False, {"from": accounts[0]}
+        environment.notional.batchBalanceAction(
+            accounts[0].address, 
+            [
+                get_balance_action(
+                    2, "RedeemNToken", depositActionAmount=1e8, redeemToUnderlying=True
+                )
+            ],
+            {"from": accounts[0]}
         )
 
 def test_floor_rates_at_kink1(environment, accounts):

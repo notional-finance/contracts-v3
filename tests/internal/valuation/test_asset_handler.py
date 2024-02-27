@@ -180,6 +180,20 @@ class TestAssetHandler:
         assert riskPv == -1e9
         assert riskPv < pv
 
+    def test_rounding_debt_value(self, assetLibrary):
+        assetLibrary.setMarket(1, SETTLEMENT_DATE, get_market_state(MARKETS[0], lastImpliedRate=0.001e9, oracleRate=0.001e9))
+        (riskPv, pv) = assetLibrary.getRiskAdjustedPresentValue(
+            1, -1, MARKETS[0], START_TIME
+        )
+        assert riskPv == -1
+        assert pv == -1
+
+        (riskPv, pv) = assetLibrary.getRiskAdjustedPresentValue(
+            1, 1, MARKETS[0], START_TIME
+        )
+        assert riskPv == 0
+        assert pv == 0
+
     def test_oracle_rate_failure(self, assetLibrary):
         assets = [get_fcash_token(1, maturity=MARKETS[5])]
 

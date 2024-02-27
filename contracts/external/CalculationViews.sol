@@ -34,7 +34,6 @@ import {nTokenHandler} from "../internal/nToken/nTokenHandler.sol";
 import {nTokenCalculations} from "../internal/nToken/nTokenCalculations.sol";
 import {AssetHandler} from "../internal/valuation/AssetHandler.sol";
 
-import {MigrateIncentives} from "./MigrateIncentives.sol";
 import {nTokenMintAction} from "./actions/nTokenMintAction.sol";
 import {NotionalCalculations} from "../../interfaces/notional/NotionalCalculations.sol";
 
@@ -71,7 +70,7 @@ contract CalculationViews is StorageLayoutV1, NotionalCalculations {
         nTokenPortfolio memory nToken;
         nToken.loadNTokenPortfolioView(currencyId);
 
-        int256 tokensToMint = nTokenMintAction.calculateTokensToMint(
+        int256 tokensToMint = nTokenCalculations.calculateTokensToMint(
             nToken,
             nToken.cashGroup.primeRate.convertFromUnderlying(amountToDepositInternal),
             block.timestamp
@@ -569,10 +568,5 @@ contract CalculationViews is StorageLayoutV1, NotionalCalculations {
         );
 
         fCashAmount = uint88(absfCash);
-    }
-
-    /// @notice Get a list of deployed library addresses (sorted by library name)
-    function getLibInfo() external pure returns (address) {
-        return (address(MigrateIncentives));
     }
 }

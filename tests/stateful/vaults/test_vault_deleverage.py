@@ -6,7 +6,7 @@ from brownie.network.state import Chain
 from brownie.test import given, strategy
 from fixtures import *
 from tests.constants import PRIME_CASH_VAULT_MATURITY, SECONDS_IN_MONTH, SECONDS_IN_QUARTER 
-from tests.helpers import get_balance_trade_action
+from tests.helpers import borrow_to_debt_cap, get_balance_trade_action
 from tests.internal.vaults.fixtures import get_vault_config, set_flags, get_vault_account, get_vault_state
 from tests.snapshot import EventChecker
 from tests.stateful.invariants import check_system_invariants
@@ -249,7 +249,7 @@ def setup_deleverage_conditions(
             ),
             minAccountBorrowSize=50 * multiple * 1e8,
             # Setting fees causes the snapshot tests to fail on prime vaults
-            feeRate5BPS = 0 if TEST_SNAPSHOT else 2000
+            feeRate5BPS = 0 if TEST_SNAPSHOT else 20
         ),
         100_000_000e8,
     )
@@ -898,5 +898,26 @@ def test_excess_cash_can_settle(environment, accounts, currencyId):
         vaultAccountAfter['tempCashBalance'],
         health['netDebtOutstanding'][0],
         rel=1e-2 if TEST_SNAPSHOT else None
+    )
+    check_system_invariants(environment, accounts, [e['vault']])
+
+@given(isPrime=strategy("bool"))
+def test_liquidator_can_deleverage_above_debt_cap(environment, accounts, isPrime):
+    vaultPrice = 0.955
+    currencyId = 2
+    e = setup_deleverage_conditions(
+        environment, accounts, currencyId, isPrime, False, vaultPrice
+    )
+    borrow_to_debt_cap(environment, currencyId, 1.10)
+
+    # Test that you can deleverage even while above the debt cap
+    depositAmount = e["maxLiquidateDebt"]
+    environment.notional.deleverageAccount(
+        accounts[1],
+        e["vault"].address,
+        accounts[2],
+        0,
+        depositAmount,
+        {"from": accounts[2], "value": depositAmount * 1e10 + 1e10 if currencyId == 1 else 0},
     )
     check_system_invariants(environment, accounts, [e['vault']])

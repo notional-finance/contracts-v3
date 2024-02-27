@@ -1,20 +1,22 @@
 {
+    "aaveLendingPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+    "aavePoolDataProvider": "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654",
     "actions": {
-        "AccountAction": "0xCfC177d5f0F453F07B2978a3e244d9001D9dc6a2",
-        "BatchAction": "0x254364E9E3C4fD1759D71B42F8F09B37fc5ed040",
-        "CalculationViews": "0x75Ef6a0F966BE50A360E42E3e253311686B97Bb9",
-        "ERC1155Action": "0x1f44af0245207e2d78BE1b6aA3AFE74B3E5F60dD",
-        "GovernanceAction": "0xb961506fA33Ff3C5ecC430839c32F0C7C13cb668",
-        "InitializeMarketsAction": "0x4b11797d31547bB742d3d5962a0753429e7Ce3A0",
-        "LiquidateCurrencyAction": "0x3ad8A8C4f53f51CEbbFc4eCb91D5B66AB044247B",
-        "LiquidatefCashAction": "0xD256186ae98C81a3b54B1EF9108f60a263ecD417",
-        "TreasuryAction": "0x0671378727e1aBf3df438d81aD45bC23CBFea9A3",
-        "VaultAccountAction": "0x659aE7031c2FC26f508bdB82792727595EA6F874",
-        "VaultAccountHealth": "0xb6E90dc0484c39303E050CeB7a965bc6943CDEfA",
-        "VaultAction": "0xbFda74061fB4D39602da10Cc4F66dD087e99a638",
-        "VaultLiquidationAction": "0xc9151A12Cbb8E485eD8Ba054A8F2dAC634259C82",
-        "Views": "0xc3f1Ff56673D423eE4C4CaFDbd7f94f0dd8f24D0",
-        "nTokenAction": "0xeb5A4C2964C17D6371578AA5Ea92b8695774eD68"
+        "AccountAction": "0xCeEcaf20c6d5A168Ad4f73180217007B66E3d594",
+        "BatchAction": "0x6470959E7d99c8058E9caCfbe752dFb4bE49BCeC",
+        "CalculationViews": "0x964b086F5F003DFFA5eF36299D4082Df0167dfEa",
+        "ERC1155Action": "0x02232aa71D8E79bd8745102eA668AA9F6C4Be1C1",
+        "GovernanceAction": "0x60e1cFB81A82fDB8420670FC96Bce869DBB70931",
+        "InitializeMarketsAction": "0x160974448363A92Fb7aee45fb9f09c7A2Bbf09EE",
+        "LiquidateCurrencyAction": "0x6fEc33C1fEBa25Df067E6Dec91c846490D07180B",
+        "LiquidatefCashAction": "0xA87A4acF5015eCAD81faa80E860Ef8B225a555F4",
+        "TreasuryAction": "0x65a7D107b93B37C918cA184D16Ef77E80985e887",
+        "VaultAccountAction": "0x6472E6029c3Ff9Dc22c94A7E13f8A8d91E334e27",
+        "VaultAccountHealth": "0xA078Ea7eDA04B832A6631949A417CfC063f71701",
+        "VaultAction": "0x2BB7Db675d66060BE4181D589470b3f787bf7298",
+        "VaultLiquidationAction": "0xC1BD497e6C318124D96f45890Dc11769088564eC",
+        "Views": "0x7Ed9f68f23B819ee59D387511442D946D20628Ac",
+        "nTokenAction": "0x14bFf9f2a16A7AeBef20d6E06c28a6aBa9CD2628"
     },
     "beacons": {
         "PrimeCashProxy": "0x382173438e47b0c1F5dF9928F0e1f301b50Ed669",
@@ -29,21 +31,23 @@
     },
     "chainId": 42161,
     "deployer": "0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3",
+    "gelatoAutomate": "0xB3f5503f93d5Ef84b06993a1975B9D21B962892F",
+    "gelatoBot": "0xF8FA7ca6D40F6cB0BA467aBBc23D2107EaEA7071",
+    "gelatoOpsProxyFactory": "0xC815dB16D4be6ddf2685C201937905aBf338F5D7",
     "guardian": "",
     "libs": {
-        "FreeCollateralExternal": "0xf09915D4B20E5B2B08b3aB18Daf15A5F0703585E",
-        "MigrateIncentives": "0xF3101e69B3D14B611037F47CD169ad60991c64f2",
-        "SettleAssetsExternal": "0x27694d57Ea6DEeB34a7708f2F365F8781E424223",
-        "TradingAction": "0x5030D70175e27e46216Ee48972bC8E2db12bBA6D",
-        "nTokenMintAction": "0x96f440a3F95E11D99F835DC0c2d201425b9C183E",
-        "nTokenRedeemAction": "0x48D7ba5D24a8F5906A7972EA6D1CccFB311C3Da2"
+        "FreeCollateralExternal": "0xE39707d637E5d89B62e2CE504c163a1a06d56a85",
+        "SettleAssetsExternal": "0x2DA67dE6F4f1eF57f996E51f4dBab7fC061928D2",
+        "TradingAction": "0xca92816154389908d4F356940787f48680C9B7c5",
+        "nTokenMintAction": "0x9C618FEc7b02e8b2922625078D8eBBf35641A3CC",
+        "nTokenRedeemAction": "0x34f332cbc830Bb6e1e1de09BF5985B4EB635104b"
     },
     "networkName": "arbitrum-one",
     "note": "0x019bE259BC299F3F653688c7655C87F998Bc7bC1",
     "notional": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
     "routers": {
-        "PauseRouter": "0xb13AC5454a69E07793beB0E1BaDa40082cB8C821",
-        "Router": "0x762F2e0743bce7bb55C622504D88D471B230A84a"
+        "PauseRouter": "0x3A571c167190d42a6aB822823d52b53D9a78Be95",
+        "Router": "0x3438a62736034eD4Ca22f3B1F0764CD17e6C63C5"
     },
     "startBlock": 86540849,
     "tokens": {

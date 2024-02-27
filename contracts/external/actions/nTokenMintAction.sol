@@ -10,7 +10,8 @@ import {
     nTokenPortfolio,
     PortfolioState,
     PortfolioAsset,
-    AssetStorageState
+    AssetStorageState,
+    InterestRateParameters
 } from "../../global/Types.sol";
 import {Constants} from "../../global/Constants.sol";
 import {SafeInt256} from "../../math/SafeInt256.sol";
@@ -90,7 +91,7 @@ library nTokenMintAction {
         nTokenPortfolio memory nToken;
         nToken.loadNTokenPortfolioStateful(currencyId);
 
-        int256 tokensToMint = calculateTokensToMint(nToken, primeCashToDeposit, blockTime);
+        int256 tokensToMint = nTokenCalculations.calculateTokensToMint(nToken, primeCashToDeposit, blockTime);
         require(tokensToMint >= 0, "Invalid token amount");
 
         if (nToken.portfolioState.storedAssets.length == 0) {
@@ -114,42 +115,6 @@ library nTokenMintAction {
         // NOTE: token supply does not change here, it will change after incentives have been claimed
         // during BalanceHandler.finalize
         return tokensToMint;
-    }
-
-    /// @notice Calculates the tokens to mint to the account as a ratio of the nToken
-    /// present value denominated in asset cash terms.
-    /// @return the amount of tokens to mint, the ifCash bitmap
-    function calculateTokensToMint(
-        nTokenPortfolio memory nToken,
-        int256 primeCashToDeposit,
-        uint256 blockTime
-    ) internal view returns (int256) {
-        require(primeCashToDeposit >= 0); // dev: deposit amount negative
-        if (primeCashToDeposit == 0) return 0;
-
-        if (nToken.lastInitializedTime != 0) {
-            // For the sake of simplicity, nTokens cannot be minted if they have assets
-            // that need to be settled. This is only done during market initialization.
-            uint256 nextSettleTime = nToken.getNextSettleTime();
-            // If next settle time <= blockTime then the token can be settled
-            require(nextSettleTime > blockTime, "Requires settlement");
-        }
-
-        int256 primeCashPV = nTokenCalculations.getNTokenPrimePV(nToken, blockTime);
-        // Defensive check to ensure PV remains positive
-        require(primeCashPV >= 0);
-
-        // Allow for the first deposit
-        if (nToken.totalSupply == 0) {
-            return primeCashToDeposit;
-        } else {
-            // primeCashPVPost = primeCashPV + amountToDeposit
-            // (tokenSupply + tokensToMint) / tokenSupply == (primeCashPV + amountToDeposit) / primeCashPV
-            // (tokenSupply + tokensToMint) == (primeCashPV + amountToDeposit) * tokenSupply / primeCashPV
-            // (tokenSupply + tokensToMint) == tokenSupply + (amountToDeposit * tokenSupply) / primeCashPV
-            // tokensToMint == (amountToDeposit * tokenSupply) / primeCashPV
-            return primeCashToDeposit.mul(nToken.totalSupply).div(primeCashPV);
-        }
     }
 
     /// @notice Portions out primeCashDeposit into amounts to deposit into individual markets. When
@@ -219,16 +184,12 @@ library nTokenMintAction {
 
         // Defensive check to ensure that we do not somehow accrue negative residual cash.
         require(residualCash >= 0, "Negative residual cash");
-        // This will occur if the three month market is over levered and we cannot lend into it
         if (residualCash > 0) {
-            // Any remaining residual cash will be put into the nToken balance and added as liquidity on the
-            // next market initialization
-            nToken.cashBalance = nToken.cashBalance.add(residualCash);
-            BalanceHandler.setBalanceStorageForNToken(
-                nToken.tokenAddress,
-                nToken.cashGroup.currencyId,
-                nToken.cashBalance
-            );
+            // Any residual cash is donated to the fee reserve rather than the nToken. Because of
+            // the restrictions inside the deleverage buffer, this residual cash amount will be
+            // only dust balances. Fuzz testing shows that this amount never exceeds 100 units per
+            // market that has been deleveraged.
+            BalanceHandler.incrementFeeToReserve(nToken.cashGroup.currencyId, residualCash);
         }
     }
 
@@ -351,23 +312,62 @@ library nTokenMintAction {
             int256 perMarketDepositUnderlying =
                 cashGroup.primeRate.convertToUnderlying(perMarketDeposit);
             // NOTE: cash * exchangeRate = fCash
-            fCashAmount = perMarketDepositUnderlying.mulInRatePrecision(assumedExchangeRate);
+            int256 fCashAmountAssumed = perMarketDepositUnderlying.mulInRatePrecision(assumedExchangeRate);
+            fCashAmount = _getActualfCashAmount(
+                cashGroup, market, marketIndex, timeToMaturity, perMarketDepositUnderlying
+            );
+
+            // fCash amount actual cannot be negative or zero. Negative would represent something very wrong
+            // since we are lending here. Zero would represent a failed trade.
+            require(0 < fCashAmount, "Deleverage Buffer");
+
+            // If the actual slippage is greater than the DELEVERAGE_BUFFER than we want to revert here to
+            // prevent a massive amount of lending occurring on the nToken. The DELEVERAGE_BUFFER exists to
+            // dampen the valuation swings the nToken will see in a single transaction. fCashAssumed represents
+            // the fCash amount at DELEVERAGE_BUFFER slippage, so this is the the minimum amount of fCash
+            // that we can purchase given the deposit amount.
+            require(fCashAmountAssumed <= fCashAmount, "Deleverage Buffer");
         }
 
         (int256 netPrimeCash, /* */) = market.executeTrade(
             tokenAddress, cashGroup, fCashAmount, timeToMaturity, marketIndex
         );
 
-        // This means that the trade failed
-        if (netPrimeCash == 0) {
-            return (perMarketDeposit, 0);
-        } else {
-            // Ensure that net the per market deposit figure does not drop below zero, this should not be possible
-            // given how we've calculated the exchange rate but extra caution here
-            int256 residual = perMarketDeposit.add(netPrimeCash);
-            require(residual >= 0); // dev: insufficient cash
-            return (residual, fCashAmount);
-        }
+        // This means that the trade failed. We do not allowed failed trades in this method. This should
+        // never occur due to the require statements above, but this is a safety check.
+        require(netPrimeCash < 0);
+
+        // Ensure that net the per market deposit figure does not drop below zero, this should not be possible
+        // given how we've calculated the exchange rate but extra caution here
+        int256 residual = perMarketDeposit.add(netPrimeCash);
+
+        // The residual remaining should never be more than a dust amount due to how the fCashAmount is
+        // calculated above.
+        require(0 <= residual && residual < 500, "Deleverage Buffer");
+        return (residual, fCashAmount);
+    }
+
+    /// @notice Returns the amount of fCash that will be purchased for the given per market deposit, is used
+    /// to reduce the potential of residual cash as a result of lending during deleverage.
+    function _getActualfCashAmount(
+        CashGroupParameters memory cashGroup,
+        MarketParameters memory market,
+        uint256 marketIndex,
+        uint256 timeToMaturity,
+        int256 perMarketDepositUnderlying
+    ) private returns (int256) {
+        InterestRateParameters memory irParams = InterestRateCurve.getActiveInterestRateParameters(
+            cashGroup.currencyId, marketIndex
+        );
+
+        return InterestRateCurve.getfCashGivenCashAmount(
+            irParams,
+            market.totalfCash,
+            // Negative is used for lending, will return a positive fCash amount
+            perMarketDepositUnderlying.neg(),
+            cashGroup.primeRate.convertToUnderlying(market.totalPrimeCash),
+            timeToMaturity
+        );
     }
 
     /// @notice If a nToken incurs a negative fCash residual as a result of lending, this means

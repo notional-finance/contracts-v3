@@ -2,7 +2,7 @@ import json
 
 from brownie import MockERC20, accounts, nTokenERC20Proxy
 from brownie.network.contract import Contract
-from brownie.project import ContractsV2Project
+from brownie.project import ContractsV3Project
 
 with open("scripts/artifacts/nComptroller.json", "r") as a:
     Comptroller = json.load(a)
@@ -13,9 +13,9 @@ with open("scripts/artifacts/nCErc20.json") as a:
 with open("scripts/artifacts/nCEther.json") as a:
     cEther = json.load(a)
 
-NotionalABI = ContractsV2Project._build.get("NotionalProxy")["abi"]
-LendingPoolABI = ContractsV2Project._build.get("ILendingPool")["abi"]
-aTokenABI = ContractsV2Project._build.get("IATokenFull")["abi"]
+NotionalABI = ContractsV3Project._build.get("NotionalProxy")["abi"]
+LendingPoolABI = ContractsV3Project._build.get("ILendingPool")["abi"]
+aTokenABI = ContractsV3Project._build.get("IATokenFull")["abi"]
 
 ETH_ADDRESS = "0x0000000000000000000000000000000000000000"
 

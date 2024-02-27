@@ -163,3 +163,10 @@ class TestExchangeRate:
             assert rate['buffer'] == 150 + (buffer - 150) * 10
 
         assert exchangeRate.convertToETH(rate, -100e8) == -100e8 * rate['buffer'] / 100
+
+    def test_convert_to_eth_rounding(self, exchangeRate):
+        neg1 = exchangeRate.convertToETH((1e18, 0.9e18, 101, 80, 106), -1)
+        assert neg1 == -1
+
+        pos1 = exchangeRate.convertToETH((1e18, 0.9e18, 101, 80, 106), 1)
+        assert pos1 == 0

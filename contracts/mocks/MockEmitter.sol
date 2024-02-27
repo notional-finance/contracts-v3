@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSUL-1.1
-pragma solidity >=0.8.11;
+pragma solidity =0.7.6;
 
 contract MockERC1155Emitter {
     event Transfer(address indexed from, address indexed to, uint256 value);

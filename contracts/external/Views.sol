@@ -21,6 +21,7 @@ import {
     BalanceStorage,
     Deprecated_AssetRateParameters,
     RebalancingContextStorage,
+    RebalancingTargetData,
     TotalfCashDebtStorage
 } from "../global/Types.sol";
 import {SafeUint256} from "../math/SafeUint256.sol";
@@ -38,6 +39,7 @@ import {DeprecatedAssetRate} from "../internal/markets/DeprecatedAssetRate.sol";
 import {nTokenHandler} from "../internal/nToken/nTokenHandler.sol";
 import {nTokenSupply} from "../internal/nToken/nTokenSupply.sol";
 import {PrimeRateLib} from "../internal/pCash/PrimeRateLib.sol";
+import {PrimeSupplyCap} from "../internal/pCash/PrimeSupplyCap.sol";
 import {PrimeCashExchangeRate} from "../internal/pCash/PrimeCashExchangeRate.sol";
 import {TokenHandler} from "../internal/balances/TokenHandler.sol";
 import {BalanceHandler} from "../internal/balances/BalanceHandler.sol";
@@ -47,14 +49,16 @@ import {AccountContextHandler} from "../internal/AccountContextHandler.sol";
 import {Emitter} from "../internal/Emitter.sol";
 
 import {NotionalViews} from "../../interfaces/notional/NotionalViews.sol";
+import {NotionalTreasury} from "../../interfaces/notional/NotionalTreasury.sol";
+import {IPrimeCashHoldingsOracle} from "../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 import {FreeCollateralExternal} from "./FreeCollateralExternal.sol";
-import {MigrateIncentives} from "./MigrateIncentives.sol";
 
 contract Views is StorageLayoutV2, NotionalViews {
     using CashGroup for CashGroupParameters;
     using TokenHandler for Token;
     using Market for MarketParameters;
     using PrimeRateLib for PrimeRate;
+    using PrimeSupplyCap for PrimeRate;
     using SafeInt256 for int256;
     using SafeUint256 for uint256;
     using BalanceHandler for BalanceState;
@@ -165,6 +169,8 @@ contract Views is StorageLayoutV2, NotionalViews {
             currencyId,
             maxMarketIndex
         );
+
+        return (deprecated_annualizedAnchorRates, proportions);
     }
 
     /// @notice Returns nToken deposit parameters for a given currency
@@ -254,10 +260,17 @@ contract Views is StorageLayoutV2, NotionalViews {
         PrimeRate memory pr,
         PrimeCashFactors memory factors,
         uint256 maxUnderlyingSupply,
-        uint256 totalUnderlyingSupply
+        uint256 totalUnderlyingSupply,
+        uint256 maxUnderlyingDebt,
+        uint256 totalUnderlyingDebt
     ) {
         (pr, factors) = PrimeCashExchangeRate.getPrimeCashRateView(currencyId, blockTime);
-        (maxUnderlyingSupply, totalUnderlyingSupply) = pr.getSupplyCap(currencyId);
+        (
+            maxUnderlyingSupply,
+            totalUnderlyingSupply,
+            maxUnderlyingDebt,
+            totalUnderlyingDebt
+        ) = pr.getSupplyCap(currencyId);
     }
 
     function getPrimeFactorsStored(
@@ -418,7 +431,10 @@ contract Views is StorageLayoutV2, NotionalViews {
             uint256 totalSupply,
             uint256 incentiveAnnualEmissionRate,
             uint256 lastInitializedTime,
-            bytes5 nTokenParameters,
+            // NOTE: changing the number of bytes returned by nTokenParameters will not break ABI
+            // decoding since abi encoding is not packed. This method will always return bytes32
+            // and the calling function will truncate that down to the number of bytes specified here.
+            bytes6 nTokenParameters,
             int256 cashBalance,
             uint256 accumulatedNOTEPerNToken,
             uint256 lastAccumulatedTime
@@ -597,14 +613,20 @@ contract Views is StorageLayoutV2, NotionalViews {
         return reserveBuffer[currencyId];
     }
 
-    function getRebalancingTarget(uint16 currencyId, address holding) external view override returns (uint8) {
-        mapping(address => uint8) storage rebalancingTargets = LibStorage.getRebalancingTargets()[currencyId];
-        return rebalancingTargets[holding];
-    }
+    function getRebalancingFactors(uint16 currencyId)
+        external
+        view
+        override
+        returns (address holding, uint8 target, uint16 externalWithdrawThreshold, RebalancingContextStorage memory context)
+    {
+        IPrimeCashHoldingsOracle oracle = PrimeCashExchangeRate.getPrimeCashHoldingsOracle(currencyId);
 
-    function getRebalancingCooldown(uint16 currencyId) external view override returns (uint40) {
-        mapping(uint16 => RebalancingContextStorage) storage store = LibStorage.getRebalancingContext();
-        return store[currencyId].rebalancingCooldownInSeconds;
+        holding = oracle.holdings()[0];
+        context = LibStorage.getRebalancingContext()[currencyId];
+
+        RebalancingTargetData storage rebalancingTargetData = LibStorage.getRebalancingTargets()[currencyId][holding];
+        target = rebalancingTargetData.targetUtilization;
+        externalWithdrawThreshold = rebalancingTargetData.externalWithdrawThreshold;
     }
 
     function getStoredTokenBalances(address[] calldata tokens) external view override returns (uint256[] memory balances) {
@@ -615,7 +637,7 @@ contract Views is StorageLayoutV2, NotionalViews {
         }
     }
 
-    function decodeERC1155Id(uint256 id) external view override returns (
+    function decodeERC1155Id(uint256 id) external pure override returns (
         uint16 currencyId,
         uint256 maturity,
         uint256 assetType,
@@ -637,8 +659,8 @@ contract Views is StorageLayoutV2, NotionalViews {
     }
 
     /// @notice Get a list of deployed library addresses (sorted by library name)
-    function getLibInfo() external pure returns (address, address) {
-        return (address(FreeCollateralExternal), address(MigrateIncentives));
+    function getLibInfo() external pure returns (address) {
+        return (address(FreeCollateralExternal));
     }
 
     fallback() external {

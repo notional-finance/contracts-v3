@@ -26,7 +26,6 @@ import {Incentives} from "../../internal/balances/Incentives.sol";
 import {FreeCollateralExternal} from "../FreeCollateralExternal.sol";
 import {SettleAssetsExternal} from "../SettleAssetsExternal.sol";
 import {ActionGuards} from "./ActionGuards.sol";
-import {MigrateIncentives} from "../MigrateIncentives.sol";
 
 import {nTokenERC20} from "../../../interfaces/notional/nTokenERC20.sol";
 
@@ -323,10 +322,9 @@ contract nTokenAction is StorageLayoutV1, nTokenERC20, ActionGuards {
     }
 
     /// @notice Get a list of deployed library addresses (sorted by library name)
-    function getLibInfo() external pure returns (address, address, address) {
+    function getLibInfo() external pure returns (address, address) {
         return (
             address(FreeCollateralExternal),
-            address(MigrateIncentives),
             address(SettleAssetsExternal)
         );
     }

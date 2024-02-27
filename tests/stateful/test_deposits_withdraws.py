@@ -4,6 +4,7 @@ from brownie.network.state import Chain
 from brownie.test import given, strategy
 from tests.helpers import (
     active_currencies_to_list,
+    borrow_to_debt_cap,
     get_balance_action,
     get_balance_trade_action,
     initialize_environment,
@@ -82,13 +83,6 @@ def test_deposit_eth_underlying(environment, accounts):
     assert balances[2] == 0
 
     check_system_invariants(environment, accounts)
-
-
-def test_deposit_underlying_token_from_other(environment, accounts):
-    with brownie.reverts(dev_revert_msg="dev: unauthorized"):
-        environment.notional.depositUnderlyingToken(
-            accounts[1], 2, 100e18, {"from": accounts[0]}
-        )
 
 
 def test_deposit_asset_token_from_self(environment, accounts):
@@ -310,8 +304,8 @@ def test_withdraw_asset_token_fail_fc(environment, accounts):
 def test_fail_on_deposits_exceeding_supply_cap(environment, accounts):
     currencyId = 2
     factors = environment.notional.getPrimeFactorsStored(currencyId)
-    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 125e8)
-    (_, _, maxUnderlyingSupply, totalUnderlyingSupply) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 125e8, 70)
+    (_, _, maxUnderlyingSupply, totalUnderlyingSupply, _, _) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
     # This is approximately equal
     assert pytest.approx(maxUnderlyingSupply - totalUnderlyingSupply, rel=1e8) == 125e8
 
@@ -319,7 +313,7 @@ def test_fail_on_deposits_exceeding_supply_cap(environment, accounts):
     environment.notional.depositUnderlyingToken(
         accounts[1], currencyId, 50e18, {"from": accounts[1]}
     )
-    (_, _, maxUnderlyingSupply, totalUnderlyingSupply) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+    (_, _, maxUnderlyingSupply, totalUnderlyingSupply, _, _) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
     assert pytest.approx(maxUnderlyingSupply - totalUnderlyingSupply, rel=1e8) == 75e8
 
     # Should fail
@@ -335,8 +329,8 @@ def test_fail_on_deposits_exceeding_supply_cap(environment, accounts):
 
     # increase amount
     factors = environment.notional.getPrimeFactorsStored(currencyId)
-    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 125e8)
-    (_, _, maxUnderlyingSupply, totalUnderlyingSupply) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+    environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 125e8, 100)
+    (_, _, maxUnderlyingSupply, totalUnderlyingSupply, _, _) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
     assert pytest.approx(maxUnderlyingSupply - totalUnderlyingSupply, rel=1e8) == 200e8
 
     # Should succeed
@@ -348,11 +342,20 @@ def test_fail_on_deposits_exceeding_supply_cap(environment, accounts):
     )
 
     # decrease amount
-    environment.notional.setMaxUnderlyingSupply(currencyId, 1e8)
-    (_, _, maxUnderlyingSupply, totalUnderlyingSupply) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+    environment.notional.setMaxUnderlyingSupply(currencyId, 1e8, 100)
+    (_, _, maxUnderlyingSupply, totalUnderlyingSupply, _, _) = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
     assert maxUnderlyingSupply < totalUnderlyingSupply
 
     # Should succeed
     environment.notional.withdraw(currencyId, 150e8, True, {"from": accounts[1]})
+
+    check_system_invariants(environment, accounts)
+
+def test_can_deposit_withdraw_when_debt_cap_exceeded(environment, accounts):
+    borrow_to_debt_cap(environment, 3, 1.10)
+
+    # Ensure that other accounts without debt can deposit and withdraw
+    environment.notional.depositUnderlyingToken(accounts[1], 3, 100e6, {"from": accounts[1]})
+    environment.notional.withdraw(3, 2 ** 88 - 1, True, {"from": accounts[1]})
 
     check_system_invariants(environment, accounts)

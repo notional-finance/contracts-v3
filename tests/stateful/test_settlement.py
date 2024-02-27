@@ -266,21 +266,23 @@ def test_settle_on_withdraw(environment, accounts):
 
     check_system_invariants(environment, accounts)
 
-
 def test_transfer_fcash_requires_settlement(environment, accounts):
     lend = get_balance_trade_action(
         1,
         "DepositUnderlying",
-        [{"tradeActionType": "Lend", "marketIndex": 1, "notional": 1e8, "minSlippage": 0}],
-        depositActionAmount=1e18,
+        [
+            {"tradeActionType": "Lend", "marketIndex": 1, "notional": 1e8, "minSlippage": 0},
+            {"tradeActionType": "Lend", "marketIndex": 2, "notional": 1e8, "minSlippage": 0},
+        ],
+        depositActionAmount=2e18,
     )
 
     environment.notional.enableBitmapCurrency(1, {"from": accounts[0]})
     environment.notional.batchBalanceAndTradeAction(
-        accounts[0], [lend], {"from": accounts[0], "value": 1e18}
+        accounts[0], [lend], {"from": accounts[0], "value": 2e18}
     )
     environment.notional.batchBalanceAndTradeAction(
-        accounts[1], [lend], {"from": accounts[1], "value": 1e18}
+        accounts[1], [lend], {"from": accounts[1], "value": 2e18}
     )
 
     blockTime = chain.time()
@@ -313,5 +315,52 @@ def test_settlement_requires_markets_initialized(environment, accounts):
 
     with brownie.reverts("Must init markets"):
         environment.notional.settleAccount(accounts[1])
+
+    check_system_invariants(environment, accounts)
+
+def test_can_settle_above_supply_and_debt_cap(environment, accounts):
+    account = accounts[1]
+    setup_multiple_asset_settlement(environment, account)
+
+    factors = environment.notional.getPrimeFactors(2, chain.time() + 1)
+    maxSupply = factors['factors']['lastTotalUnderlyingValue'] + 0.1e8
+    environment.notional.setMaxUnderlyingSupply(2, maxSupply, 70)
+    factors = environment.notional.getPrimeFactors(2, chain.time() + 1)
+
+    environment.notional.enablePrimeBorrow(True, {"from": accounts[0]})
+
+    # Can borrow up to debt cap
+    maxPrimeCash = environment.notional.convertUnderlyingToPrimeCash(2, factors['maxUnderlyingDebt'] * 1e10)
+    environment.notional.withdraw(2, maxPrimeCash - 0.1e8, True, {"from": accounts[0]})
+
+    # Put the tokens right up against the debt and supply caps
+    with brownie.reverts("Over Debt Cap"):
+        environment.notional.withdraw(2, 1e8, True, {"from": accounts[0]})
+
+    with brownie.reverts("Over Supply Cap"):
+        environment.notional.depositUnderlyingToken(accounts[1], 2, 1e18, {"from": accounts[1]})
+
+    blockTime = chain.time()
+    chain.mine(1, timestamp=blockTime + SECONDS_IN_QUARTER)
+    environment.notional.initializeMarkets(1, False)
+    environment.notional.initializeMarkets(2, False)
+    environment.notional.initializeMarkets(3, False)
+    settle_all_other_accounts(environment, accounts, None)
+
+    # Ensure that accounts got settled
+    assert len(environment.notional.getAccountPortfolio(accounts[0])) == 0
+    assert len(environment.notional.getAccountPortfolio(accounts[1])) == 0
+
+    # On DAI there is a debt, so both the debt and supply caps increase by the amount settled
+    factors = environment.notional.getPrimeFactors(2, chain.time() + 1)
+    assert factors['totalUnderlyingDebt'] > (factors['maxUnderlyingDebt'] + 150e8)
+    assert factors['totalUnderlyingSupply'] > (factors['maxUnderlyingSupply'] + 150e8)
+
+    # Still cannot lend or borrow over the debt caps
+    with brownie.reverts("Over Debt Cap"):
+        environment.notional.withdraw(2, 1e8, True, {"from": accounts[0]})
+
+    with brownie.reverts("Over Supply Cap"):
+        environment.notional.depositUnderlyingToken(accounts[1], 2, 1e18, {"from": accounts[1]})
 
     check_system_invariants(environment, accounts)

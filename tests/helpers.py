@@ -1,6 +1,7 @@
 import math
 import random
 
+import brownie
 from brownie import (
     UnderlyingHoldingsOracle,
     MockAggregator,
@@ -13,7 +14,7 @@ from brownie.convert import to_bytes, to_uint
 from brownie.convert.datatypes import Wei
 from brownie.network.state import Chain
 from brownie.test import strategy
-from eth_abi.packed import encode_abi_packed
+from eth_abi.packed import encode_packed
 from scripts.config import CurrencyDefaults, nTokenDefaults
 from scripts.deployment import TestEnvironment
 from tests.constants import (
@@ -339,7 +340,7 @@ def get_trade_action(**kwargs):
     tradeActionType = kwargs["tradeActionType"]
 
     if tradeActionType == "Lend":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "uint8", "uint88", "uint32", "uint120"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -350,7 +351,7 @@ def get_trade_action(**kwargs):
             ],
         )
     elif tradeActionType == "Borrow":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "uint8", "uint88", "uint32", "uint120"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -361,7 +362,7 @@ def get_trade_action(**kwargs):
             ],
         )
     elif tradeActionType == "AddLiquidity":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "uint8", "uint88", "uint32", "uint32", "uint88"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -373,7 +374,7 @@ def get_trade_action(**kwargs):
             ],
         )
     elif tradeActionType == "RemoveLiquidity":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "uint8", "uint88", "uint32", "uint32", "uint88"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -385,7 +386,7 @@ def get_trade_action(**kwargs):
             ],
         )
     elif tradeActionType == "PurchaseNTokenResidual":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "uint32", "int88", "uint128"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -395,7 +396,7 @@ def get_trade_action(**kwargs):
             ],
         )
     elif tradeActionType == "SettleCashDebt":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "address", "uint88"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -591,12 +592,9 @@ def setup_residual_environment(
     if not canSellResiduals:
         # Redeem the vast majority of the nTokens
         balance = environment.notional.getAccountBalance(currencyId, accounts[0])
-        environment.notional.nTokenRedeem(
+        environment.notional.batchBalanceAction(
             accounts[0].address,
-            currencyId,
-            math.floor(balance[1] * 0.9),
-            True,
-            True,
+            [ get_balance_action(currencyId, "RedeemNToken", depositActionAmount=math.floor(balance[1] * 0.9), redeemToUnderlying=True)],
             {"from": accounts[0]},
         )
 
@@ -725,3 +723,22 @@ def simulate_init_markets(mock, currencyId, additionalfCash=0):
     # Clear the nToken fCash from total debt
     mock.setTotalfCashDebtOutstanding(currencyId, tref, totalDebt + 100_000e8)
     mock.setMarket(currencyId, tref, market)
+
+def borrow_to_debt_cap(environment, currencyId, supplyBuffer):
+    factors = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+    # Have to buffer the max supply a bit to ensure that interest accrual does not
+    # push this over the cap immediately
+    maxSupply = factors['factors']['lastTotalUnderlyingValue'] * supplyBuffer
+    environment.notional.setMaxUnderlyingSupply(currencyId, maxSupply, 70)
+    factors = environment.notional.getPrimeFactors(currencyId, chain.time() + 1)
+
+    environment.notional.enablePrimeBorrow(True, {"from": accounts[0]})
+
+    # Can borrow up to debt cap
+    maxUnderlying = factors['maxUnderlyingDebt'] - factors['totalUnderlyingDebt']
+    maxUnderlying = math.floor(maxUnderlying / 100) if currencyId == 3 else maxUnderlying * 1e10
+    maxPrimeCash = environment.notional.convertUnderlyingToPrimeCash(currencyId, maxUnderlying)
+    environment.notional.withdraw(currencyId, maxPrimeCash - 1, True, {"from": accounts[0]})
+
+    with brownie.reverts("Over Debt Cap"):
+        environment.notional.withdraw(currencyId, 1e8, True, {"from": accounts[0]})

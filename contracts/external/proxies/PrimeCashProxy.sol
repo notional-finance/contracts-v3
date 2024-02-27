@@ -31,8 +31,7 @@ contract PrimeCashProxy is BaseERC4626Proxy {
         (
             /* */,
             PrimeCashFactors memory factors,
-            /* */,
-            /* */
+            /* */, /* */, /* */, /* */
         ) = NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
 
         return factors.totalPrimeSupply;
@@ -65,8 +64,7 @@ contract PrimeCashProxy is BaseERC4626Proxy {
         (
             PrimeRate memory pr,
             PrimeCashFactors memory factors,
-            /* */,
-            /* */
+            /* */, /* */, /* */, /* */
         ) = NOTIONAL.getPrimeFactors(currencyId, block.timestamp);
 
         totalValueExternal = pr.convertToUnderlying(factors.totalPrimeSupply.toInt())
@@ -75,12 +73,15 @@ contract PrimeCashProxy is BaseERC4626Proxy {
             .div(Constants.INTERNAL_TOKEN_PRECISION).toUint();
     }
 
+    /// @notice pCash is a non-standard ERC4626 in the sense that assets are held on the proxy and may be liquidated
+    /// if there is a debt balance as well
+    /// @dev at this point the contract has the tokens....
     function _mint(uint256 assets, uint256 msgValue, address receiver) internal override returns (uint256 tokensMinted) {
-        revert("Not Implemented");
+        return NOTIONAL.depositUnderlyingToken{value: msgValue}(receiver, currencyId, assets);
     }
 
     function _redeem(uint256 shares, address receiver, address owner) internal override returns (uint256 assets) {
-        revert("Not Implemented");
+        return NOTIONAL.withdrawViaProxy(currencyId, owner, receiver, msg.sender, shares.toUint88());
     }
 
 }

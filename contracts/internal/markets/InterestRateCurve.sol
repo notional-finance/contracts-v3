@@ -379,7 +379,6 @@ library InterestRateCurve {
         int256 totalCashUnderlying = cashGroup.primeRate.convertToUnderlying(market.totalPrimeCash);
 
         // returns the net cash amounts to apply to each of the three relevant balances.
-        // TODO: pass down the post fee interest rate here
         int256 netUnderlyingToAccount;
         int256 netUnderlyingToMarket;
         int256 netUnderlyingToReserve;

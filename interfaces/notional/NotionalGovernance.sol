@@ -8,6 +8,7 @@ import "../../interfaces/chainlink/AggregatorV2V3Interface.sol";
 import "../../interfaces/notional/NotionalGovernance.sol";
 import "../../interfaces/notional/IRewarder.sol";
 import "../../interfaces/aave/ILendingPool.sol";
+import {IPrimeCashHoldingsOracle} from "../../interfaces/notional/IPrimeCashHoldingsOracle.sol";
 
 interface NotionalGovernance {
     event ListCurrency(uint16 newCurrencyId);
@@ -22,7 +23,6 @@ interface NotionalGovernance {
     event UpdateAuthorizedCallbackContract(address operator, bool approved);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event PauseRouterAndGuardianUpdated(address indexed pauseRouter, address indexed pauseGuardian);
-    event UpdateSecondaryIncentiveRewarder(uint16 indexed currencyId, address rewarder);
     event UpdateInterestRateCurve(uint16 indexed currencyId, uint8 indexed marketIndex);
     event UpdateMaxUnderlyingSupply(uint16 indexed currencyId, uint256 maxUnderlyingSupply);
     event PrimeProxyDeployed(uint16 indexed currencyId, address proxy, bool isCashProxy);
@@ -72,7 +72,8 @@ interface NotionalGovernance {
         uint8 pvHaircutPercentage,
         uint8 residualPurchaseTimeBufferHours,
         uint8 cashWithholdingBuffer10BPS,
-        uint8 liquidationHaircutPercentage
+        uint8 liquidationHaircutPercentage,
+        uint8 maxMintDeviationPercentage
     ) external;
 
     function updateCashGroup(uint16 currencyId, CashGroupSettings calldata cashGroup) external;
@@ -85,7 +86,8 @@ interface NotionalGovernance {
 
     function setMaxUnderlyingSupply(
         uint16 currencyId,
-        uint256 maxUnderlyingSupply
+        uint256 maxUnderlyingSupply,
+        uint8 maxPrimeDebtUtilization
     ) external;
 
     function updatePrimeCashHoldingsOracle(

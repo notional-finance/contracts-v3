@@ -15,7 +15,6 @@ import {LiquidateCurrency} from "../../internal/liquidation/LiquidateCurrency.so
 import {LiquidationHelpers} from "../../internal/liquidation/LiquidationHelpers.sol";
 import {ActionGuards} from "./ActionGuards.sol";
 
-import {MigrateIncentives} from "../MigrateIncentives.sol";
 import {FreeCollateralExternal} from "../FreeCollateralExternal.sol";
 
 contract LiquidateCurrencyAction is ActionGuards {
@@ -358,7 +357,7 @@ contract LiquidateCurrencyAction is ActionGuards {
     }
 
     /// @notice Get a list of deployed library addresses (sorted by library name)
-    function getLibInfo() external pure returns (address, address) {
-        return (address(FreeCollateralExternal), address(MigrateIncentives));
+    function getLibInfo() external pure returns (address) {
+        return (address(FreeCollateralExternal));
     }
 }

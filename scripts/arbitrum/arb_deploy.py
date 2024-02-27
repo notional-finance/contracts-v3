@@ -1,6 +1,6 @@
 from brownie import ZERO_ADDRESS, Contract, accounts, UnderlyingHoldingsOracle, ChainlinkAdapter, EmptyProxy, nProxy, UpgradeableBeacon, nTokenERC20Proxy, PrimeCashProxy, PrimeDebtProxy, interface
 from brownie.network import Chain
-from scripts.arbitrum.arb_config import ListedOrder, ListedTokens
+from scripts.arbitrum.arb_config import ChainlinkOracles, ListedOrder, ListedTokens
 from scripts.common import TokenType
 from scripts.deployment import deployNotionalContracts
 from tests.helpers import get_balance_action
@@ -75,6 +75,21 @@ def _deploy_chainlink_oracle(symbol, deployer):
             token['invertBase'],
             token['invertQuote'],
             "Notional {} Chainlink Adapter".format(symbol),
+            token['sequencerUptimeOracle'],
+            {"from": deployer}
+        )
+
+def deploy_chainlink_usd_oracle(symbol, deployer):
+    token = ListedTokens[symbol]
+    if symbol == "ETH":
+        return ZERO_ADDRESS
+    else:
+        return ChainlinkAdapter.deploy(
+            ChainlinkOracles["rETH/ETH"],
+            ChainlinkOracles["ETH/USD"],
+            False,
+            True,
+            "Notional rETH/USD Chainlink Adapter".format(symbol),
             token['sequencerUptimeOracle'],
             {"from": deployer}
         )
