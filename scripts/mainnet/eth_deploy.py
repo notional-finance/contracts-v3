@@ -70,26 +70,25 @@ def main():
     notional = Contract.from_abi("notional", "0x6e7058c91F85E0F6db4fc9da2CA41241f5e4263f", interface.NotionalProxy.abi)
     # set_beacons(notional, beaconDeployer, nTokenBeacon, pCashBeacon, pDebtBeacon, deployer)
 
-    id = 1
-    for c in ListedOrder:
-        # token = ListedTokens[c]
+    listTokens = ListedOrder[4:]
+    for c in listTokens:
+        token = ListedTokens[c]
         # if c != "ETH":
         #     erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
         #     erc20.transfer(fundingAccount, 10 ** erc20.decimals(), {"from": WHALES[c]})
         list_currency(c, notional, deployer, fundingAccount, ListedTokens)
-        check_trading_module_oracle(c, ListedTokens, isFork)
+        currencyId = token["currencyId"]
         try:
-            nToken = MockERC20.at(notional.nTokenAddress(id))
+            nToken = MockERC20.at(notional.nTokenAddress(currencyId))
             print("nToken: ", nToken.symbol(), nToken.name())
         except:
             pass
-        pCash = MockERC20.at(notional.pCashAddress(id))
+        pCash = MockERC20.at(notional.pCashAddress(currencyId))
         print("pCash: ", pCash.symbol(), pCash.name())
-        pDebt = MockERC20.at(notional.pDebtAddress(id))
+        pDebt = MockERC20.at(notional.pDebtAddress(currencyId))
         print("pCash: ", pDebt.symbol(), pDebt.name())
-        id += 1
 
-    initialize_markets(notional, fundingAccount, ListedOrder, ListedTokens)
+    initialize_markets(notional, fundingAccount, listTokens, ListedTokens)
 
     # Deployer needs to transfer ownership to the owner
     # notional.transferOwnership(OWNER, False, {"from": deployer})

@@ -118,7 +118,7 @@ def list_currency(notional, symbol, tradingModule, config):
 
 def check_trading_module_oracle(symbol, config, isFork):
     (addresses, notional, _, _, _) = get_addresses()
-    tradingModule = Contract.from_abi("trading", addresses["trading"]["module"], interface.ITradingModule.abi)
+    tradingModule = Contract.from_abi("trading", addresses["tradingModule"], interface.ITradingModule.abi)
     token = config[symbol]
     tokenAddress = token['address']
     (oracle, _) = tradingModule.priceOracles(tokenAddress)
@@ -145,7 +145,7 @@ def main(ListedTokens, listTokens):
     deployer = accounts.at("0x8F5ea3CDe898B208280c0e93F3aDaaf1F5c35a7e", force=True)
     # deployer = accounts.load(networkName.upper() + "_DEPLOYER")
     print("DEPLOYER ADDRESS", deployer.address)
-    tradingModule = Contract.from_abi("trading", addresses["trading"]["module"], interface.ITradingModule.abi)
+    tradingModule = Contract.from_abi("trading", addresses["tradingModule"], interface.ITradingModule.abi)
 
     for t in listTokens:
         donate_initial(t, notional, fundingAccount)

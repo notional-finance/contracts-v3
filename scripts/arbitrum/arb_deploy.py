@@ -212,22 +212,23 @@ def _list_currency(symbol, notional, deployer, pCashOracle, ethOracle, fundingAc
 def initialize_markets(notional, fundingAccount, order, config):
     actions = []
     initMarkets = []
-    for (i, symbol) in enumerate(order):
+    for symbol in order:
         token = config[symbol]
+        currencyId = token["currencyId"]
         if symbol == 'ETH':
             actions.append(
-                get_balance_action(i + 1, "DepositUnderlyingAndMintNToken", depositActionAmount=0.5e18)
+                get_balance_action(currencyId, "DepositUnderlyingAndMintNToken", depositActionAmount=0.5e18)
             )
-            initMarkets.append(i + 1)
+            initMarkets.append(currencyId)
         elif "fCashCurves" in token:
             erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
             # Donate the initial balance
             balance = erc20.balanceOf(fundingAccount)
             erc20.approve(notional.address, 2 ** 256 - 1, {"from": fundingAccount})
             actions.append(
-                get_balance_action(i + 1, "DepositUnderlyingAndMintNToken", depositActionAmount=balance)
+                get_balance_action(currencyId, "DepositUnderlyingAndMintNToken", depositActionAmount=balance)
             )
-            initMarkets.append(i + 1)
+            initMarkets.append(currencyId)
 
     notional.batchBalanceAction(fundingAccount, actions, {"from": fundingAccount, "value": 0.5e18})
     calldata = [

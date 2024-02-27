@@ -13,6 +13,7 @@ ChainlinkOracles = {
     "USDT/USD": "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
     "cbETH/ETH": "0xF017fcB346A1885194689bA23Eff2fE6fA5C483b",
     "ETH/DAI": "0x6085b0a8f4c7ffa2e8ca578037792d6535d1e29b", # Existing Chainlink Adapter
+    "wstETH/USD": "0x8770d8dEb4Bc923bf929cd260280B5F1dd69564D" # Notional Adapter
 }
 
 CurrencyDefaults = {
@@ -119,9 +120,11 @@ Stablecoin_Curve = {
  
 ListedTokens = {
     "ETH": CurrencyDefaults | {
+        "currencyId": 1,
         "address": ZERO_ADDRESS,
         "name": "Ether",
         "decimals": 18,
+        "usdOracle": ChainlinkOracles["ETH/USD"],
 
         "buffer": 120,
         "haircut": 87,
@@ -166,10 +169,12 @@ ListedTokens = {
         "leverageThreshold": [0.84e9, 0.84e9],
     },
     "DAI": CurrencyDefaults | Stablecoin_Curve | {
+        "currencyId": 2,
         "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         "name": "Dai Stablecoin",
         "decimals": 18,
         "ethOracle": "0x6085b0a8f4c7ffa2e8ca578037792d6535d1e29b",
+        "usdOracle": ChainlinkOracles["DAI/USD"],
 
         "buffer": 109,
         "haircut": 92,
@@ -177,10 +182,12 @@ ListedTokens = {
         "maxUnderlyingSupply": 10_000e8,
     },
     "USDC": CurrencyDefaults | Stablecoin_Curve | {
+        "currencyId": 3,
         "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         "name": "USD Coin",
         "decimals": 6,
         "ethOracle": "0x68225f47813af66f186b3714ffe6a91850bc76b4",
+        "usdOracle": ChainlinkOracles["USDC/USD"],
 
         "buffer": 109,
         "haircut": 92,
@@ -188,11 +195,14 @@ ListedTokens = {
         "maxUnderlyingSupply": 10_000e8,
     },
     "WBTC": PrimeOnlyDefaults | {
+        "currencyId": 4,
         "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
         "name": "Wrapped BTC",
         "decimals": 8,
         # Wrapped BTC / BTC / ETH Oracle
         "ethOracle": "0xf9dd33af680d707efdec21332f249ae28cc13727",
+        # Need to deploy WBTC / USD oracle
+        "usdOracle": "",
 
         "buffer": 120,
         "haircut": 84,
@@ -213,6 +223,7 @@ ListedTokens = {
         },
     },
     "wstETH": CurrencyDefaults | LST_Curve | {
+        "currencyId": 5,
         "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
         "name": "Wrapped Liquid Staked Ether",
         "decimals": 18,
@@ -221,6 +232,7 @@ ListedTokens = {
         "baseOracle": ChainlinkOracles["stETH/ETH"],
         "invertBase": False,
         "invertQuote": False,
+        "usdOracle": ChainlinkOracles["wstETH/USD"],
 
         "buffer": 120,
         "haircut": 83,
@@ -228,6 +240,7 @@ ListedTokens = {
         "maxUnderlyingSupply": 10e8,
     },
     "FRAX": CurrencyDefaults | Stablecoin_Curve | {
+        "currencyId": 6,
         "address": "0x853d955aCEf822Db058eb8505911ED77F175b99e",
         "name": "Frax",
         "decimals": 18,
@@ -235,6 +248,7 @@ ListedTokens = {
         "quoteOracle": ChainlinkOracles["ETH/USD"],
         "invertBase": False,
         "invertQuote": False,
+        "usdOracle": ChainlinkOracles["FRAX/USD"],
 
         "buffer": 109,
         "haircut": 80,
@@ -242,10 +256,12 @@ ListedTokens = {
         "maxUnderlyingSupply": 10_000e8,
     },
     "rETH": CurrencyDefaults | LST_Curve | {
+        "currencyId": 7,
         "address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
         "name": "Rocket Pool ETH",
         "decimals": 18,
         "ethOracle": ChainlinkOracles["rETH/ETH"],
+        "usdOracle": "",
 
         "buffer": 120,
         "haircut": 83,
@@ -253,6 +269,7 @@ ListedTokens = {
         "maxUnderlyingSupply": 10e8,
     },
     "USDT": CurrencyDefaults | Stablecoin_Curve | {
+        "currencyId": 8,
         "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         "name": "Tether USD",
         "decimals": 6,
@@ -260,6 +277,7 @@ ListedTokens = {
         "quoteOracle": ChainlinkOracles["ETH/USD"],
         "invertBase": False,
         "invertQuote": False,
+        "usdOracle": ChainlinkOracles["USDT/USD"],
 
         "buffer": 109,
         "haircut": 85,
@@ -267,10 +285,12 @@ ListedTokens = {
         "maxUnderlyingSupply": 10_000e8,
     },
     'cbETH': CurrencyDefaults | LST_Curve | {
+        "currencyId": 9,
         "address": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
         "name": "Coinbase Wrapped Staked ETH",
         "decimals": 18,
         "ethOracle": ChainlinkOracles["cbETH/ETH"],
+        "usdOracle": "",
 
         "buffer": 120,
         "haircut": 83,
@@ -278,6 +298,7 @@ ListedTokens = {
         "maxUnderlyingSupply": 10e8,
     },
     'sDAI': PrimeOnlyDefaults | {
+        "currencyId": 10,
         "address": "0x83F20F44975D03b1b09e64809B757c47f942BEeA",
         "name": "Savings Dai",
         "decimals": 18,
@@ -287,6 +308,7 @@ ListedTokens = {
         "quoteOracle": "0x83F20F44975D03b1b09e64809B757c47f942BEeA",
         "invertBase": False,
         "invertQuote": False,
+        "usdOracle": "",
 
         # Prime Cash Curve
         "primeCashCurve": {

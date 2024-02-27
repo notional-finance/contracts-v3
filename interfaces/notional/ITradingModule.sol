@@ -53,6 +53,8 @@ interface ITradingModule {
     event MaxOracleFreshnessUpdated(uint32 currentValue, uint32 newValue);
     event TokenPermissionsUpdated(address sender, address token, TokenPermissions permissions);
 
+    function priceOracles(address token) external view returns (address oracle, uint8 rateDecimals);
+
     function getExecutionData(uint16 dexId, address from, Trade calldata trade)
         external view returns (
             address spender,
