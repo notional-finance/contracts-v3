@@ -88,14 +88,17 @@ abstract contract InvariantsSecondaryRewarder is SecondaryRewarderSetupTest {
     }
 
     function _redeem(address account, uint256 amount) internal {
+        uint256 totalSupply = IERC20(NTOKEN).totalSupply();
         uint256 maxAmount = IERC20(NTOKEN).balanceOf(account);
+        if (totalSupply < maxAmount * 3) {
+            maxAmount = totalSupply / 3;
+        }
         // if min is less "Insufficient free collateral" error is thrown for DAI-ARB pair
-        uint256 minAmount = 4;
+        uint256 minAmount = 1e6;
         if (maxAmount < minAmount) return;
         amount = bound(amount, minAmount, maxAmount);
 
         vm.prank(account);
-        // TODO: this will fail on an error "Residuals" if the amount is too large.
         NOTIONAL.nTokenRedeem(account, CURRENCY_ID, uint96(amount));
     }
 

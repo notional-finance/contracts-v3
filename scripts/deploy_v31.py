@@ -75,7 +75,7 @@ def main():
   # ETH
   log_rebalance(ethHoldingsOracle, 1e18)
   # Set a cap on the deposits
-  ethHoldingsOracle.setMaxExternalAvailable(1e18, {"from": notional.owner()})
+  ethHoldingsOracle.setMaxAbsoluteDeposit(1e18, {"from": notional.owner()})
 
   notional.updatePrimeCashHoldingsOracle(1, ethHoldingsOracle, {"from": notional.owner()})
   notional.setRebalancingCooldown(1, 360, {"from": notional.owner()})
