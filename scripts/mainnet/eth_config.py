@@ -13,7 +13,13 @@ ChainlinkOracles = {
     "USDT/USD": "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
     "cbETH/ETH": "0xF017fcB346A1885194689bA23Eff2fE6fA5C483b",
     "ETH/DAI": "0x6085b0a8f4c7ffa2e8ca578037792d6535d1e29b", # Existing Chainlink Adapter
-    "wstETH/USD": "0x8770d8dEb4Bc923bf929cd260280B5F1dd69564D" # Notional Adapter
+    "wstETH/USD": "0x8770d8dEb4Bc923bf929cd260280B5F1dd69564D", # Notional Adapter
+    "crvUSD/USD": "0xEEf0C605546958c1f899b6fB336C20671f9cD49F",
+    "pyUSD/USD": "0x8f1dF6D7F2db73eECE86a18b4381F4707b918FB1",
+    "GHO/USD": "0x3f12643D3f6f874d39C2a4c9f2Cd6f2DbAC877FC",
+    "weETH/USD": "0xdDb6F90fFb4d3257dd666b69178e5B3c5Bf41136", # Redstone
+    "osETH/ETH": "0x66ac817f997Efd114EDFcccdce99F3268557B32C", # Redstone
+    "osETH/USD": "" # TODO: need to deploy an oracle here
 }
 
 CurrencyDefaults = {
