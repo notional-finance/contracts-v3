@@ -14,7 +14,7 @@ from brownie import (
 from brownie.network import Chain
 from scripts.arbitrum.arb_config import ListedOrder, ListedTokens
 from scripts.common import TokenType
-from scripts.deployers.deploy_oracle import deploy_chainlink_oracle
+from scripts.deployers.oracle_deployer import deploy_chainlink_oracle
 from scripts.deployment import deployNotionalContracts
 from tests.helpers import get_balance_action
 

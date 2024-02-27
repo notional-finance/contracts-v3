@@ -1,7 +1,7 @@
 from brownie import ZERO_ADDRESS, Contract, accounts, interface
 from scripts.arbitrum.arb_deploy import _deploy_pcash_oracle, _to_interest_rate_curve
 from scripts.common import TokenType
-from scripts.deployers.deploy_oracle import deploy_chainlink_oracle
+from scripts.deployers.oracle_deployer import deploy_chainlink_oracle
 from scripts.inspect import get_addresses
 import json
 from tests.helpers import get_balance_action

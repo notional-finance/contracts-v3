@@ -33,16 +33,15 @@ abstract contract FlashLiquidatorBase is BaseLiquidator, IFlashLoanReceiver {
         NotionalProxy notional_,
         address lendingPool_,
         address weth_,
-        IWstETH wstETH_,
         address owner_,
-        address tradingModule_,
-        bool unwrapStETH_
-    ) BaseLiquidator(notional_, weth_, wstETH_, owner_, unwrapStETH_) {
+        address tradingModule_
+    ) BaseLiquidator(notional_, weth_, owner_) {
         LENDING_POOL = lendingPool_;
         TRADING_MODULE = ITradingModule(tradingModule_);
     }
 
     function _enableCurrency(uint16 currencyId) internal override returns (address) {
+        // Enables currency on notional first
         address underlying = super._enableCurrency(currencyId);
 
         if (underlying == Constants.ETH_ADDRESS) {

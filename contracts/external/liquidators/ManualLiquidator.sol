@@ -26,19 +26,15 @@ contract ManualLiquidator is FlashLiquidatorBase, AccessControl, Initializable {
         NotionalProxy notional_,
         address lendingPool_,
         address weth_,
-        IWstETH wstETH_,
         address note_,
-        address tradingModule_,
-        bool unwrapStETH_
+        address tradingModule_
     )
         FlashLiquidatorBase(
             notional_,
             lendingPool_,
             weth_,
-            wstETH_,
             address(0),
-            tradingModule_,
-            unwrapStETH_
+            tradingModule_
         )
         initializer
     {

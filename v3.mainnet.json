@@ -30,9 +30,15 @@
         "SettleAssetsExternal": "0xe10836BA543Be91e978fC9b455BF483572a44B21",
         "TradingAction": "0xCAc9c01d1207e5D06bB0fD5b854832F35FE97E68"
     },
+    "tokens": {
+        "WETH": {
+            "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        }
+    },
     "networkName": "mainnet",
     "note": "0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5",
     "notional": "0x6e7058c91F85E0F6db4fc9da2CA41241f5e4263f",
+    "aaveLendingPool": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
     "routers": {
     },
     "startBlock": 0

@@ -16,9 +16,6 @@ def deployNotional(deployer, networkName, dryRun, isFork):
     
     return notional
 
-def deployLiquidator(deployer, networkName, dryRun, isFork):
-    pass
-
 def main(dryRun="LFG"):
     networkName = network.show_active()
     isFork = False

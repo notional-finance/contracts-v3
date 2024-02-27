@@ -1,5 +1,5 @@
 from brownie import ZERO_ADDRESS, accounts
-from scripts.deployers.deploy_oracle import deploy_chainlink_usd_oracle
+from scripts.deployers.oracle_deployer import deploy_chainlink_usd_oracle
 from scripts.mainnet.eth_config import ChainlinkOracles, ListedTokens
 
 DEPLOYER = "0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3"

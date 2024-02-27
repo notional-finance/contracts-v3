@@ -24,19 +24,15 @@ contract FlashLiquidator is FlashLiquidatorBase {
         NotionalProxy notional_,
         address lendingPool_,
         address weth_,
-        IWstETH wstETH_,
         address owner_,
-        address tradingModule_,
-        bool unwrapStETH_
+        address tradingModule_
     )
         FlashLiquidatorBase(
             notional_,
             lendingPool_,
             weth_,
-            wstETH_,
             owner_,
-            tradingModule_,
-            unwrapStETH_
+            tradingModule_
         )
     {}
 

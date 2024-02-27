@@ -5,7 +5,6 @@ pragma abicoder v2;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
 import {Trade} from "../../../interfaces/notional/ITradingModule.sol";
-import {IWstETH} from "../../../interfaces/IWstETH.sol";
 import {Token} from "../../global/Types.sol";
 import {Constants} from "../../global/Constants.sol";
 import {LiquidatorStorageLayoutV1} from "./LiquidatorStorageLayoutV1.sol";
@@ -74,12 +73,8 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
     using SafeInt256 for int256;
     using SafeUint256 for uint256;
 
-    uint256 internal constant WSTETH_CURRENCY_ID = 5;
-    
     NotionalProxy public immutable NOTIONAL;
     WETH9 public immutable WETH;
-    IWstETH public immutable wstETH;
-    bool internal immutable UNWRAP_WSTETH;
 
     modifier onlyOwner() {
         require(owner == msg.sender, "Ownable: caller is not the owner");
@@ -89,15 +84,11 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
     constructor(
         NotionalProxy notional_,
         address weth_,
-        IWstETH wstETH_,
-        address owner_,
-        bool unwrapStETH_
+        address owner_
     ) {
         NOTIONAL = notional_;
         WETH = WETH9(weth_);
-        wstETH = wstETH_;
         owner = owner_;
-        UNWRAP_WSTETH = unwrapStETH_;
     }
 
     function checkAllowanceOrSet(address erc20, address spender) internal {
@@ -200,11 +191,6 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
         // Redeem nTokens
         _redeemAndWithdraw(liquidation.collateralCurrency, uint96(collateralNTokens), true);
 
-        if (UNWRAP_WSTETH && liquidation.collateralCurrency == WSTETH_CURRENCY_ID) {
-            // Unwrap to stETH for tradding
-            _unwrapStakedETH();
-        }
-
         // Will withdraw all cash balance, no need to redeem local currency, it will be
         // redeemed later
         if (action.hasTransferFee) _redeemAndWithdraw(liquidation.localCurrency, 0, true);
@@ -305,9 +291,5 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
 
     function _wrapToWETH() internal {
         WETH9(WETH).deposit{value: address(this).balance}();
-    }
-
-    function _unwrapStakedETH() internal {
-        wstETH.unwrap(wstETH.balanceOf(address(this)));
     }
 }
