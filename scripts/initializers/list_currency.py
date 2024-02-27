@@ -1,6 +1,7 @@
 from brownie import ZERO_ADDRESS, Contract, accounts, interface
-from scripts.arbitrum.arb_deploy import _deploy_chainlink_oracle, _deploy_pcash_oracle, _to_interest_rate_curve
+from scripts.arbitrum.arb_deploy import _deploy_pcash_oracle, _to_interest_rate_curve
 from scripts.common import TokenType
+from scripts.deployers.deploy_oracle import deploy_chainlink_oracle
 from scripts.inspect import get_addresses
 import json
 from tests.helpers import get_balance_action
@@ -157,7 +158,7 @@ def main(ListedTokens, listTokens):
         if "baseOracle" in ListedTokens[t] and ListedTokens[t]["ethOracle"] == "":
             # These contracts are verified automatically on Arbiscan
             print("DEPLOYING ETH ORACLE FOR: ", t)
-            ethOracle = _deploy_chainlink_oracle(t, deployer)
+            ethOracle = deploy_chainlink_oracle(t, deployer, ListedTokens[t])
             ListedTokens[t]["ethOracle"] = ethOracle.address
 
     batchBase = {

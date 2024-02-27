@@ -95,6 +95,15 @@ def main():
     for (i, symbol) in enumerate(ListedOrder):
         rates = [ m[5] / 1e9 for m in notional.getActiveMarkets(i + 1) ]
         print("Market Rates for {}: {}".format(symbol, rates))
+        exchangeRate = notional.getCurrencyAndRates(i + 1)['ethRate']['rate'] / 1e18
+        print("Exchange Rate for {}: {}".format(symbol, exchangeRate))
+        factors = notional.getPrimeFactors(i + 1, chain.time())
+        print("Prime Factors {}: {} / {}".format(
+            symbol,
+            factors['totalUnderlyingSupply'] / 1e8,
+            factors['maxUnderlyingSupply'] / 1e8
+        ))
+        
     
     print("Gas Costs")
     # gas_used("Beacon Deployer", beaconDeployer)
