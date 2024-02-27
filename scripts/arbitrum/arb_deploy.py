@@ -3,20 +3,18 @@ from brownie import (
     ZERO_ADDRESS,
     Contract, accounts,
     UnderlyingHoldingsOracle,
-    ChainlinkAdapter,
     EmptyProxy,
     nProxy,
     UpgradeableBeacon,
     nTokenERC20Proxy,
     PrimeCashProxy,
     PrimeDebtProxy,
-    ERC4626OracleAdapter,
-    wstETHOracleAdapter,
     interface
 )
 from brownie.network import Chain
-from scripts.arbitrum.arb_config import ChainlinkOracles, ListedOrder, ListedTokens
+from scripts.arbitrum.arb_config import ListedOrder, ListedTokens
 from scripts.common import TokenType
+from scripts.deployers.deploy_oracle import deploy_chainlink_oracle
 from scripts.deployment import deployNotionalContracts
 from tests.helpers import get_balance_action
 
@@ -69,47 +67,12 @@ def deploy_beacons(deployer, emptyProxy):
 
 def list_currency(symbol, notional, deployer, fundingAccount, config):
     pCashOracle = _deploy_pcash_oracle(symbol, notional, deployer, config)
-    ethOracle = _deploy_chainlink_oracle(symbol, deployer, config)
+    ethOracle = deploy_chainlink_oracle(symbol, deployer, config)
     _list_currency(symbol, notional, deployer, pCashOracle, ethOracle, fundingAccount, config)
 
 def _deploy_pcash_oracle(symbol, notional, deployer, config):
     token = config[symbol]
     return UnderlyingHoldingsOracle.deploy(notional.address, token['address'], {"from": deployer})
-
-def _deploy_chainlink_oracle(symbol, deployer, config):
-    token = config[symbol]
-    if symbol == "ETH":
-        return ZERO_ADDRESS
-    elif "ethOracle" in token and token["ethOracle"]:
-        return ChainlinkAdapter.at(token["ethOracle"])
-    elif "oracleType" in token and token["oracleType"] == "ERC4626":
-        return ERC4626OracleAdapter.deploy(
-            token['baseOracle'],
-            token['quoteOracle'],
-            token['invertBase'],
-            token['invertQuote'],
-            "Notional {} Chainlink Adapter".format(symbol),
-            token['sequencerUptimeOracle'],
-            {"from": deployer}
-        )
-    elif "oracleType" in token and token["oracleType"] == "wstETH":
-        return wstETHOracleAdapter.deploy(
-            token['baseOracle'],
-            token['invertBase'],
-            token['invertQuote'],
-            "Notional {} Chainlink Adapter".format(symbol),
-            {"from": deployer}
-        )
-    else:
-        return ChainlinkAdapter.deploy(
-            token['baseOracle'],
-            token['quoteOracle'],
-            token['invertBase'],
-            token['invertQuote'],
-            "Notional {} Chainlink Adapter".format(symbol),
-            token['sequencerUptimeOracle'],
-            {"from": deployer}
-        )
 
 def _to_interest_rate_curve(params):
     return (

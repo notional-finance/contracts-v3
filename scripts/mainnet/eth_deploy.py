@@ -35,11 +35,9 @@ def main():
         networkName = "mainnet"
         isFork = True
         deployer = accounts.at(DEPLOYER, force=True)
-        beaconDeployer = accounts.at(BEACON_DEPLOYER, force=True)
     elif networkName == "mainnet":
         isFork = False
         deployer = accounts.load("MAINNET_DEPLOYER")
-        beaconDeployer = accounts.load("BEACON_DEPLOYER")
 
     fundingAccount = deployer
 

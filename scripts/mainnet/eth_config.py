@@ -130,6 +130,7 @@ ListedTokens = {
         "address": ZERO_ADDRESS,
         "name": "Ether",
         "decimals": 18,
+        "ethOracle": ZERO_ADDRESS,
         "usdOracle": ChainlinkOracles["ETH/USD"],
 
         "buffer": 120,
@@ -208,7 +209,14 @@ ListedTokens = {
         # Wrapped BTC / BTC / ETH Oracle
         "ethOracle": "0xf9dd33af680d707efdec21332f249ae28cc13727",
         # Need to deploy WBTC / USD oracle
-        "usdOracle": "",
+        "usdOracle": {
+            "oracleType": "ChainlinkAdapter",
+            "baseOracle": ChainlinkOracles["WBTC/BTC"],
+            "quoteOracle": ChainlinkOracles["BTC/USD"],
+            "invertBase": False,
+            "invertQuote": True,
+            "sequencerUptimeOracle": ZERO_ADDRESS
+        },
 
         "buffer": 120,
         "haircut": 84,
@@ -267,7 +275,14 @@ ListedTokens = {
         "name": "Rocket Pool ETH",
         "decimals": 18,
         "ethOracle": ChainlinkOracles["rETH/ETH"],
-        "usdOracle": "",
+        "usdOracle": {
+            "oracleType": "ChainlinkAdapter",
+            "baseOracle": ChainlinkOracles["rETH/ETH"],
+            "quoteOracle": ChainlinkOracles["ETH/USD"],
+            "invertBase": False,
+            "invertQuote": True,
+            "sequencerUptimeOracle": ZERO_ADDRESS
+        },
 
         "buffer": 120,
         "haircut": 83,
