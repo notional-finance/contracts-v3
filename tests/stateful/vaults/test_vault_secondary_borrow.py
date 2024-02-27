@@ -74,7 +74,7 @@ def enter_vault(multiCurrencyVault, environment, account, isPrime):
         maturity,
         100_000e8,
         0,
-        eth_abi.encode_abi(["uint256[2]"], [[Wei(10e8), 0]]),
+        eth_abi.encode(["uint256[2]"], [[Wei(10e8), 0]]),
         {"from": account}
     )
 
@@ -121,7 +121,7 @@ def test_increase_multi_currency_vault_position(accounts, multiCurrencyVault, en
                 maturity,
                 1_000e8,
                 0,
-                eth_abi.encode_abi(["uint256[2]"], [[0, 0]]),
+                eth_abi.encode(["uint256[2]"], [[0, 0]]),
                 {"from": accounts[1]}
             )
             e['txn'] = txn
@@ -141,7 +141,7 @@ def test_increase_multi_currency_vault_position(accounts, multiCurrencyVault, en
                 maturity,
                 0,
                 0,
-                eth_abi.encode_abi(["uint256[2]"], [[Wei(4.8e8), 0]]),
+                eth_abi.encode(["uint256[2]"], [[Wei(4.8e8), 0]]),
                 {"from": accounts[1]}
             )
             vaultAccount = environment.notional.getVaultAccount(accounts[1], multiCurrencyVault)
@@ -201,7 +201,7 @@ def test_vault_exit_types(accounts, multiCurrencyVault, environment, exitType, i
             vaultSharesExit,
             daiRepaid,
             0,
-            eth_abi.encode_abi(['uint256[2]','int256[3]'], [[ethRepaid, 0], [daiTraded, 0, 0]]),
+            eth_abi.encode(['uint256[2]','int256[3]'], [[ethRepaid, 0], [daiTraded, 0, 0]]),
             {"from": accounts[1]}
         )
         e['txn'] = txn
@@ -279,7 +279,7 @@ def test_vault_exit_at_zero_interest(accounts, multiCurrencyVault, environment):
             vaultAccountBefore['vaultShares'],
             -vaultAccountBefore['accountDebtUnderlying'],
             0,
-            eth_abi.encode_abi(['uint256[2]','int256[3]'], [[Wei(10e8), 0], [0, 0, 0]]),
+            eth_abi.encode(['uint256[2]','int256[3]'], [[Wei(10e8), 0], [0, 0, 0]]),
             {"from": accounts[1]}
         )
 
@@ -307,7 +307,7 @@ def test_roll_position(accounts, multiCurrencyVault, environment, isPrime, rollT
             105_000e8,
             maturity,
             10_000e18, 0, 0,
-            eth_abi.encode_abi(['uint256[2]'], [[Wei(1e8), 0]]),
+            eth_abi.encode(['uint256[2]'], [[Wei(1e8), 0]]),
             {"from": accounts[1]}
         )
 
@@ -318,7 +318,7 @@ def test_roll_position(accounts, multiCurrencyVault, environment, isPrime, rollT
             105_000e8,
             maturity,
             10_000e18, 0, 0,
-            eth_abi.encode_abi(['uint256[2]'], [[Wei(11e8), 0]]),
+            eth_abi.encode(['uint256[2]'], [[Wei(11e8), 0]]),
             {"from": accounts[1]}
         )
         e['txn'] = txn
@@ -638,7 +638,7 @@ def test_liquidated_can_enter(accounts, multiCurrencyVault, environment, currenc
             vaultAccountBefore["maturity"],
             10_000e8,
             0,
-            eth_abi.encode_abi(["uint256[2]"], [[Wei(3e8), 0]]),
+            eth_abi.encode(["uint256[2]"], [[Wei(3e8), 0]]),
             { "from": accounts[1] },
         )
 
@@ -672,7 +672,7 @@ def test_liquidated_can_exit(accounts, multiCurrencyVault, environment, currency
             vaultAccountBefore["vaultShares"],
             -vaultAccountBefore["accountDebtUnderlying"],
             0,
-            eth_abi.encode_abi(['uint256[2]','int256[3]'], [[Wei(10e8), 0], [0, 0, 0]]),
+            eth_abi.encode(['uint256[2]','int256[3]'], [[Wei(10e8), 0], [0, 0, 0]]),
             {"from": accounts[1]},
         )
 
@@ -698,7 +698,7 @@ def test_liquidated_can_roll(accounts, multiCurrencyVault, environment, currency
             multiCurrencyVault,
             100_000e8,
             PRIME_CASH_VAULT_MATURITY,
-            0, 0, 0, eth_abi.encode_abi(['uint256[2]'], [[Wei(3e8) if currencyIndex == 1 else Wei(10e8), 0]]),
+            0, 0, 0, eth_abi.encode(['uint256[2]'], [[Wei(3e8) if currencyIndex == 1 else Wei(10e8), 0]]),
             {"from": accounts[1]},
         )
     poolBalancesAfter = multiCurrencyVault.getPoolBalances()
@@ -771,7 +771,7 @@ def test_borrow_secondary_currency_fails_over_max_capacity(environment, accounts
             maturity,
             100_000e8,
             0,
-            eth_abi.encode_abi(["uint256[2]"], [[Wei(6e8), 0]]),
+            eth_abi.encode(["uint256[2]"], [[Wei(6e8), 0]]),
             { "from": accounts[1] },
         )
 
@@ -883,7 +883,7 @@ def test_enforce_min_borrow_on_liquidation(accounts, MultiBorrowStrategyVault, e
         PRIME_CASH_VAULT_MATURITY,
         100_000e8,
         0,
-        eth_abi.encode_abi(["uint256[2]"], [[Wei(10e8), Wei(100e8)]]),
+        eth_abi.encode(["uint256[2]"], [[Wei(10e8), Wei(100e8)]]),
         {"from": accounts[1]}
     )
     ethDAIOracle.setAnswer(0.0004e18, {"from": accounts[0]})

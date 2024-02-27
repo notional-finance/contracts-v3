@@ -38,11 +38,6 @@ def test_cannot_deposit_invalid_currency_id(environment, accounts):
             accounts[0], currencyId, 100e6, {"from": accounts[0]}
         )
 
-    with brownie.reverts():
-        environment.notional.depositAssetToken(
-            accounts[0], currencyId, 100e8, {"from": accounts[0]}
-        )
-
 
 def test_deposit_underlying_token_from_self(environment, accounts):
     currencyId = 2
@@ -79,28 +74,6 @@ def test_deposit_eth_underlying(environment, accounts):
 
     balances = environment.notional.getAccountBalance(1, accounts[1])
     assert environment.approxInternal("ETH", balances[0], 100e8)
-    assert balances[1] == 0
-    assert balances[2] == 0
-
-    check_system_invariants(environment, accounts)
-
-
-def test_deposit_asset_token_from_self(environment, accounts):
-    currencyId = 2
-    environment.cToken["DAI"].transfer(accounts[1], 5000e8, {"from": accounts[0]})
-    environment.cToken["DAI"].approve(environment.notional.address, 2 ** 255, {"from": accounts[1]})
-    with EventChecker(environment, "Account Action", account=accounts[1]) as c:
-        txn = environment.notional.depositAssetToken(
-            accounts[1], currencyId, 5000e8, {"from": accounts[1]}
-        )
-        c['txn'] = txn
-
-    context = environment.notional.getAccountContext(accounts[1])
-    activeCurrenciesList = active_currencies_to_list(context[4])
-    assert activeCurrenciesList == [(currencyId, False, True)]
-
-    balances = environment.notional.getAccountBalance(currencyId, accounts[1])
-    assert environment.approxInternal("DAI", balances[0], 100e8)
     assert balances[1] == 0
     assert balances[2] == 0
 
@@ -165,7 +138,7 @@ def test_withdraw_and_redeem_token_pass_fc(environment, accounts):
     currencyId = 2
     environment.cToken["DAI"].transfer(accounts[1], 100e8, {"from": accounts[0]})
     environment.cToken["DAI"].approve(environment.notional.address, 2 ** 255, {"from": accounts[1]})
-    environment.notional.depositAssetToken(accounts[1], currencyId, 5000e8, {"from": accounts[1]})
+    environment.notional.depositUnderlyingToken(accounts[1], currencyId, 100e18, {"from": accounts[1]})
     cTokenBalanceBefore = environment.cToken["DAI"].balanceOf(accounts[1], {"from": accounts[0]})
 
     balanceBefore = environment.token["DAI"].balanceOf(accounts[1], {"from": accounts[0]})
@@ -322,11 +295,6 @@ def test_fail_on_deposits_exceeding_supply_cap(environment, accounts):
             accounts[1], currencyId, 200e18, {"from": accounts[1]}
         )
 
-    with brownie.reverts("Over Supply Cap"):
-        environment.notional.depositAssetToken(
-            accounts[1], currencyId, 5000e8, {"from": accounts[1]}
-        )
-
     # increase amount
     factors = environment.notional.getPrimeFactorsStored(currencyId)
     environment.notional.setMaxUnderlyingSupply(currencyId, factors['lastTotalUnderlyingValue'] + 125e8, 100)
@@ -335,10 +303,7 @@ def test_fail_on_deposits_exceeding_supply_cap(environment, accounts):
 
     # Should succeed
     environment.notional.depositUnderlyingToken(
-        accounts[1], currencyId, 50e18, {"from": accounts[1]}
-    )
-    environment.notional.depositAssetToken(
-        accounts[1], currencyId, 2500e8, {"from": accounts[1]}
+        accounts[1], currencyId, 100e18, {"from": accounts[1]}
     )
 
     # decrease amount
