@@ -5,8 +5,6 @@ pragma abicoder v2;
 import "../internal/balances/Incentives.sol";
 import "../internal/nToken/nTokenHandler.sol";
 import "../internal/nToken/nTokenSupply.sol";
-import "../external/MigrateIncentives.sol";
-import "../external/patchfix/MigrateIncentivesFix.sol";
 import "../global/LibStorage.sol";
 
 contract MockIncentives {
@@ -116,10 +114,6 @@ contract MockIncentives {
         uint256 finalNTokenBalance
     ) external returns (uint256 incentivesToClaim) {
         return Incentives.claimIncentives(balanceState, account, finalNTokenBalance);
-    }
-
-    function migrateNToken(uint16 currencyId, uint256 blockTime) external {
-        MigrateIncentivesLib._migrateIncentives(currencyId, blockTime);
     }
 
     function setSecondaryRewarder(uint16 currencyId, IRewarder rewarder) external {

@@ -14,7 +14,7 @@ from brownie.convert import to_bytes, to_uint
 from brownie.convert.datatypes import Wei
 from brownie.network.state import Chain
 from brownie.test import strategy
-from eth_abi.packed import encode_abi_packed
+from eth_abi.packed import encode_packed
 from scripts.config import CurrencyDefaults, nTokenDefaults
 from scripts.deployment import TestEnvironment
 from tests.constants import (
@@ -340,7 +340,7 @@ def get_trade_action(**kwargs):
     tradeActionType = kwargs["tradeActionType"]
 
     if tradeActionType == "Lend":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "uint8", "uint88", "uint32", "uint120"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -351,7 +351,7 @@ def get_trade_action(**kwargs):
             ],
         )
     elif tradeActionType == "Borrow":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "uint8", "uint88", "uint32", "uint120"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -362,7 +362,7 @@ def get_trade_action(**kwargs):
             ],
         )
     elif tradeActionType == "AddLiquidity":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "uint8", "uint88", "uint32", "uint32", "uint88"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -374,7 +374,7 @@ def get_trade_action(**kwargs):
             ],
         )
     elif tradeActionType == "RemoveLiquidity":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "uint8", "uint88", "uint32", "uint32", "uint88"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -386,7 +386,7 @@ def get_trade_action(**kwargs):
             ],
         )
     elif tradeActionType == "PurchaseNTokenResidual":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "uint32", "int88", "uint128"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
@@ -396,7 +396,7 @@ def get_trade_action(**kwargs):
             ],
         )
     elif tradeActionType == "SettleCashDebt":
-        return encode_abi_packed(
+        return encode_packed(
             ["uint8", "address", "uint88"],
             [
                 TRADE_ACTION_TYPE[tradeActionType],
