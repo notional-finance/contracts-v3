@@ -3,6 +3,7 @@ pragma solidity =0.7.6;
 pragma abicoder v2;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
 import {Trade} from "../../../interfaces/notional/ITradingModule.sol";
 import {Token} from "../../global/Types.sol";
@@ -72,6 +73,7 @@ enum LiquidationType {
 abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
     using SafeInt256 for int256;
     using SafeUint256 for uint256;
+    using SafeERC20 for IERC20;
 
     NotionalProxy public immutable NOTIONAL;
     WETH9 public immutable WETH;
@@ -93,7 +95,7 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
 
     function checkAllowanceOrSet(address erc20, address spender) internal {
         if (IERC20(erc20).allowance(address(this), spender) < 2**128) {
-            IERC20(erc20).approve(spender, type(uint256).max);
+            IERC20(erc20).safeApprove(spender, type(uint256).max);
         }
     }
 
@@ -105,8 +107,8 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
 
     function approveTokens(address[] calldata tokens, address spender) external onlyOwner {
         for (uint256 i; i < tokens.length; i++) {
-            IERC20(tokens[i]).approve(spender, 0);
-            IERC20(tokens[i]).approve(spender, type(uint256).max);
+            IERC20(tokens[i]).safeApprove(spender, 0);
+            IERC20(tokens[i]).safeApprove(spender, type(uint256).max);
         }
     }
 
