@@ -13,24 +13,25 @@ def main():
     (addresses, notional, *_) = get_addresses()
     deployer = accounts.load("MAINNET_DEPLOYER")
 
-    liquidator = FlashLiquidator.deploy(
-        notional.address,
-        addresses["aaveLendingPool"],
-        addresses["tokens"]["WETH"]["address"],
-        deployer,
-        addresses["tradingModule"],
-        {"from": deployer},
-    )
+    # liquidator = FlashLiquidator.deploy(
+    #     notional.address,
+    #     addresses["aaveLendingPool"],
+    #     addresses["tokens"]["WETH"]["address"],
+    #     deployer,
+    #     addresses["tradingModule"],
+    #     {"from": deployer, "gas_price": "60 gwei"},
+    # )
+    liquidator = FlashLiquidator.at("0x9BFc1ca64E8065514fED89c85AA0E98161F64395")
 
     maxCurrencyId = notional.getMaxCurrencyId()
     tradingModule = Contract.from_abi(
         "trading", addresses["tradingModule"], interface.ITradingModule.abi
     )
-    liquidator.enableCurrencies([i for i in range(1, maxCurrencyId + 1)], {"from": deployer})
+    liquidator.enableCurrencies([i for i in range(1, maxCurrencyId + 1)], {"from": deployer, "gasPrice": "60 gwei"})
 
     batchBase = {
         "version": "1.0",
-        "chainId": "42161",
+        "chainId": "1",
         "createdAt": 1692567274357,
         "meta": {"name": "Transactions Batch", "description": "", "txBuilderVersion": "1.16.1"},
         "transactions": [],
