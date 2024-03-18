@@ -23,6 +23,12 @@ def get_router_args(router):
         router.VAULT_ACCOUNT_HEALTH(),
     ]
 
+def get_multicall():
+    multicall_abi = json.load(open("abi/Multicall3.json"))
+    return Contract.from_abi(
+        "Multicall", "0xcA11bde05977b3631167028862bE2a173976CA11", multicall_abi
+    )
+
 def get_addresses():
     networkName = network.show_active()
     if networkName == "mainnet-fork" or networkName == "mainnet-current":
@@ -39,8 +45,9 @@ def get_addresses():
     notional = Contract.from_abi("Notional", addresses["notional"], abi=interface.NotionalProxy.abi)
     note = NoteERC20.at(addresses["note"])
     router = Contract.from_abi("Router", addresses["notional"], abi=Router.abi)
+    multicall = get_multicall()
 
-    return (addresses, notional, note, router, networkName)
+    return (addresses, notional, note, router, networkName, multicall)
 
 def main():
-    (addresses, notional, note, router, networkName) = get_addresses()
+    (addresses, notional, note, router, networkName, multicall) = get_addresses()
