@@ -66,7 +66,9 @@ library nTokenCalculations {
                 .divInRatePrecision(nTokenOracleValue);
             require(deviationInRP <= maxValueDeviationRP, "Over Deviation Limit");
 
-            int256 nTokenValueForMinting = SafeInt256.min(nTokenOracleValue, nTokenSpotValue);
+            // Use the larger PV when minting nTokens to ensure that the minting is at the lower price
+            // of the two values.
+            int256 nTokenValueForMinting = SafeInt256.max(nTokenOracleValue, nTokenSpotValue);
 
             // nTokenSpotValuePost = nTokenOracleValue + amountToDeposit
             // (tokenSupply + tokensToMint) / tokenSupply == (nTokenSpotValue + amountToDeposit) / nTokenOracleValue
