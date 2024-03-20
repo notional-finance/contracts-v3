@@ -66,12 +66,14 @@ library nTokenCalculations {
                 .divInRatePrecision(nTokenOracleValue);
             require(deviationInRP <= maxValueDeviationRP, "Over Deviation Limit");
 
+            int256 nTokenValueForMinting = SafeInt256.min(nTokenOracleValue, nTokenSpotValue);
+
             // nTokenSpotValuePost = nTokenOracleValue + amountToDeposit
             // (tokenSupply + tokensToMint) / tokenSupply == (nTokenSpotValue + amountToDeposit) / nTokenOracleValue
             // (tokenSupply + tokensToMint) == (nTokenSpotValue + amountToDeposit) * tokenSupply / nTokenOracleValue
             // (tokenSupply + tokensToMint) == tokenSupply + (amountToDeposit * tokenSupply) / nTokenSpotValue
             // tokensToMint == (amountToDeposit * tokenSupply) / nTokenSpotValue
-            return primeCashToDeposit.mul(nToken.totalSupply).div(nTokenSpotValue);
+            return primeCashToDeposit.mul(nToken.totalSupply).div(nTokenValueForMinting);
         }
     }
 
