@@ -43,7 +43,7 @@
     "notional": "0x6e7058c91F85E0F6db4fc9da2CA41241f5e4263f",
     "routers": {
         "PauseRouter": "0x8470516910062633bBF959f940232F9d300eF0f6",
-        "Router": "0x42c74C3d5D0Cc020627dc7074A40A83636F6fb23"
+        "Router": "0x3da72a5D6FA2a46585F01A09Bc6E2EE1481ee555"
     },
     "startBlock": 0,
     "tokens": {

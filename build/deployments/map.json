@@ -48,6 +48,7 @@
       "0x9BFc1ca64E8065514fED89c85AA0E98161F64395"
     ],
     "FreeCollateralExternal": [
+      "0xeA7aa69DbEEA9deB4294109BD344F69c79c6FDF7",
       "0xE39707d637E5d89B62e2CE504c163a1a06d56a85"
     ],
     "GovernanceAction": [
@@ -135,6 +136,7 @@
       "0x366d5b255D97C5fee2283561Bd89fCe5566b178F"
     ],
     "Router": [
+      "0x3da72a5D6FA2a46585F01A09Bc6E2EE1481ee555",
       "0x42c74C3d5D0Cc020627dc7074A40A83636F6fb23",
       "0xfEbC565a1C8C70dBbDC11F0E6Ad8cc33B6F3Dd1B",
       "0x878C46978AC67E43d9d27e510f98e087E9940B12",
@@ -146,9 +148,11 @@
       "0x16eD130F7A6dcAc7e3B0617A7bafa4b470189962"
     ],
     "SettleAssetsExternal": [
+      "0xe10836BA543Be91e978fC9b455BF483572a44B21",
       "0x2DA67dE6F4f1eF57f996E51f4dBab7fC061928D2"
     ],
     "TradingAction": [
+      "0xCAc9c01d1207e5D06bB0fD5b854832F35FE97E68",
       "0xca92816154389908d4F356940787f48680C9B7c5"
     ],
     "TreasuryAction": [
@@ -227,9 +231,11 @@
       "0x0Ace2DC3995aCD739aE5e0599E71A5524b93b886"
     ],
     "nTokenMintAction": [
+      "0x380cDF83748249C14A575673325aba9BD7e1FF55",
       "0x0DA580405B03764EB10435E10E506574ffDC6eCb"
     ],
     "nTokenRedeemAction": [
+      "0xcE3F1D83CEcee26b1D4a7010123b86cED67a48d4",
       "0x34f332cbc830Bb6e1e1de09BF5985B4EB635104b"
     ],
     "wstETHOracleAdapter": [
