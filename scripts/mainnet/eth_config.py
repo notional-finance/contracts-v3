@@ -328,7 +328,7 @@ ListedTokens = {
         # This is the sDAI token address, it is used as its own oracle
         "quoteOracle": "0x83F20F44975D03b1b09e64809B757c47f942BEeA",
         "invertBase": False,
-        "invertQuote": False,
+        "invertQuote": True,
         "usdOracle": "",
 
         # Prime Cash Curve
