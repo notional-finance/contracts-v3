@@ -19,7 +19,8 @@ ChainlinkOracles = {
     "GHO/USD": "0x3f12643D3f6f874d39C2a4c9f2Cd6f2DbAC877FC",
     "weETH/USD": "0xdDb6F90fFb4d3257dd666b69178e5B3c5Bf41136", # Redstone
     "osETH/ETH": "0x66ac817f997Efd114EDFcccdce99F3268557B32C", # Redstone
-    "osETH/USD": "" # TODO: need to deploy an oracle here
+    "osETH/USD": "0x3d3d7d124B0B80674730e0D31004790559209DEb",
+    "ezETH/ETH": "0xF4a3e183F59D2599ee3DF213ff78b1B3b1923696" # Redstone
 }
 
 CurrencyDefaults = {
