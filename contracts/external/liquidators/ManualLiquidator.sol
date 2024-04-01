@@ -3,6 +3,7 @@ pragma solidity =0.7.6;
 pragma abicoder v2;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/Initializable.sol";
@@ -15,6 +16,7 @@ import {SafeInt256} from "../../math/SafeInt256.sol";
 contract ManualLiquidator is FlashLiquidatorBase, AccessControl, Initializable {
     using SafeInt256 for int256;
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant USER_ROLE = keccak256("USER_ROLE");
@@ -189,7 +191,7 @@ contract ManualLiquidator is FlashLiquidatorBase, AccessControl, Initializable {
     }
 
     function withdrawToOwner(address token, uint256 amount) external ownerOrUser {
-        IERC20(token).transfer(owner, amount);
+        IERC20(token).safeTransfer(owner, amount);
     }
 
     function _redeemAndWithdraw(

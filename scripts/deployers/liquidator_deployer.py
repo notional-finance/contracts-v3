@@ -13,15 +13,14 @@ def main():
     (addresses, notional, *_) = get_addresses()
     deployer = accounts.load("MAINNET_DEPLOYER")
 
-    # liquidator = FlashLiquidator.deploy(
-    #     notional.address,
-    #     addresses["aaveLendingPool"],
-    #     addresses["tokens"]["WETH"]["address"],
-    #     deployer,
-    #     addresses["tradingModule"],
-    #     {"from": deployer, "gas_price": "60 gwei"},
-    # )
-    liquidator = FlashLiquidator.at("0x9BFc1ca64E8065514fED89c85AA0E98161F64395")
+    liquidator = FlashLiquidator.deploy(
+        notional.address,
+        addresses["aaveLendingPool"],
+        addresses["tokens"]["WETH"]["address"],
+        deployer,
+        addresses["tradingModule"],
+        {"from": deployer},
+    )
 
     maxCurrencyId = notional.getMaxCurrencyId()
     tradingModule = Contract.from_abi(
@@ -37,6 +36,17 @@ def main():
         "transactions": [],
     }
     approvals = []
+    approvals.append(
+        {
+            "to": tradingModule.address,
+            "value": "0",
+            "data": tradingModule.setTokenPermissions.encode_input(
+                liquidator, addresses['tokens']['WETH']['address'], (True, 8, 15)
+            ),
+            "contractMethod": {"inputs": [], "name": "fallback", "payable": True},
+            "contractInputsValues": None,
+        }
+    )
     for i in range(1, maxCurrencyId + 1):
         underlying = notional.getCurrency(i)["underlyingToken"]["tokenAddress"]
         approvals.append(

@@ -3,6 +3,7 @@ pragma solidity =0.7.6;
 pragma abicoder v2;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {
     BaseLiquidator, 
@@ -25,6 +26,7 @@ abstract contract FlashLiquidatorBase is BaseLiquidator, IFlashLoanReceiver {
     using SafeInt256 for int256;
     using SafeMath for uint256;
     using TradeHandler for Trade;
+    using SafeERC20 for IERC20;
 
     address public immutable LENDING_POOL;
     ITradingModule public immutable TRADING_MODULE;
@@ -140,7 +142,7 @@ abstract contract FlashLiquidatorBase is BaseLiquidator, IFlashLoanReceiver {
         // Transfer profit to OWNER
         uint256 bal = IERC20(currency).balanceOf(address(this));
         if (bal > threshold) {
-            IERC20(currency).transfer(owner, bal.sub(threshold));
+            IERC20(currency).safeTransfer(owner, bal.sub(threshold));
         }
     }
 
