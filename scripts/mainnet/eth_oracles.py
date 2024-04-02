@@ -13,6 +13,15 @@ ezETH_USD = {
     'sequencerUptimeOracle': ZERO_ADDRESS
 }
 
+weETH_USD = {
+    'oracleType': 'ChainlinkAdapter',
+    'baseOracle': ChainlinkOracles['weETH/ETH'],
+    'quoteOracle': ChainlinkOracles['ETH/USD'],
+    'invertBase': False,
+    'invertQuote': True,
+    'sequencerUptimeOracle': ZERO_ADDRESS
+}
+
 def main():
     deployer = accounts.load("MAINNET_DEPLOYER")
     # wbtc = deploy_chainlink_usd_oracle("WBTC", deployer, ListedTokens["WBTC"]["usdOracle"])
@@ -30,3 +39,4 @@ def main():
     #     },
     # )
     ezETH = deploy_chainlink_usd_oracle("ezETH", deployer, ezETH_USD)
+    weETH = deploy_chainlink_usd_oracle("weETH", deployer, weETH_USD)
