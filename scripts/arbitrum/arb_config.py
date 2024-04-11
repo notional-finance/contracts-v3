@@ -16,7 +16,9 @@ ChainlinkOracles = {
     "RDNT/USD": "0x20d0fcab0ecfd078b036b6caf1fac69a6453b352",
     "LINK/USD": "0x86e53cf1b870786351da77a57575e79cb55812cb",
     "UNI/USD": "0x9c917083fdb403ab5adbec26ee294f6ecada2720",
-    "LDO/USD": "0xa43a34030088e6510feccfb77e88ee5e7ed0fe64"
+    "LDO/USD": "0xa43a34030088e6510feccfb77e88ee5e7ed0fe64",
+    "ezETH/ETH": "0x11E1836bFF2ce9d6A5bec9cA79dc998210f3886d",
+    "weETH/ETH": "0xE141425bc1594b8039De6390db1cDaf4397EA22b"
 }
 
 CurrencyDefaults = {

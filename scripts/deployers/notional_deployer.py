@@ -102,6 +102,9 @@ class NotionalDeployer:
     def _deployLib(self, deployer, contract):
         if contract._name in self.libs:
             print("{} deployed at {}".format(contract._name, self.libs[contract._name]))
+            # Adds the lib into the state in case it does not exist yet, prevents a lib not found
+            # error in brownie
+            contract.at(self.libs[contract._name])
             return
 
         # Make sure isLib is set to true
@@ -130,19 +133,7 @@ class NotionalDeployer:
         if self.dryRun:
             print("Will deploy action contract {}".format(contract._name))
         else:
-            # Brownie and Hardhat do not compile to the same bytecode for this contract, during mainnet
-            # deployment. Therefore, when we deploy to production we actually deploy the artifact generated
-            # by the hardhat deployment here.
-            if contract._name == "GovernanceAction":
-                deployed = deployArtifact(
-                    "./artifacts/contracts/external/actions/GovernanceAction.sol/GovernanceAction.json",
-                    [],
-                    deployer.deployer,
-                    "Governance"
-                )
-            else:
-                deployed = deployer.deploy(contract, args, "", True)
-
+            deployed = deployer.deploy(contract, args, "", True)
             self.actions[contract._name] = deployed.address
             self._save()
             self.verify(contract, deployed, [] if args is None else args)

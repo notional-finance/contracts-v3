@@ -122,12 +122,6 @@ interface NotionalProxy is
         uint256 amountExternalPrecision
     ) external payable returns (uint256);
 
-    function depositAssetToken(
-        address account,
-        uint16 currencyId,
-        uint256 amountExternalPrecision
-    ) external returns (uint256);
-
     function withdraw(
         uint16 currencyId,
         uint88 amountInternalPrecision,

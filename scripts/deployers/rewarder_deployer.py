@@ -4,7 +4,7 @@ from itertools import chain
 from brownie import SecondaryRewarder, accounts, MockERC20
 from scripts.inspect import get_addresses
 
-END_TIME = 1709596800 # March 5
+END_TIME = 1711728000 # March 18
 ARB = '0x912CE59144191C1204E64559FE8253a0e49E6548'
 REWARDERS = {
     "ETH": "0x3987F211d4BA25B6FF163B56051651bF6c6c5e54",
@@ -82,14 +82,14 @@ def main():
     # assert MockERC20.at(eth.NTOKEN_ADDRESS()).symbol() == 'nETH'
     # assert eth.emissionRatePerYear() == 0
 
-    txns.append(transfer_and_set('ETH',    1, 12_000e18, 624_000e8, notional))
-    txns.append(transfer_and_set('DAI',    2,  5_000e18, 260_000e8, notional))
-    txns.append(transfer_and_set('USDC',   3, 12_000e18, 624_000e8, notional))
-    txns.append(transfer_and_set('WBTC',   4,  1_000e18,   52_000e8, notional))
-    txns.append(transfer_and_set('wstETH', 5,  5_000e18,  260_000e8, notional))
-    txns.append(transfer_and_set('FRAX',   6,  5_000e18,  301_288e8, notional))
-    txns.append(transfer_and_set('rETH',   7,  5_000e18,  260_000e8, notional))
-    txns.append(transfer_and_set('USDT',   8,  5_000e18,  260_000e8, notional))
+    txns.append(transfer_and_set('ETH',    1, 12_655e18, 723_840e8, notional))
+    txns.append(transfer_and_set('DAI',    2,  5_265e18, 301_600e8, notional))
+    txns.append(transfer_and_set('USDC',   3, 12_655e18, 723_840e8, notional))
+    txns.append(transfer_and_set('WBTC',   4,  1_045e18,  60_320e8, notional))
+    txns.append(transfer_and_set('wstETH', 5,  5_265e18, 301_600e8, notional))
+    txns.append(transfer_and_set('FRAX',   6,  5_265e18, 347_360e8, notional))
+    txns.append(transfer_and_set('rETH',   7,  5_265e18, 301_600e8, notional))
+    txns.append(transfer_and_set('USDT',   8,  5_265e18, 301_600e8, notional))
     # txns.append(transfer_and_set('cbETH', 9, 0e18, 0, notional))
     
     flattened_list = list(chain.from_iterable(map(lambda x: x, txns)))

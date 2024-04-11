@@ -1,7 +1,20 @@
-from brownie import ZERO_ADDRESS, Contract, accounts, UnderlyingHoldingsOracle, ChainlinkAdapter, EmptyProxy, nProxy, UpgradeableBeacon, nTokenERC20Proxy, PrimeCashProxy, PrimeDebtProxy, interface
+import json
+from brownie import (
+    ZERO_ADDRESS,
+    Contract, accounts,
+    UnderlyingHoldingsOracle,
+    EmptyProxy,
+    nProxy,
+    UpgradeableBeacon,
+    nTokenERC20Proxy,
+    PrimeCashProxy,
+    PrimeDebtProxy,
+    interface
+)
 from brownie.network import Chain
-from scripts.arbitrum.arb_config import ChainlinkOracles, ListedOrder, ListedTokens
+from scripts.arbitrum.arb_config import ListedOrder, ListedTokens
 from scripts.common import TokenType
+from scripts.deployers.oracle_deployer import deploy_chainlink_oracle
 from scripts.deployment import deployNotionalContracts
 from tests.helpers import get_balance_action
 
@@ -47,52 +60,19 @@ def deploy_beacons(deployer, emptyProxy):
     assert pCashBeacon.address == "0x1F681977aF5392d9Ca5572FB394BC4D12939A6A9"
     pDebtBeacon = UpgradeableBeacon.deploy(emptyProxy, {"from": deployer})
     assert pDebtBeacon.address == "0xDF08039c0af34E34660aC7c2705C0Da953247640"
+    wfCashBeacon = UpgradeableBeacon.deploy(emptyProxy, {"from": deployer})
+    assert wfCashBeacon.address == "0xEBe1BF1653d55d31F6ED38B1A4CcFE2A92338f66"
 
-    # Nonce 103 and 104
-    # https://etherscan.io/tx/0x947d60c781254637c5b9e774d8910a1187a31de606b3d3a515b6981662536fd2I
-    # https://etherscan.io/tx/0x54c63544f562fd997d81fec94bc2189977b996e2ada8e3839e635aea513a6291
-    # wfCashBeacon = UpgradeableBeacon.deploy(impl, {"from": deployer})
+    return ( nTokenBeacon, pCashBeacon, pDebtBeacon, wfCashBeacon )
 
-    return ( nTokenBeacon, pCashBeacon, pDebtBeacon )
+def list_currency(symbol, notional, deployer, fundingAccount, config):
+    pCashOracle = _deploy_pcash_oracle(symbol, notional, deployer, config)
+    ethOracle = deploy_chainlink_oracle(symbol, deployer, config)
+    _list_currency(symbol, notional, deployer, pCashOracle, ethOracle, fundingAccount, config)
 
-def list_currency(symbol, notional, deployer, fundingAccount):
-    pCashOracle = _deploy_pcash_oracle(symbol, notional, deployer)
-    ethOracle = _deploy_chainlink_oracle(symbol, deployer)
-    _list_currency(symbol, notional, deployer, pCashOracle, ethOracle, fundingAccount)
-
-def _deploy_pcash_oracle(symbol, notional, deployer):
-    token = ListedTokens[symbol]
+def _deploy_pcash_oracle(symbol, notional, deployer, config):
+    token = config[symbol]
     return UnderlyingHoldingsOracle.deploy(notional.address, token['address'], {"from": deployer})
-
-def _deploy_chainlink_oracle(symbol, deployer):
-    token = ListedTokens[symbol]
-    if symbol == "ETH":
-        return ZERO_ADDRESS
-    else:
-        return ChainlinkAdapter.deploy(
-            token['baseOracle'],
-            token['quoteOracle'],
-            token['invertBase'],
-            token['invertQuote'],
-            "Notional {} Chainlink Adapter".format(symbol),
-            token['sequencerUptimeOracle'],
-            {"from": deployer}
-        )
-
-def deploy_chainlink_usd_oracle(symbol, deployer):
-    token = ListedTokens[symbol]
-    if symbol == "ETH":
-        return ZERO_ADDRESS
-    else:
-        return ChainlinkAdapter.deploy(
-            ChainlinkOracles["rETH/ETH"],
-            ChainlinkOracles["ETH/USD"],
-            False,
-            True,
-            "Notional rETH/USD Chainlink Adapter".format(symbol),
-            token['sequencerUptimeOracle'],
-            {"from": deployer}
-        )
 
 def _to_interest_rate_curve(params):
     return (
@@ -106,14 +86,16 @@ def _to_interest_rate_curve(params):
         params["feeRatePercent"],
     )
 
-def _list_currency(symbol, notional, deployer, pCashOracle, ethOracle, fundingAccount):
-    token = ListedTokens[symbol]
+def _list_currency(symbol, notional, deployer, pCashOracle, ethOracle, fundingAccount, config):
+    token = config[symbol]
+    # Minimum underlying held is 0.05e8 in internal decimals
     if symbol == 'ETH':
-        fundingAccount.transfer(notional, 0.01e18)
+        fundingAccount.transfer(notional, 0.05e18)
     else:
         erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
+        decimals = erc20.decimals()
         # Donate the initial balance
-        erc20.transfer(notional, erc20.balanceOf(fundingAccount) / 10, {"from": fundingAccount})
+        erc20.transfer(notional, 0.05 * 10 ** decimals, {"from": fundingAccount})
 
     txn = notional.listCurrency(
         (
@@ -141,71 +123,84 @@ def _list_currency(symbol, notional, deployer, pCashOracle, ethOracle, fundingAc
     )
     currencyId = txn.events["ListCurrency"]["newCurrencyId"]
 
-    notional.enableCashGroup(
+    notional.setMaxUnderlyingSupply(
         currencyId,
-        (
-            token["maxMarketIndex"],
-            token["rateOracleTimeWindow"],
-            token["maxDiscountFactor"],
-            token["reserveFeeShare"],
-            token["debtBuffer"],
-            token["fCashHaircut"],
-            token["minOracleRate"],
-            token["liquidationfCashDiscount"],
-            token["liquidationDebtBuffer"],
-            token["maxOracleRate"]
-        ),
-        token['name'],
-        symbol,
+        token['maxUnderlyingSupply'],
+        token['primeCashCurve']['kinkUtilization2'],
         {"from": deployer}
     )
 
-    notional.updateInterestRateCurve(
-        currencyId,
-        [1, 2],
-        [_to_interest_rate_curve(c) for c in token['fCashCurves']],
-        {"from": deployer}
-    )
+    if "maxMarketIndex" in token:
+        notional.enableCashGroup(
+            currencyId,
+            (
+                token["maxMarketIndex"],
+                token["rateOracleTimeWindow"],
+                token["maxDiscountFactor"],
+                token["reserveFeeShare"],
+                token["debtBuffer"],
+                token["fCashHaircut"],
+                token["minOracleRate"],
+                token["liquidationfCashDiscount"],
+                token["liquidationDebtBuffer"],
+                token["maxOracleRate"]
+            ),
+            token['name'],
+            symbol,
+            {"from": deployer}
+        )
 
-    notional.updateDepositParameters(currencyId, token['depositShare'], token['leverageThreshold'], {"from": deployer})
+        notional.updateInterestRateCurve(
+            currencyId,
+            [1, 2],
+            [_to_interest_rate_curve(c) for c in token['fCashCurves']],
+            {"from": deployer}
+        )
 
-    notional.updateInitializationParameters(currencyId, [0, 0], token['proportion'], {"from": deployer})
+        notional.updateDepositParameters(currencyId, token['depositShare'], token['leverageThreshold'], {"from": deployer})
 
-    notional.updateTokenCollateralParameters(
-        currencyId,
-        token["residualPurchaseIncentive"],
-        token["pvHaircutPercentage"],
-        token["residualPurchaseTimeBufferHours"],
-        token["cashWithholdingBuffer10BPS"],
-        token["liquidationHaircutPercentage"],
-        {"from": deployer}
-    )
+        notional.updateInitializationParameters(currencyId, [0, 0], token['proportion'], {"from": deployer})
 
-    notional.setMaxUnderlyingSupply(currencyId, token['maxUnderlyingSupply'], {"from": deployer})
+        notional.updateTokenCollateralParameters(
+            currencyId,
+            token["residualPurchaseIncentive"],
+            token["pvHaircutPercentage"],
+            token["residualPurchaseTimeBufferHours"],
+            token["cashWithholdingBuffer10BPS"],
+            token["liquidationHaircutPercentage"],
+            token["maxMintDeviation5BPS"],
+            {"from": deployer}
+        )
 
-def initialize_markets(notional, fundingAccount):
+def initialize_markets(notional, fundingAccount, order, config):
     actions = []
-    for (i, symbol) in enumerate(ListedOrder):
-        token = ListedTokens[symbol]
+    initMarkets = []
+    for symbol in order:
+        token = config[symbol]
+        currencyId = token["currencyId"]
         if symbol == 'ETH':
             actions.append(
-                get_balance_action(i + 1, "DepositUnderlyingAndMintNToken", depositActionAmount=0.5e18)
+                get_balance_action(currencyId, "DepositUnderlyingAndMintNToken", depositActionAmount=0.5e18)
             )
-        else:
+            initMarkets.append(currencyId)
+        elif "fCashCurves" in token:
             erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
             # Donate the initial balance
             balance = erc20.balanceOf(fundingAccount)
             erc20.approve(notional.address, 2 ** 256 - 1, {"from": fundingAccount})
             actions.append(
-                get_balance_action(i + 1, "DepositUnderlyingAndMintNToken", depositActionAmount=balance)
+                get_balance_action(currencyId, "DepositUnderlyingAndMintNToken", depositActionAmount=balance)
             )
+            initMarkets.append(currencyId)
+
     notional.batchBalanceAction(fundingAccount, actions, {"from": fundingAccount, "value": 0.5e18})
-    notional.initializeMarkets(1, True, {"from": fundingAccount})
-    notional.initializeMarkets(2, True, {"from": fundingAccount})
-    notional.initializeMarkets(3, True, {"from": fundingAccount})
-    notional.initializeMarkets(4, True, {"from": fundingAccount})
-    notional.initializeMarkets(5, True, {"from": fundingAccount})
-    notional.initializeMarkets(6, True, {"from": fundingAccount})
+    calldata = [
+        (notional.address, notional.initializeMarkets.encode_input(i, True))
+        for i in initMarkets
+    ]
+    multicall_abi = json.load(open("./abi/Multicall3.json"))
+    multicall = Contract.from_abi("multicall", "0xcA11bde05977b3631167028862bE2a173976CA11", multicall_abi)
+    multicall.aggregate(calldata, {"from": fundingAccount})
 
 
 BeaconType = {
@@ -214,6 +209,20 @@ BeaconType = {
     "PDEBT": 2,
     "WFCASH": 3,
 }
+
+def set_beacons(notional, beaconDeployer, nTokenBeacon, pCashBeacon, pDebtBeacon, deployer):
+    nTokenBeacon.transferOwnership(notional.address, {"from": beaconDeployer})
+    pCashBeacon.transferOwnership(notional.address, {"from": beaconDeployer})
+    pDebtBeacon.transferOwnership(notional.address, {"from": beaconDeployer})
+
+    nTokenImpl = nTokenERC20Proxy.deploy(notional.address, {"from": deployer})
+    pCashImpl = PrimeCashProxy.deploy(notional.address, {"from": deployer})
+    pDebtImpl = PrimeDebtProxy.deploy(notional.address, {"from": deployer})
+
+    notional.upgradeBeacon(BeaconType["NTOKEN"], nTokenImpl, {"from": deployer})
+    notional.upgradeBeacon(BeaconType["PCASH"], pCashImpl, {"from": deployer})
+    notional.upgradeBeacon(BeaconType["PDEBT"], pDebtImpl, {"from": deployer})
+
 
 def main():
     if chain.id != 42161:
@@ -247,23 +256,11 @@ def main():
         # Cannot Re-Initialize
         assert True
 
-    nTokenBeacon.transferOwnership(notional.address, {"from": beaconDeployer})
-    pCashBeacon.transferOwnership(notional.address, {"from": beaconDeployer})
-    pDebtBeacon.transferOwnership(notional.address, {"from": beaconDeployer})
-
-    nTokenImpl = nTokenERC20Proxy.deploy(notional.address, {"from": beaconDeployer})
-    pCashImpl = PrimeCashProxy.deploy(notional.address, {"from": beaconDeployer})
-    pDebtImpl = PrimeDebtProxy.deploy(notional.address, {"from": beaconDeployer})
-
     notional = Contract.from_abi("notional", notional.address, interface.NotionalProxy.abi)
-
-    # Deployer is currently the owner here.
-    notional.upgradeBeacon(BeaconType["NTOKEN"], nTokenImpl, {"from": deployer})
-    notional.upgradeBeacon(BeaconType["PCASH"], pCashImpl, {"from": deployer})
-    notional.upgradeBeacon(BeaconType["PDEBT"], pDebtImpl, {"from": deployer})
+    set_beacons(notional, beaconDeployer, nTokenBeacon, pCashBeacon, pDebtBeacon, deployer)
 
     for c in ListedOrder:
-        list_currency(c, notional, deployer, fundingAccount)
+        list_currency(c, notional, deployer, fundingAccount, ListedTokens)
 
     initialize_markets(notional, fundingAccount)
 

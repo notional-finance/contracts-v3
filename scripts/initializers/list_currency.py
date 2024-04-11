@@ -1,7 +1,7 @@
-from brownie import Contract, accounts, interface
-from scripts.arbitrum.arb_config import ListedTokens, ListedOrder
-from scripts.arbitrum.arb_deploy import _deploy_chainlink_oracle, _deploy_pcash_oracle, _to_interest_rate_curve
+from brownie import ZERO_ADDRESS, Contract, accounts, interface
+from scripts.arbitrum.arb_deploy import _deploy_pcash_oracle, _to_interest_rate_curve
 from scripts.common import TokenType
+from scripts.deployers.oracle_deployer import deploy_chainlink_oracle
 from scripts.inspect import get_addresses
 import json
 from tests.helpers import get_balance_action
@@ -14,10 +14,9 @@ WHALES = {
 }
 
 LIQUIDATOR = '0xaCe757160cedD8b735f3dc19870A52F611F04a2e'
-TRADING_MODULE = '0xBf6B9c5608D520469d8c4BD1E24F850497AF0Bb8'
 
-def donate_initial(symbol, notional, fundingAccount):
-    token = ListedTokens[symbol]
+def donate_initial(symbol, notional, fundingAccount, config):
+    token = config[symbol]
     if symbol == 'ETH':
         fundingAccount.transfer(notional, 0.01e18)
     else:
@@ -27,8 +26,8 @@ def donate_initial(symbol, notional, fundingAccount):
         # Donate the initial balance
         erc20.transfer(notional, 0.05 * 10 ** erc20.decimals(), {"from": fundingAccount})
 
-def list_currency(notional, symbol):
-    token = ListedTokens[symbol]
+def list_currency(notional, symbol, tradingModule, config):
+    token = config[symbol]
     callData = []
 
     txn = notional.listCurrency(
@@ -55,7 +54,7 @@ def list_currency(notional, symbol):
         symbol,
         {"from": notional.owner()}
     )
-    currencyId = ListedOrder.index(symbol) + 1
+    currencyId = token['currencyId']
     callData.append(txn.input)
 
     txn = notional.setMaxUnderlyingSupply(currencyId, token['maxUnderlyingSupply'], {"from": notional.owner()})
@@ -109,8 +108,6 @@ def list_currency(notional, symbol):
         callData.append(txn.input)
     
     # Set trading module approvals for the liquidator
-    tradingModule = Contract.from_abi("trading", TRADING_MODULE, interface.ITradingModule.abi)
-    
     txn = tradingModule.setTokenPermissions(
         LIQUIDATOR,
         token['address'],
@@ -120,13 +117,36 @@ def list_currency(notional, symbol):
 
     return {'notional': callData, 'tradingModule': txn.input}
 
-def main():
-    listTokens = ['UNI', 'LINK', 'LDO']
+def check_trading_module_oracle(symbol, config, isFork):
+    (addresses, notional, _, _, _) = get_addresses()
+    tradingModule = Contract.from_abi("trading", addresses["tradingModule"], interface.ITradingModule.abi)
+    token = config[symbol]
+    tokenAddress = token['address']
+    (oracle, _) = tradingModule.priceOracles(tokenAddress)
+    if oracle == ZERO_ADDRESS:
+        print("No Trading Module Oracle Defined for ", symbol)
+        if isFork:
+            txn = tradingModule.setPriceOracle(
+                tokenAddress,
+                token['usdOracle'],
+                {"from": notional.owner()}
+            )
+            return txn.input
+        else:
+            return tradingModule.setPriceOracle.encode_input(
+                tokenAddress,
+                token['usdOracle']
+            )
+    else:
+        assert oracle == token['usdOracle']
+
+def main(ListedTokens, listTokens):
     fundingAccount = accounts.at("0x7d7935EDd4b6cDB5f34B0E1cCEAF85a3C4A11254", force=True)
     (addresses, notional, note, router, networkName) = get_addresses()
     deployer = accounts.at("0x8F5ea3CDe898B208280c0e93F3aDaaf1F5c35a7e", force=True)
     # deployer = accounts.load(networkName.upper() + "_DEPLOYER")
     print("DEPLOYER ADDRESS", deployer.address)
+    tradingModule = Contract.from_abi("trading", addresses["tradingModule"], interface.ITradingModule.abi)
 
     for t in listTokens:
         donate_initial(t, notional, fundingAccount)
@@ -138,7 +158,7 @@ def main():
         if "baseOracle" in ListedTokens[t] and ListedTokens[t]["ethOracle"] == "":
             # These contracts are verified automatically on Arbiscan
             print("DEPLOYING ETH ORACLE FOR: ", t)
-            ethOracle = _deploy_chainlink_oracle(t, deployer)
+            ethOracle = deploy_chainlink_oracle(t, deployer, ListedTokens[t])
             ListedTokens[t]["ethOracle"] = ethOracle.address
 
     batchBase = {
@@ -155,7 +175,7 @@ def main():
 
     for t in listTokens:
         batchBase['transactions'] = []
-        transactions = list_currency(notional, t)
+        transactions = list_currency(notional, t, tradingModule, ListedTokens)
         for data in transactions['notional']:
             batchBase['transactions'].append({
                 "to": notional.address,
@@ -166,7 +186,7 @@ def main():
             })
 
         batchBase['transactions'].append({
-            "to": TRADING_MODULE,
+            "to": tradingModule.address,
             "value": "0",
             "data": transactions['tradingModule'],
             "contractMethod": { "inputs": [], "name": "fallback", "payable": True },

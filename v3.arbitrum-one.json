@@ -3,11 +3,11 @@
     "aavePoolDataProvider": "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654",
     "actions": {
         "AccountAction": "0xCeEcaf20c6d5A168Ad4f73180217007B66E3d594",
-        "BatchAction": "0x6470959E7d99c8058E9caCfbe752dFb4bE49BCeC",
-        "CalculationViews": "0x964b086F5F003DFFA5eF36299D4082Df0167dfEa",
+        "BatchAction": "0xa46d887436194884D8beB0cb4cfE97348A27ce1d",
+        "CalculationViews": "0x7E01fb0546048B7815aC61D6aB29bf6E3f99A35C",
         "ERC1155Action": "0x02232aa71D8E79bd8745102eA668AA9F6C4Be1C1",
         "GovernanceAction": "0x60e1cFB81A82fDB8420670FC96Bce869DBB70931",
-        "InitializeMarketsAction": "0x160974448363A92Fb7aee45fb9f09c7A2Bbf09EE",
+        "InitializeMarketsAction": "0xEf4c3b3a5A747Ac73512B4778B07b992bf45231A",
         "LiquidateCurrencyAction": "0x6fEc33C1fEBa25Df067E6Dec91c846490D07180B",
         "LiquidatefCashAction": "0xA87A4acF5015eCAD81faa80E860Ef8B225a555F4",
         "TreasuryAction": "0x65a7D107b93B37C918cA184D16Ef77E80985e887",
@@ -39,7 +39,7 @@
         "FreeCollateralExternal": "0xE39707d637E5d89B62e2CE504c163a1a06d56a85",
         "SettleAssetsExternal": "0x2DA67dE6F4f1eF57f996E51f4dBab7fC061928D2",
         "TradingAction": "0xca92816154389908d4F356940787f48680C9B7c5",
-        "nTokenMintAction": "0x9C618FEc7b02e8b2922625078D8eBBf35641A3CC",
+        "nTokenMintAction": "0x10A639500AF69F5acCB4B6aE806c99997f53aD03",
         "nTokenRedeemAction": "0x34f332cbc830Bb6e1e1de09BF5985B4EB635104b"
     },
     "networkName": "arbitrum-one",
@@ -47,7 +47,7 @@
     "notional": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
     "routers": {
         "PauseRouter": "0x3A571c167190d42a6aB822823d52b53D9a78Be95",
-        "Router": "0x3438a62736034eD4Ca22f3B1F0764CD17e6C63C5"
+        "Router": "0x484b4314933BacB9A706a7118C97608624Bce4C9"
     },
     "startBlock": 86540849,
     "tokens": {
@@ -69,5 +69,6 @@
         "wstETH": {
             "address": "0x5979D7b546E38E414F7E9822514be443A4800529"
         }
-    }
+    },
+    "tradingModule": "0xBf6B9c5608D520469d8c4BD1E24F850497AF0Bb8"
 }

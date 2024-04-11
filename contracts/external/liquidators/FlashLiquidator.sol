@@ -3,6 +3,7 @@ pragma solidity =0.7.6;
 pragma abicoder v2;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {FlashLiquidatorBase} from "./FlashLiquidatorBase.sol";
 import {
@@ -17,6 +18,7 @@ import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
 import {IWstETH} from "../../../interfaces/IWstETH.sol";
 
 contract FlashLiquidator is FlashLiquidatorBase {
+    using SafeERC20 for IERC20;
     using SafeInt256 for int256;
     using SafeMath for uint256;
 
@@ -24,21 +26,9 @@ contract FlashLiquidator is FlashLiquidatorBase {
         NotionalProxy notional_,
         address lendingPool_,
         address weth_,
-        IWstETH wstETH_,
         address owner_,
-        address tradingModule_,
-        bool unwrapStETH_
-    )
-        FlashLiquidatorBase(
-            notional_,
-            lendingPool_,
-            weth_,
-            wstETH_,
-            owner_,
-            tradingModule_,
-            unwrapStETH_
-        )
-    {}
+        address tradingModule_
+    ) FlashLiquidatorBase(notional_, lendingPool_, weth_, owner_, tradingModule_) { }
 
     function _redeemAndWithdraw(
         uint16 nTokenCurrencyId,
@@ -119,7 +109,7 @@ contract FlashLiquidator is FlashLiquidatorBase {
     }
 
     function withdraw(address token, uint256 amount) external {
-        IERC20(token).transfer(owner, amount);
+        IERC20(token).safeTransfer(owner, amount);
     }
 
     receive() external payable {}

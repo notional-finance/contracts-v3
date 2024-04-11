@@ -119,51 +119,6 @@ contract AccountAction is ActionGuards {
         return primeCashReceived.toUint();
     }
 
-    /// @notice DEPRECATED: deposits deprecated cTokens tokens as collateral into an account that
-    /// were listed prior to the migration to prime cash. Future listed tokens will not have asset
-    /// tokens and will revert in this method.
-    /// @param account the account to deposit into
-    /// @param currencyId currency id of the asset token
-    /// @param amountExternalPrecision the amount of asset tokens in its native decimal precision
-    /// (i.e. 8 decimals for cTokens).
-    /// @return asset tokens minted and deposited to the account in internal decimals (8)
-    /// @dev emit:CashBalanceChange emit:AccountContextUpdate
-    /// @dev auth:none
-    function depositAssetToken(
-        address account,
-        uint16 currencyId,
-        uint256 amountExternalPrecision
-    ) external nonReentrant returns (uint256) {
-        require(msg.sender != address(this)); // dev: no internal call to deposit asset
-        // Only the account can deposit into its balance, donations are not allowed.
-        require(msg.sender == account); // dev: unauthorized
-        requireValidAccount(account);
-
-        AccountContext memory accountContext = AccountContextHandler.getAccountContext(account);
-        BalanceState memory balanceState;
-        balanceState.loadBalanceState(account, currencyId, accountContext);
-
-        // Int conversion overflow check done inside this method call. msg.sender
-        // is used as the account in deposit to allow for other accounts to deposit
-        // on behalf of the given account. This always does an immediate transfer
-        // and marks the net prime cash change on the balance state.
-        int256 primeCashReceived = balanceState.depositDeprecatedAssetToken(
-            account,
-            SafeInt256.toInt(amountExternalPrecision)
-        );
-
-        require(primeCashReceived > 0); // dev: asset tokens negative or zero
-
-        balanceState.finalizeNoWithdraw(account, accountContext);
-        accountContext.setAccountContext(account);
-
-        // Check the supply cap after all balances have been finalized
-        balanceState.primeRate.checkSupplyCap(currencyId);
-
-        // NOTE: no free collateral checks required for depositing
-        return primeCashReceived.toUint();
-    }
-
     /// @notice Withdraws balances from Notional, may also redeem to underlying tokens on user request. Will settle
     /// and do free collateral checks if required. Can only be called by msg.sender, operators who want to withdraw for
     /// an account must do an authenticated call via ERC1155Action `safeTransferFrom` or `safeBatchTransferFrom`

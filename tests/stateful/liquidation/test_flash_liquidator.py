@@ -150,7 +150,7 @@ def test_local_currency_with_transfer_fee(env, weth, mockFlashLender, flashLiqui
     account = accounts[2]
     setup_local_currency_liquidate(5, env, account)
 
-    params = eth_abi.encode_abi(
+    params = eth_abi.encode(
         ["uint8", "address", "uint256", "uint96"],
         [LocalCurrency_WithTransferFee, account.address, 5, 0],
     )
@@ -165,7 +165,7 @@ def test_local_currency_no_transfer_fee(env, weth, mockFlashLender, flashLiquida
     account = accounts[2]
     setup_local_currency_liquidate(2, env, account)
 
-    params = eth_abi.encode_abi(
+    params = eth_abi.encode(
         ["uint8", "address", "uint256", "uint96"],
         [LocalCurrency_NoTransferFee, account.address, 2, 0],
     )
@@ -193,7 +193,7 @@ def test_local_currency_eth(env, weth, mockFlashLender, flashLiquidator, account
     tokenDefaults[1] = 75
     env.notional.updateTokenCollateralParameters(currencyId, *(tokenDefaults))
 
-    params = eth_abi.encode_abi(
+    params = eth_abi.encode(
         ["uint8", "address", "uint256", "uint96"],
         [LocalCurrency_NoTransferFee, account.address, 1, 0],
     )
@@ -241,7 +241,7 @@ def test_collateral_currency_with_transfer_fee(
         "bytes",
     )
 
-    calldata = eth_abi.encode_abi(
+    calldata = eth_abi.encode(
         [
             "uint8",
             "address",
@@ -315,7 +315,7 @@ def test_collateral_currency_no_transfer_fee(
         "bytes",
     )
 
-    calldata = eth_abi.encode_abi(
+    calldata = eth_abi.encode(
         [
             "uint8",
             "address",
@@ -380,7 +380,7 @@ def test_local_fcash_no_transfer_fee(env, weth, mockFlashLender, flashLiquidator
     maturities = sorted(
         [asset[1] for asset in liquidatedPortfolioBefore if asset[3] > 0], reverse=True
     )
-    calldata = eth_abi.encode_abi(
+    calldata = eth_abi.encode(
         ["uint8", "address", "uint256", "uint256[]", "uint256[]"],
         [LocalfCash_NoTransferFee, account.address, 2, maturities, [0, 0]],
     )
@@ -449,7 +449,7 @@ def test_cross_currency_fcash_no_transfer_fee(
         "bytes",
     )
 
-    calldata = eth_abi.encode_abi(
+    calldata = eth_abi.encode(
         [
             "uint8",
             "address",

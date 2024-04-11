@@ -137,7 +137,6 @@ contract Router is StorageLayoutV1, IRouter {
             return VAULT_ACCOUNT_ACTION;
         } else if (
             sig == NotionalProxy.depositUnderlyingToken.selector ||
-            sig == NotionalProxy.depositAssetToken.selector ||
             sig == NotionalProxy.withdraw.selector ||
             sig == NotionalProxy.withdrawViaProxy.selector ||
             sig == NotionalProxy.settleAccount.selector ||
@@ -207,8 +206,8 @@ contract Router is StorageLayoutV1, IRouter {
         ) {
             return VAULT_ACTION;
         } else if (
-            sig == NotionalProxy.initializeMarkets.selector ||
-            sig == NotionalProxy.sweepCashIntoMarkets.selector
+            sig == NotionalProxy.initializeMarkets.selector
+            // sig == NotionalProxy.sweepCashIntoMarkets.selector
         ) {
             return INITIALIZE_MARKET;
         } else if (

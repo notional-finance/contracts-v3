@@ -32,7 +32,7 @@ def pathCalldataExactOut(fromAddr, toAddr):
     if toAddr == ZERO_ADDRESS:
         toAddr = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
     packedEncoder = eth_abi.codec.ABIEncoder(eth_abi.registry.registry_packed)
-    return packedEncoder.encode_abi(
+    return packedEncoder.encode(
         ["address", "uint24", "address"], 
         [toAddr, 3000, fromAddr]
     )
@@ -48,7 +48,7 @@ def collateralCalldata(
     router = interface.ISwapRouter("0xE592427A0AEce92De3Edee1F18E0157C05861564")
     localUnderlying = env.notional.getCurrencyAndRates(localCurrency)["underlyingToken"][0]
     collateralUnderlying = env.notional.getCurrencyAndRates(collateralCurrency)["underlyingToken"][0]
-    liqCalldata = eth_abi.encode_abi(
+    liqCalldata = eth_abi.encode(
         ['(address,uint16,uint16,address,uint128,uint96,(address,bytes))'],
         [[
             account, 
@@ -69,7 +69,7 @@ def collateralCalldata(
             ]
         ]]
     )
-    return eth_abi.encode_abi(
+    return eth_abi.encode(
         ['(uint8,bool,bool,bytes)'],
         [[1, False, False, liqCalldata]]
     )

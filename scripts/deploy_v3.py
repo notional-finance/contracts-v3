@@ -1,4 +1,4 @@
-from brownie import accounts, network
+from brownie import accounts, network, history
 from scripts.deployers.notional_deployer import NotionalDeployer
 
 
@@ -13,7 +13,8 @@ def deployNotional(deployer, networkName, dryRun, isFork):
 
     if isFork:
         notional.upgradeProxy()
-
+    
+    return notional
 
 def main(dryRun="LFG"):
     networkName = network.show_active()
@@ -39,5 +40,16 @@ def main(dryRun="LFG"):
         else:
             dryRun = False
 
-    deployNotional(deployer, networkName, dryRun, isFork)
+    notional = deployNotional(deployer, networkName, dryRun, isFork)
     # deployLiquidator(deployer, networkName, dryRun)
+
+    gas_used("Contract Deployer", deployer)
+
+def gas_used(label, account, gasPrice = 40):
+    print("{}: {:,} gas, {:,.4f} ETH @ {} gwei, {} txns".format(
+        label,
+        sum([ tx.gas_used for tx in history.from_sender(account) ]),
+        sum([ tx.gas_used for tx in history.from_sender(account) ]) * gasPrice * 1e9 / 1e18,
+        gasPrice,
+        len(history.from_sender(account))
+    ))
