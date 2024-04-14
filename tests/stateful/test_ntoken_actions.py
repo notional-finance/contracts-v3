@@ -157,7 +157,7 @@ Test deleverage:
     - Lend succeeds if slippage < deleverage buffer
 """
 
-DELEVERAGE_BUFFER = 0.03e9
+DELEVERAGE_BUFFER = 0.08e9
 
 def get_leverage_ratio(environment, currencyId, marketIndex):
     market = environment.notional.getActiveMarkets(currencyId)[marketIndex - 1]
