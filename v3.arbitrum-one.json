@@ -19,7 +19,7 @@
         "nTokenAction": "0x14bFf9f2a16A7AeBef20d6E06c28a6aBa9CD2628"
     },
     "beacons": {
-        "PrimeCashProxy": "0x382173438e47b0c1F5dF9928F0e1f301b50Ed669",
+        "PrimeCashProxy": "0xA40f569d1D3fd36c4B8d2Fd64B7440A3edD7ce0c",
         "PrimeDebtProxy": "0x43c4B0107c190Bcc206361B81341b1A829b0722a",
         "nTokenBeacon": "0xc4FD259b816d081C8bdd22D6bbd3495DB1573DB7",
         "nTokenERC20Proxy": "0x5902c25821fBaFF05d04E3FdDC7F852B4a8953fc",
