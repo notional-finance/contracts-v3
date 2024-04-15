@@ -41,12 +41,12 @@ library Deployments {
     IUpgradeableBeacon internal constant NTOKEN_BEACON = IUpgradeableBeacon(0xc4FD259b816d081C8bdd22D6bbd3495DB1573DB7);
     IUpgradeableBeacon internal constant PCASH_BEACON = IUpgradeableBeacon(0x1F681977aF5392d9Ca5572FB394BC4D12939A6A9);
     IUpgradeableBeacon internal constant PDEBT_BEACON = IUpgradeableBeacon(0xDF08039c0af34E34660aC7c2705C0Da953247640);
-    // ARB:
-    // IUpgradeableBeacon internal constant WRAPPED_FCASH_BEACON = IUpgradeableBeacon(0xD676d720E4e8B14F545F9116F0CAD47aF32329DD);
+    // Mainnet:
     IUpgradeableBeacon internal constant WRAPPED_FCASH_BEACON = IUpgradeableBeacon(0xEBe1BF1653d55d31F6ED38B1A4CcFE2A92338f66);
+    // Arbitrum:
+    // IUpgradeableBeacon internal constant WRAPPED_FCASH_BEACON = IUpgradeableBeacon(0xD676d720E4e8B14F545F9116F0CAD47aF32329DD);
     
 
-    // TODO: this will be set to the timestamp of the final settlement time in notional v2,
-    // no assets can be settled prior to this date once the notional v3 upgrade is enabled.
+    // NOTE: this is unused and should be removed if the contract is ever deployed again
     uint256 internal constant NOTIONAL_V2_FINAL_SETTLEMENT = 0;
 }
