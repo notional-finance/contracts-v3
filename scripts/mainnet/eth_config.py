@@ -349,7 +349,56 @@ ListedTokens = {
         "haircut": 92,
         "liquidationDiscount": 105,
         "maxUnderlyingSupply": 10_000e8,
-    }
+    },
+    "GHO": CurrencyDefaults | Stablecoin_Curve | {
+        "currencyId": 11,
+        "address": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+        "name": "Gho Token",
+        "decimals": 18,
+        "baseOracle": ChainlinkOracles["GHO/USD"],
+        "quoteOracle": ChainlinkOracles["ETH/USD"],
+        "invertBase": False,
+        "invertQuote": False,
+        "usdOracle": ChainlinkOracles["GHO/USD"],
+
+        "buffer": 111,
+        "haircut": 85,
+        "liquidationDiscount": 105,
+        "maxUnderlyingSupply": 10_000e8, # TODO
+
+        "primeCashCurve": {
+            "kinkUtilization1": 65,
+            "kinkUtilization2": 85,
+            "kinkRate1": 17,
+            "kinkRate2": 51,
+            "maxRate25BPS": 225,
+            "feeRatePercent": 20,
+            "minFeeRate5BPS": 10,
+            "maxFeeRate25BPS": 160
+        },
+        "fCashCurves" : [{
+            "kinkUtilization1": 20,
+            "kinkUtilization2": 80,
+            "kinkRate1": 50,
+            "kinkRate2": 128,
+            "maxRate25BPS": 152,
+            "feeRatePercent": 8,
+            "minFeeRate5BPS": 3,
+            "maxFeeRate25BPS": 8
+        }, {
+            "kinkUtilization1": 20,
+            "kinkUtilization2": 80,
+            "kinkRate1": 50,
+            "kinkRate2": 128,
+            "maxRate25BPS": 152,
+            "feeRatePercent": 8,
+            "minFeeRate5BPS": 3,
+            "maxFeeRate25BPS": 8
+        }],
+        "proportion": [0.35e9, 0.35e9],
+        "depositShare": [0.6e8, 0.4e8],
+        "leverageThreshold": [0.88e9, 0.88e9],
+    },
 }
 
 ListedOrder = [
@@ -357,6 +406,6 @@ ListedOrder = [
     'ETH', 'DAI', 'USDC', 'WBTC',
     # 5-8
     'wstETH', 'FRAX', 'rETH', 'USDT',
-    # 9-10
-    'cbETH', 'sDAI'
+    # 9-11
+    'cbETH', 'sDAI', 'GHO'
 ]
