@@ -16,7 +16,7 @@ def deployNotional(deployer, networkName, dryRun, isFork):
     
     return notional
 
-def main(dryRun="LFG"):
+def get_network():
     networkName = network.show_active()
     isFork = False
     if networkName in ["mainnet-fork", "mainnet-current"]:
@@ -25,6 +25,11 @@ def main(dryRun="LFG"):
     elif networkName in ["arbitrum-fork", "arbitrum-current"]:
         networkName = "arbitrum-one"
         isFork = True
+
+    return (networkName, isFork)
+
+def main(dryRun="LFG"):
+    (networkName, isFork) = get_network()
     
     if isFork:
         deployer = accounts[0]
