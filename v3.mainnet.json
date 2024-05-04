@@ -2,7 +2,7 @@
     "aaveLendingPool": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
     "actions": {
         "AccountAction": "0x922E6E0B80eE037B32266BCa33713B2043Bc87d0",
-        "BatchAction": "0xDb7A1bE29D3D3AD8231d4808ac555119eD8762e1",
+        "BatchAction": "0x3B8b09E679fD545D5B8AB1F03221497e8C0708AF",
         "CalculationViews": "0xC6f5bA780B78DB117233D5F76da9E2032a312A9e",
         "ERC1155Action": "0x51888550902159F2Eb7C43B8589DBe975379AA10",
         "GovernanceAction": "0x514f9563ACE90BdE2F0f00091208236E1864690F",
@@ -35,7 +35,7 @@
         "FreeCollateralExternal": "0xeA7aa69DbEEA9deB4294109BD344F69c79c6FDF7",
         "SettleAssetsExternal": "0xe10836BA543Be91e978fC9b455BF483572a44B21",
         "TradingAction": "0xCAc9c01d1207e5D06bB0fD5b854832F35FE97E68",
-        "nTokenMintAction": "0xE5aE18DE0BDD7003e3B74613554f58484e432DE7",
+        "nTokenMintAction": "0x380cDF83748249C14A575673325aba9BD7e1FF55",
         "nTokenRedeemAction": "0xcE3F1D83CEcee26b1D4a7010123b86cED67a48d4"
     },
     "networkName": "mainnet",
@@ -43,7 +43,7 @@
     "notional": "0x6e7058c91F85E0F6db4fc9da2CA41241f5e4263f",
     "routers": {
         "PauseRouter": "0x8470516910062633bBF959f940232F9d300eF0f6",
-        "Router": "0xeD1546dEFCa671D4a64D3Bd7D25571355C23F4B0"
+        "Router": "0x3da72a5D6FA2a46585F01A09Bc6E2EE1481ee555"
     },
     "startBlock": 0,
     "tokens": {

@@ -89,7 +89,7 @@ library Constants {
     // One basis point in RATE_PRECISION terms
     uint256 internal constant BASIS_POINT = uint256(RATE_PRECISION / 10000);
     // Used to when calculating the amount to deleverage of a market when minting nTokens
-    uint256 internal constant DELEVERAGE_BUFFER = 800 * BASIS_POINT;
+    uint256 internal constant DELEVERAGE_BUFFER = 300 * BASIS_POINT;
     // Used for scaling cash group factors
     uint256 internal constant FIVE_BASIS_POINTS = 5 * BASIS_POINT;
     // Used for residual purchase incentive and cash withholding buffer

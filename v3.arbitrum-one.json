@@ -3,7 +3,7 @@
     "aavePoolDataProvider": "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654",
     "actions": {
         "AccountAction": "0xCeEcaf20c6d5A168Ad4f73180217007B66E3d594",
-        "BatchAction": "0xA6E04316C551199A41B78D60BBC371A636667652",
+        "BatchAction": "0xa46d887436194884D8beB0cb4cfE97348A27ce1d",
         "CalculationViews": "0x7E01fb0546048B7815aC61D6aB29bf6E3f99A35C",
         "ERC1155Action": "0x02232aa71D8E79bd8745102eA668AA9F6C4Be1C1",
         "GovernanceAction": "0x60e1cFB81A82fDB8420670FC96Bce869DBB70931",
@@ -39,7 +39,7 @@
         "FreeCollateralExternal": "0xE39707d637E5d89B62e2CE504c163a1a06d56a85",
         "SettleAssetsExternal": "0x2DA67dE6F4f1eF57f996E51f4dBab7fC061928D2",
         "TradingAction": "0xca92816154389908d4F356940787f48680C9B7c5",
-        "nTokenMintAction": "0xECE7B93380CD6F987Cb712BBfa35ad410a780D6f",
+        "nTokenMintAction": "0x10A639500AF69F5acCB4B6aE806c99997f53aD03",
         "nTokenRedeemAction": "0x34f332cbc830Bb6e1e1de09BF5985B4EB635104b"
     },
     "networkName": "arbitrum-one",
@@ -47,7 +47,7 @@
     "notional": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
     "routers": {
         "PauseRouter": "0x3A571c167190d42a6aB822823d52b53D9a78Be95",
-        "Router": "0xcfC39cFBA3bc5053E065281C78c696Ff21f64a6A"
+        "Router": "0x484b4314933BacB9A706a7118C97608624Bce4C9"
     },
     "startBlock": 86540849,
     "tokens": {
