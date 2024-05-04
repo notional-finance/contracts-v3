@@ -47,7 +47,8 @@ CurrencyDefaults = {
     "maxMintDeviation5BPS": 40,
 
     "rateOracleTimeWindow": 72,
-    "allowDebt": True
+    "allowDebt": True,
+    "maxPrimeDebtUtilization": 80
 }
 
 PrimeOnlyDefaults = {
@@ -355,6 +356,8 @@ ListedTokens = {
         "address": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
         "name": "Gho Token",
         "decimals": 18,
+        "pCashOracle": "",
+        "ethOracle": "",
         "baseOracle": ChainlinkOracles["GHO/USD"],
         "quoteOracle": ChainlinkOracles["ETH/USD"],
         "invertBase": False,
@@ -364,7 +367,7 @@ ListedTokens = {
         "buffer": 111,
         "haircut": 85,
         "liquidationDiscount": 105,
-        "maxUnderlyingSupply": 10_000e8, # TODO
+        "maxUnderlyingSupply": 2_000_000e8,
 
         "primeCashCurve": {
             "kinkUtilization1": 65,
