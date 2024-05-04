@@ -1,16 +1,20 @@
+import json
 from brownie import ZERO_ADDRESS, Contract, accounts, interface
 from scripts.arbitrum.arb_deploy import _deploy_pcash_oracle, _to_interest_rate_curve
 from scripts.common import TokenType
+from scripts.deploy_v3 import get_network
 from scripts.deployers.oracle_deployer import deploy_chainlink_oracle
 from scripts.inspect import get_addresses
-import json
 from tests.helpers import get_balance_action
+from scripts.mainnet.eth_config import ListedTokens as ETH_ListedTokens
+from scripts.arbitrum.arb_config import ListedTokens as ARB_ListedTokens
 
 WHALES = {
     'cbETH': "0xba12222222228d8ba445958a75a0704d566bf2c8",
     'GMX': "0x908c4d94d34924765f1edc22a1dd098397c59dd4",
     'ARB': "0xf3fc178157fb3c87548baa86f9d24ba38e649b58",
-    'RDNT': "0x9d9e4A95765154A575555039E9E2a321256B5704"
+    'RDNT': "0x9d9e4A95765154A575555039E9E2a321256B5704",
+    'GHO': '0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d'
 }
 
 LIQUIDATOR = '0xaCe757160cedD8b735f3dc19870A52F611F04a2e'
@@ -21,12 +25,12 @@ def donate_initial(symbol, notional, fundingAccount, config):
         fundingAccount.transfer(notional, 0.01e18)
     else:
         erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
-        # whale = WHALES[symbol]
-        # erc20.transfer(fundingAccount, 10 * 10 ** erc20.decimals(), {"from": whale})
+        whale = WHALES[symbol]
+        erc20.transfer(fundingAccount, 10 * 10 ** erc20.decimals(), {"from": whale})
         # Donate the initial balance
         erc20.transfer(notional, 0.05 * 10 ** erc20.decimals(), {"from": fundingAccount})
 
-def list_currency(notional, symbol, tradingModule, config):
+def _list_currency(notional, symbol, tradingModule, config):
     token = config[symbol]
     callData = []
 
@@ -57,7 +61,12 @@ def list_currency(notional, symbol, tradingModule, config):
     currencyId = token['currencyId']
     callData.append(txn.input)
 
-    txn = notional.setMaxUnderlyingSupply(currencyId, token['maxUnderlyingSupply'], {"from": notional.owner()})
+    txn = notional.setMaxUnderlyingSupply(
+        currencyId,
+        token['maxUnderlyingSupply'],
+        token['maxPrimeDebtUtilization'],
+        {"from": notional.owner()}
+    )
     callData.append(txn.input)
 
     # Inside here, we are listing fCash
@@ -103,6 +112,7 @@ def list_currency(notional, symbol, tradingModule, config):
             token["residualPurchaseTimeBufferHours"],
             token["cashWithholdingBuffer10BPS"],
             token["liquidationHaircutPercentage"],
+            token["maxMintDeviation5BPS"],
             {"from": notional.owner()}
         )
         callData.append(txn.input)
@@ -112,7 +122,7 @@ def list_currency(notional, symbol, tradingModule, config):
         LIQUIDATOR,
         token['address'],
         (True, 8, 15), # allow sell, 8 is 0x, 15 is all trade types
-        {"from": notional.owner()}
+        {"from": "0x22341fB5D92D3d801144aA5A925F401A91418A05"}
     )
 
     return {'notional': callData, 'tradingModule': txn.input}
@@ -140,25 +150,25 @@ def check_trading_module_oracle(symbol, config, isFork):
     else:
         assert oracle == token['usdOracle']
 
-def main(ListedTokens, listTokens):
+def list_currency(ListedTokens, listTokens):
     fundingAccount = accounts.at("0x7d7935EDd4b6cDB5f34B0E1cCEAF85a3C4A11254", force=True)
-    (addresses, notional, note, router, networkName) = get_addresses()
+    (addresses, notional, *_) = get_addresses()
     deployer = accounts.at("0x8F5ea3CDe898B208280c0e93F3aDaaf1F5c35a7e", force=True)
     # deployer = accounts.load(networkName.upper() + "_DEPLOYER")
     print("DEPLOYER ADDRESS", deployer.address)
     tradingModule = Contract.from_abi("trading", addresses["tradingModule"], interface.ITradingModule.abi)
 
     for t in listTokens:
-        donate_initial(t, notional, fundingAccount)
+        donate_initial(t, notional, fundingAccount, ListedTokens)
         if ListedTokens[t]["pCashOracle"] == "":
             # These contracts are verified automatically on Arbiscan
             print("DEPLOYING PCASH ORACLE FOR: ", t)
-            pCash = _deploy_pcash_oracle(t, notional, deployer)
+            pCash = _deploy_pcash_oracle(t, notional, deployer, ListedTokens)
             ListedTokens[t]["pCashOracle"] = pCash.address
         if "baseOracle" in ListedTokens[t] and ListedTokens[t]["ethOracle"] == "":
             # These contracts are verified automatically on Arbiscan
             print("DEPLOYING ETH ORACLE FOR: ", t)
-            ethOracle = deploy_chainlink_oracle(t, deployer, ListedTokens[t])
+            ethOracle = deploy_chainlink_oracle(t, deployer, ListedTokens)
             ListedTokens[t]["ethOracle"] = ethOracle.address
 
     batchBase = {
@@ -175,7 +185,7 @@ def main(ListedTokens, listTokens):
 
     for t in listTokens:
         batchBase['transactions'] = []
-        transactions = list_currency(notional, t, tradingModule, ListedTokens)
+        transactions = _list_currency(notional, t, tradingModule, ListedTokens)
         for data in transactions['notional']:
             batchBase['transactions'].append({
                 "to": notional.address,
@@ -200,10 +210,18 @@ def main(ListedTokens, listTokens):
             # Mint nTokens and Init Markets
             erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
             erc20.approve(notional, 2 ** 255, {"from": fundingAccount})
+            currencyId = token['currencyId']
 
             notional.batchBalanceAction(fundingAccount, [
                 get_balance_action(
-                    9, "DepositUnderlyingAndMintNToken", depositActionAmount=0.05e18
+                    currencyId, "DepositUnderlyingAndMintNToken", depositActionAmount=0.05e18
                 )
             ], {'from': fundingAccount})
-            notional.initializeMarkets(9, True, {'from': fundingAccount})
+            notional.initializeMarkets(currencyId, True, {'from': fundingAccount})
+
+def main():
+    (networkName, isFork) = get_network()
+    if networkName == "arbitrum-one":
+        list_currency(ARB_ListedTokens, [])
+    elif networkName == "mainnet":
+        list_currency(ETH_ListedTokens, ["GHO"])
