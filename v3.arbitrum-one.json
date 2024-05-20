@@ -70,5 +70,6 @@
             "address": "0x5979D7b546E38E414F7E9822514be443A4800529"
         }
     },
-    "tradingModule": "0xBf6B9c5608D520469d8c4BD1E24F850497AF0Bb8"
+    "tradingModule": "0xBf6B9c5608D520469d8c4BD1E24F850497AF0Bb8",
+    "liquidator": "0xaCe757160cedD8b735f3dc19870A52F611F04a2e"
 }

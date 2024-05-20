@@ -51,5 +51,6 @@
             "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
         }
     },
-    "tradingModule": "0x594734c7e06C3D483466ADBCe401C6Bd269746C8"
+    "tradingModule": "0x594734c7e06C3D483466ADBCe401C6Bd269746C8",
+    "liquidator": "0x0A058E89B904A701063fec9D0e770BA087ED3e76"
 }
