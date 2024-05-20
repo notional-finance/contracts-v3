@@ -166,12 +166,22 @@ def append_txn(batchBase, txn):
         "contractInputsValues": None
     })
 
+def deploy_oracles(ListedTokens, listToken, deployer, notional):
+    print("DEPLOYER ADDRESS", deployer.address)
+
+    if ListedTokens[listToken]["pCashOracle"] == "":
+        print("DEPLOYING PCASH ORACLE FOR: ", listToken)
+        pCash = _deploy_pcash_oracle(listToken, notional, deployer, ListedTokens)
+        ListedTokens[listToken]["pCashOracle"] = pCash.address
+    if "baseOracle" in ListedTokens[listToken] and ListedTokens[listToken]["ethOracle"] == "":
+        print("DEPLOYING ETH ORACLE FOR: ", listToken)
+        ethOracle = deploy_chainlink_oracle(listToken, deployer, ListedTokens)
+        ListedTokens[listToken]["ethOracle"] = ethOracle.address
+
+
 
 def list_currency(ListedTokens, listTokens):
     (addresses, notional, *_, tradingModule) = get_addresses()
-    deployer = accounts.at("0x8F5ea3CDe898B208280c0e93F3aDaaf1F5c35a7e", force=True)
-    # deployer = accounts.load(networkName.upper() + "_DEPLOYER")
-    print("DEPLOYER ADDRESS", deployer.address)
     liquidator = addresses["liquidator"]
 
     batchBase = {
@@ -191,16 +201,9 @@ def list_currency(ListedTokens, listTokens):
         txn = donate_initial(t, notional, ListedTokens)
         append_txn(batchBase, txn)
 
-        if ListedTokens[t]["pCashOracle"] == "":
-            # These contracts are verified automatically on Arbiscan
-            print("DEPLOYING PCASH ORACLE FOR: ", t)
-            pCash = _deploy_pcash_oracle(t, notional, deployer, ListedTokens)
-            ListedTokens[t]["pCashOracle"] = pCash.address
-        if "baseOracle" in ListedTokens[t] and ListedTokens[t]["ethOracle"] == "":
-            # These contracts are verified automatically on Arbiscan
-            print("DEPLOYING ETH ORACLE FOR: ", t)
-            ethOracle = deploy_chainlink_oracle(t, deployer, ListedTokens)
-            ListedTokens[t]["ethOracle"] = ethOracle.address
+        # This is inside a fork so we just fake the account
+        deployer = accounts.at("0x8F5ea3CDe898B208280c0e93F3aDaaf1F5c35a7e", force=True)
+        deploy_oracles(ListedTokens, t, deployer, notional)
 
         transactions = _list_currency(notional, t, tradingModule, ListedTokens, liquidator)
         for txn in transactions:
@@ -229,9 +232,28 @@ def list_currency(ListedTokens, listTokens):
 
         json.dump(batchBase, open("batch-{}.json".format(t), 'w'), indent=2)
 
-def main():
-    (networkName, isFork) = get_network()
+
+def list(token):
+    (networkName, _) = get_network()
+
     if networkName == "arbitrum-one":
-        list_currency(ARB_ListedTokens, [])
+        listed_tokens = ARB_ListedTokens
     elif networkName == "mainnet":
-        list_currency(ETH_ListedTokens, ["GHO"])
+        listed_tokens = ETH_ListedTokens
+
+    list_currency(listed_tokens, [token])
+
+def oracles(token):
+    (networkName, isFork) = get_network()
+
+    if networkName == "arbitrum-one":
+        listed_tokens = ARB_ListedTokens
+    elif networkName == "mainnet":
+        listed_tokens = ETH_ListedTokens
+
+    (_, notional, *_) = get_addresses()
+    if isFork:
+        deployer = accounts.at("0x8F5ea3CDe898B208280c0e93F3aDaaf1F5c35a7e", force=True)
+    else:
+        deployer = accounts.load(networkName.upper() + "_DEPLOYER")
+    deploy_oracles(listed_tokens, token, notional, deployer)
