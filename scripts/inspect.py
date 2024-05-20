@@ -77,8 +77,9 @@ def get_addresses():
     note = NoteERC20.at(addresses["note"])
     router = Contract.from_abi("Router", addresses["notional"], abi=Router.abi)
     multicall = get_multicall()
+    tradingModule = Contract.from_abi("trading", addresses["tradingModule"], interface.ITradingModule.abi)
 
-    return (addresses, notional, note, router, networkName, multicall)
+    return (addresses, notional, note, router, networkName, multicall, tradingModule)
 
 def main():
     (addresses, notional, note, router, networkName, multicall) = get_addresses()
