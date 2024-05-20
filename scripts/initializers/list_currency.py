@@ -166,7 +166,7 @@ def append_txn(batchBase, txn):
         "contractInputsValues": None
     })
 
-def deploy_oracles(ListedTokens, listToken, deployer, notional):
+def deploy_oracles(ListedTokens, listToken, notional, deployer):
     print("DEPLOYER ADDRESS", deployer.address)
 
     if ListedTokens[listToken]["pCashOracle"] == "":
