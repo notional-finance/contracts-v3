@@ -367,7 +367,7 @@ ListedTokens = {
         "buffer": 111,
         "haircut": 85,
         "liquidationDiscount": 105,
-        "maxUnderlyingSupply": 2_000_000e8,
+        "maxUnderlyingSupply": 2_000e8,
 
         "primeCashCurve": {
             "kinkUtilization1": 65,
