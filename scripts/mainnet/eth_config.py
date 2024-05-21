@@ -368,6 +368,7 @@ ListedTokens = {
         "haircut": 85,
         "liquidationDiscount": 105,
         "maxUnderlyingSupply": 2_000e8,
+        "maxPrimeDebtUtilization": 85,
 
         "primeCashCurve": {
             "kinkUtilization1": 65,
