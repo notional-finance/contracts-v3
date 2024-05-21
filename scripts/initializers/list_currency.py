@@ -29,8 +29,8 @@ def donate_initial(symbol, notional, config):
         txn = fundingAccount.transfer(notional, 0.01e18)
     else:
         erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
-        whale = WHALES[symbol]
-        erc20.transfer(fundingAccount, 100.05 * 10 ** erc20.decimals(), {"from": whale})
+        # whale = WHALES[symbol]
+        # erc20.transfer(fundingAccount, 100.05 * 10 ** erc20.decimals(), {"from": whale})
         # Donate the initial balance
         txn = erc20.transfer(notional, 0.05 * 10 ** erc20.decimals(), {"from": fundingAccount})
 
@@ -160,7 +160,7 @@ def check_trading_module_oracle(symbol, config, isFork):
 def append_txn(batchBase, txn):
     batchBase['transactions'].append({
         "to": txn.receiver,
-        "value": txn.value,
+        "value": str(txn.value),
         "data": txn.input,
         "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
         "contractInputsValues": None
@@ -214,7 +214,6 @@ def list_currency(ListedTokens, listTokens):
             # Mint nTokens and Init Markets
             erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
             currencyId = token['currencyId']
-            precision = 10 ** erc20.decimals()
 
             # Minting nTokens and init markets is all done atomically
             txn = erc20.approve(notional, 2 ** 255, {"from": notional.owner()})
@@ -222,7 +221,7 @@ def list_currency(ListedTokens, listTokens):
 
             txn = notional.batchBalanceAction(notional.owner(), [
                 get_balance_action(
-                    currencyId, "DepositUnderlyingAndMintNToken", depositActionAmount=100 * precision
+                    currencyId, "DepositUnderlyingAndMintNToken", depositActionAmount=erc20.balanceOf(notional.owner())
                 )
             ], {'from': notional.owner()})
             append_txn(batchBase, txn)
