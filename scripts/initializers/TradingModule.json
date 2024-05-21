@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "chainId": "1",
+  "createdAt": "1716296184383",
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.16.1"
+  },
+  "transactions": [
+    {
+      "to": "0x594734c7e06C3D483466ADBCe401C6Bd269746C8",
+      "value": "0",
+      "data": "0xddf11c380000000000000000000000000a058e89b904a701063fec9d0e770ba087ed3e7600000000000000000000000040d16fc0246ad3160ccc09b8d0d3a2cd28ae6c2f00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000f",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    }
+  ]
+}
