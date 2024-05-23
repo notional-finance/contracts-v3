@@ -25,7 +25,7 @@ ARB_REWARDERS = {
 }
 
 ETH_REWARDERS = {
-    "GHO": "0xf42Ec71A4440F5e9871C643696DD6Dc9a38911F8",
+    "GHO": "0xbf35529d9333feEe50c17Aa0A39eeABea2b3ABB2",
 }
 
 batchBase = {
@@ -85,13 +85,13 @@ def main():
     (_, notional, *_) = get_addresses()
     txns = []
     # deployer = accounts.load("MAINNET_DEPLOYER")
-    deployer = accounts[0]
+    # deployer = accounts[0]
 
-    eth = SecondaryRewarder.deploy(
-        notional.address, 11, GHO, 0, END_TIME, {"from": deployer}
-    )
-    assert MockERC20.at(eth.NTOKEN_ADDRESS()).symbol() == 'nGHO'
-    assert eth.emissionRatePerYear() == 0
+    # eth = SecondaryRewarder.deploy(
+    #     notional.address, 11, GHO, 0, END_TIME, {"from": deployer}
+    # )
+    # assert MockERC20.at(eth.NTOKEN_ADDRESS()).symbol() == 'nGHO'
+    # assert eth.emissionRatePerYear() == 0
 
     txns.append(transfer_and_set('GHO', 11, 15_000e18, 60_000e8, notional))
 
