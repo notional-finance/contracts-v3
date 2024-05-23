@@ -1,7 +1,7 @@
 import json
 from itertools import chain
 
-from brownie import SecondaryRewarder, accounts, MockERC20
+from brownie import ZERO_ADDRESS, SecondaryRewarder, accounts, MockERC20
 from scripts.inspect import get_addresses
 from tests.helpers import get_balance_action
 from brownie.network import Chain
@@ -63,14 +63,14 @@ def transfer_and_set(symbol, currencyId, transferAmount, emissionRate, notional)
         "contractInputsValues": None
     })
 
-    # if symbol != 'USDT':
-    #     tx.append({
-    #         "to": notional.address,
-    #         "value": "0",
-    #         "data": notional.setSecondaryIncentiveRewarder.encode_input(currencyId, rewarder),
-    #         "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
-    #         "contractInputsValues": None
-    #     })
+    if notional.getSecondaryIncentiveRewarder(currencyId) == ZERO_ADDRESS:
+        tx.append({
+            "to": notional.address,
+            "value": "0",
+            "data": notional.setSecondaryIncentiveRewarder.encode_input(currencyId, rewarder),
+            "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
+            "contractInputsValues": None
+        })
 
     # Transfer
     if DRY_RUN:
@@ -93,7 +93,7 @@ def main():
     # assert MockERC20.at(eth.NTOKEN_ADDRESS()).symbol() == 'nGHO'
     # assert eth.emissionRatePerYear() == 0
 
-    txns.append(transfer_and_set('GHO', 11, 15_000e18, 60_000e8, notional))
+    txns.append(transfer_and_set('GHO', 11, 14_490e18, 60_000e8, notional))
 
     GHO_WHALE = '0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d'
     token = MockERC20.at(GHO)
@@ -111,4 +111,4 @@ def main():
 
     batchBase['transactions'] = flattened_list
 
-    json.dump(batchBase, open("rewarders.json", "w"))
+    json.dump(batchBase, open("rewarders.json", "w"), indent=2)
