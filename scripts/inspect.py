@@ -82,4 +82,4 @@ def get_addresses():
     return (addresses, notional, note, router, networkName, multicall, tradingModule)
 
 def main():
-    (addresses, notional, note, router, networkName, multicall) = get_addresses()
+    (addresses, notional, note, router, networkName, multicall, tradingModule) = get_addresses()
