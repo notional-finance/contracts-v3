@@ -18,27 +18,27 @@ import {Constants} from "../../global/Constants.sol";
 import {SafeInt256} from "../../math/SafeInt256.sol";
 import {NotionalProxy} from "../../../interfaces/notional/NotionalProxy.sol";
 import {ITradingModule} from "../../../interfaces/notional/ITradingModule.sol";
-import {IFlashLender} from "../../../interfaces/aave/IFlashLender.sol";
-import {IFlashLoanReceiver} from "../../../interfaces/aave/IFlashLoanReceiver.sol";
+import {IERC7399} from "../../../interfaces/IERC7399.sol";
 import {IWstETH} from "../../../interfaces/IWstETH.sol";
 
-abstract contract FlashLiquidatorBase is BaseLiquidator, IFlashLoanReceiver {
+interface IERC7399Receiver {
+    function callback(address, address, address, uint256, uint256, bytes memory) external returns (bytes memory);
+}
+
+abstract contract FlashLiquidatorBase is BaseLiquidator, IERC7399Receiver {
     using SafeInt256 for int256;
     using SafeMath for uint256;
     using TradeHandler for Trade;
     using SafeERC20 for IERC20;
 
-    address public immutable LENDING_POOL;
     ITradingModule public immutable TRADING_MODULE;
 
     constructor(
         NotionalProxy notional_,
-        address lendingPool_,
         address weth_,
         address owner_,
         address tradingModule_
     ) BaseLiquidator(notional_, weth_, owner_) {
-        LENDING_POOL = lendingPool_;
         TRADING_MODULE = ITradingModule(tradingModule_);
     }
 
@@ -49,55 +49,46 @@ abstract contract FlashLiquidatorBase is BaseLiquidator, IFlashLoanReceiver {
         if (underlying == Constants.ETH_ADDRESS) {
             underlying = address(WETH);
         }
-        
-        // Lending pool needs to be able to pull underlying
-        checkAllowanceOrSet(underlying, LENDING_POOL);
 
         return underlying;
     }
 
     // Profit estimation
     function flashLoan(
+        address flashLenderWrapper,
         address asset, 
         uint256 amount, 
         bytes calldata params, 
         address localAddress, 
         address collateralAddress
     ) external onlyOwner returns (uint256 flashLoanResidual, uint256 localProfit, uint256 collateralProfit) {
-        address[] memory assets = new address[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        assets[0] = asset;
-        amounts[0] = amount;
-
-        IFlashLender(LENDING_POOL).flashLoan(
+        IERC7399(flashLenderWrapper).flash(
             address(this),
-            assets,
-            amounts,
-            new uint256[](1),
-            address(this),
+            asset,
+            amount,
             params,
-            0
+            this.callback
         );
+
         flashLoanResidual = IERC20(asset).balanceOf(address(this));
-        localProfit = localAddress == address(0) ? 
+        localProfit = localAddress == address(0) ?
             address(this).balance : IERC20(localAddress).balanceOf(address(this));
-        collateralProfit = collateralAddress == address(0) ? 
+        collateralProfit = collateralAddress == address(0) ?
             address(this).balance : IERC20(collateralAddress).balanceOf(address(this));
     }
 
-    function executeOperation(
-        address[] calldata assets,
-        uint256[] calldata amounts,
-        uint256[] calldata premiums,
-        address initiator,
+    function callback(
+        address /* initiator */,
+        address paymentReceiver,
+        address asset,
+        uint256 amount,
+        uint256 fee,
         bytes calldata params
-    ) external override returns (bool) {
-        require(msg.sender == LENDING_POOL); // dev: unauthorized caller
+    ) external override returns (bytes memory) {
         LiquidationAction memory action = abi.decode(params, ((LiquidationAction)));
 
-        if (assets[0] == address(WETH)) {
-            WETH.withdraw(amounts[0]);
+        if (asset == address(WETH)) {
+            WETH.withdraw(amount);
         }
 
         if (action.preLiquidationTrade.length > 0) {
@@ -106,13 +97,13 @@ abstract contract FlashLiquidatorBase is BaseLiquidator, IFlashLoanReceiver {
         }
 
         if (LiquidationType(action.liquidationType) == LiquidationType.LocalCurrency) {
-            _liquidateLocal(action, assets);
+            _liquidateLocal(action, asset);
         } else if (LiquidationType(action.liquidationType) == LiquidationType.CollateralCurrency) {
-            _liquidateCollateral(action, assets);
+            _liquidateCollateral(action, asset);
         } else if (LiquidationType(action.liquidationType) == LiquidationType.LocalfCash) {
-            _liquidateLocalfCash(action, assets);
+            _liquidateLocalfCash(action, asset);
         } else if (LiquidationType(action.liquidationType) == LiquidationType.CrossCurrencyfCash) {
-            _liquidateCrossCurrencyfCash(action, assets);
+            _liquidateCrossCurrencyfCash(action, asset);
         }
 
         if (action.tradeInWETH) {
@@ -126,16 +117,19 @@ abstract contract FlashLiquidatorBase is BaseLiquidator, IFlashLoanReceiver {
             _dexTrade(action);
         }
 
-        if (!action.tradeInWETH && assets[0] == address(WETH)) {
+        if (!action.tradeInWETH && asset == address(WETH)) {
             WETH.deposit{value: address(this).balance}();
         }
 
+        uint256 amountWithFee = amount.add(fee);
         if (action.withdrawProfit) {
-            _withdrawProfit(assets[0], amounts[0].add(premiums[0]));
+            _withdrawProfit(asset, amountWithFee);
         }
 
-        // The lending pool should have enough approval to pull the required amount from the contract
-        return true;
+        // Repay the flash lender
+        IERC20(asset).safeTransfer(paymentReceiver, amountWithFee);
+
+        return "";
     }
 
     function _withdrawProfit(address currency, uint256 threshold) internal {

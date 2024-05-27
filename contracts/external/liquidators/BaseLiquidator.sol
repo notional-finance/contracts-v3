@@ -132,7 +132,7 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
         return underlyingToken.tokenAddress;
     }
 
-    function _liquidateLocal(LiquidationAction memory action, address[] memory assets) internal {
+    function _liquidateLocal(LiquidationAction memory action, address asset) internal {
         LocalCurrencyLiquidation memory liquidation = abi.decode(
             action.payload,
             (LocalCurrencyLiquidation)
@@ -140,8 +140,8 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
 
         if (action.hasTransferFee) {
             // NOTE: This assumes that the first asset flash borrowed is the one with transfer fees
-            uint256 amount = IERC20(assets[0]).balanceOf(address(this));
-            checkAllowanceOrSet(assets[0], address(NOTIONAL));
+            uint256 amount = IERC20(asset).balanceOf(address(this));
+            checkAllowanceOrSet(asset, address(NOTIONAL));
             NOTIONAL.depositUnderlyingToken(address(this), liquidation.localCurrency, amount);
         }
 
@@ -160,7 +160,7 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
         _redeemAndWithdraw(liquidation.localCurrency, uint96(netNTokens), true);
     }
 
-    function _liquidateCollateral(LiquidationAction memory action, address[] memory assets)
+    function _liquidateCollateral(LiquidationAction memory action, address asset)
         internal
     {
         CollateralCurrencyLiquidation memory liquidation = abi.decode(
@@ -170,8 +170,8 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
 
         if (action.hasTransferFee) {
             // NOTE: This assumes that the first asset flash borrowed is the one with transfer fees
-            uint256 amount = IERC20(assets[0]).balanceOf(address(this));
-            checkAllowanceOrSet(assets[0], address(NOTIONAL));
+            uint256 amount = IERC20(asset).balanceOf(address(this));
+            checkAllowanceOrSet(asset, address(NOTIONAL));
             NOTIONAL.depositUnderlyingToken(address(this), liquidation.localCurrency, amount);
         }
 
@@ -198,7 +198,7 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
         if (action.hasTransferFee) _redeemAndWithdraw(liquidation.localCurrency, 0, true);
     }
 
-    function _liquidateLocalfCash(LiquidationAction memory action, address[] memory assets)
+    function _liquidateLocalfCash(LiquidationAction memory action, address asset)
         internal
     {
         LocalfCashLiquidation memory liquidation = abi.decode(
@@ -208,8 +208,8 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
 
         if (action.hasTransferFee) {
             // NOTE: This assumes that the first asset flash borrowed is the one with transfer fees
-            uint256 amount = IERC20(assets[0]).balanceOf(address(this));
-            checkAllowanceOrSet(assets[0], address(NOTIONAL));
+            uint256 amount = IERC20(asset).balanceOf(address(this));
+            checkAllowanceOrSet(asset, address(NOTIONAL));
             NOTIONAL.depositUnderlyingToken(address(this), liquidation.localCurrency, amount);
         }
 
@@ -238,7 +238,7 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
         // NOTE: no withdraw if _hasTransferFees, _sellfCashAssets with withdraw everything
     }
 
-    function _liquidateCrossCurrencyfCash(LiquidationAction memory action, address[] memory assets)
+    function _liquidateCrossCurrencyfCash(LiquidationAction memory action, address asset)
         internal
     {
         CrossCurrencyfCashLiquidation memory liquidation = abi.decode(
@@ -248,8 +248,8 @@ abstract contract BaseLiquidator is LiquidatorStorageLayoutV1 {
 
         if (action.hasTransferFee) {
             // NOTE: This assumes that the first asset flash borrowed is the one with transfer fees
-            uint256 amount = IERC20(assets[0]).balanceOf(address(this));
-            checkAllowanceOrSet(assets[0], address(NOTIONAL));
+            uint256 amount = IERC20(asset).balanceOf(address(this));
+            checkAllowanceOrSet(asset, address(NOTIONAL));
             NOTIONAL.depositUnderlyingToken(address(this), liquidation.localCurrency, amount);
         }
 
