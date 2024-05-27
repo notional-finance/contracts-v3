@@ -24,11 +24,10 @@ contract FlashLiquidator is FlashLiquidatorBase {
 
     constructor(
         NotionalProxy notional_,
-        address lendingPool_,
         address weth_,
         address owner_,
         address tradingModule_
-    ) FlashLiquidatorBase(notional_, lendingPool_, weth_, owner_, tradingModule_) { }
+    ) FlashLiquidatorBase(notional_, weth_, owner_, tradingModule_) { }
 
     function _redeemAndWithdraw(
         uint16 nTokenCurrencyId,

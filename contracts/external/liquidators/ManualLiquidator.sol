@@ -26,14 +26,12 @@ contract ManualLiquidator is FlashLiquidatorBase, AccessControl, Initializable {
     // @dev setting owner to address(0) because it is initialized in initialize()
     constructor(
         NotionalProxy notional_,
-        address lendingPool_,
         address weth_,
         address note_,
         address tradingModule_
     )
         FlashLiquidatorBase(
             notional_,
-            lendingPool_,
             weth_,
             address(0),
             tradingModule_

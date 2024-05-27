@@ -4,7 +4,9 @@ pragma abicoder v2;
 
 import {Test} from "forge-std/Test.sol";
 import {IFlashLender} from "../../interfaces/aave/IFlashLender.sol";
+import {IERC7399} from "../../interfaces/IERC7399.sol";
 import {FlashLiquidator} from "../../contracts/external/liquidators/FlashLiquidator.sol";
+import {IERC7399Receiver} from "../../contracts/external/liquidators/FlashLiquidatorBase.sol";
 import "../../interfaces/notional/NotionalProxy.sol";
 import "../../interfaces/notional/ITradingModule.sol";
 import "../../contracts/external/liquidators/BaseLiquidator.sol";
@@ -16,7 +18,7 @@ struct UniData {
 contract LiquidatorTest is Test { 
     FlashLiquidator public liquidator;
     address public owner;
-    IFlashLender public constant lendingPool = IFlashLender(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2);
+    IERC7399 public constant lendingPool = IERC7399(0x0c86c636ed5593705b5675d370c831972C787841);
     NotionalProxy public constant notional = NotionalProxy(0x6e7058c91F85E0F6db4fc9da2CA41241f5e4263f);
     ITradingModule public constant tradingModule = ITradingModule(0x594734c7e06C3D483466ADBCe401C6Bd269746C8);
 
@@ -29,7 +31,6 @@ contract LiquidatorTest is Test {
 
         liquidator = new FlashLiquidator(
             notional,
-            address(lendingPool),
             0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,
             owner,
             address(tradingModule)
@@ -64,10 +65,8 @@ contract LiquidatorTest is Test {
 
         notional.initializeMarkets(1, false);
 
-        address[] memory assets = new address[](1);
-        uint256[] memory amounts = new uint256[](1);
-        assets[0] = address(liquidator.WETH());
-        amounts[0] = 0.2e18;
+        address asset = address(liquidator.WETH());
+        uint256 amount = 0.2e18;
         LocalCurrencyLiquidation memory local = LocalCurrencyLiquidation(acct, 1, 0);
         LiquidationAction memory params = LiquidationAction(
             uint8(LiquidationType.LocalCurrency),
@@ -79,14 +78,12 @@ contract LiquidatorTest is Test {
         );
 
         vm.prank(owner);
-        lendingPool.flashLoan(
+        lendingPool.flash(
             address(liquidator),
-            assets,
-            amounts,
-            new uint256[](1),
-            address(liquidator),
+            asset,
+            amount,
             abi.encode(params),
-            0
+            liquidator.callback
         );
     }
 
@@ -105,10 +102,8 @@ contract LiquidatorTest is Test {
         vm.warp(block.timestamp + 86400 * 7);
         vm.stopPrank();
 
-        address[] memory assets = new address[](1);
-        uint256[] memory amounts = new uint256[](1);
-        assets[0] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-        amounts[0] = 47e6;
+        address asset = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        uint256 amount = 47e6;
         UniData memory uni = UniData(500);
         CollateralCurrencyLiquidation memory collateral = CollateralCurrencyLiquidation(
             acct,
@@ -118,7 +113,7 @@ contract LiquidatorTest is Test {
             0,
             0,
             TradeData(
-                Trade(TradeType.EXACT_IN_SINGLE, address(0), assets[0], 0.01469e18, 0, block.timestamp, abi.encode(uni)),
+                Trade(TradeType.EXACT_IN_SINGLE, address(0), asset, 0.01469e18, 0, block.timestamp, abi.encode(uni)),
                 uint16(DexId.UNISWAP_V3),
                 false,
                 0
@@ -134,14 +129,13 @@ contract LiquidatorTest is Test {
         );
 
         vm.prank(owner);
-        lendingPool.flashLoan(
+        lendingPool.flash(
             address(liquidator),
-            assets,
-            amounts,
-            new uint256[](1),
-            address(liquidator),
+            asset,
+            amount,
             abi.encode(params),
-            0
+            address(liquidator),
+            IERC7399Receiver.callback.selector
         );
     }
 }
