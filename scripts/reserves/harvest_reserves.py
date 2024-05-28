@@ -61,7 +61,7 @@ def get_reserves_at_timestamp(network, timestamp):
         raise Exception(f"Failed to retrieve data: {response.status_code}")
 
 REINVESTMENT_RATE = 0.2
-RESERVE_BALANCE_DATE = 1716488211
+RESERVE_BALANCE_DATE = 1711868400
 NETWORK = "arbitrum" # or "mainnet"
 
 def main():
