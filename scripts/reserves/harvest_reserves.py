@@ -17,6 +17,7 @@ query reserveBalanceAtBlock($block: Int){
       underlying {
         symbol
         precision
+        tokenAddress
       }
     }
     current {
@@ -65,7 +66,7 @@ RESERVE_BALANCE_DATE = 1711868400
 NETWORK = "arbitrum" # or "mainnet"
 
 def main():
-    (addresses, notional, *_) = get_addresses()
+    (addresses, notional, *_, tradingModule) = get_addresses()
     balances = get_reserves_at_timestamp(NETWORK, RESERVE_BALANCE_DATE)
     sorted_balances = sorted(balances, key=lambda x: x['token']['currencyId'])
     TreasuryManagerABI = json.load(open("abi/TreasuryManager.json"))
@@ -76,17 +77,19 @@ def main():
     for balance in sorted_balances:
         currency_id = balance['token']['currencyId']
         all_ids.append(currency_id)
-
         harvestAmount = int(balance['current']['currentBalance']) * REINVESTMENT_RATE
         reserveBuffer = notional.getReserveBalance(currency_id) - harvestAmount
         txn = notional.setReserveBuffer(currency_id, reserveBuffer, {"from": notional.owner()})
         append_txn(batchBase, txn)
 
-    notional.setTreasuryManager(treasury.address, {"from": notional.owner()})
+    # notional.setTreasuryManager(treasury.address, {"from": notional.owner()})
     txn = treasury.harvestAssetsFromNotional(all_ids, {"from": treasury.manager()})
     harvested = txn.events['AssetsHarvested']['amounts']
     for (i, h) in enumerate(harvested):
         u = sorted_balances[i]['token']['underlying']
         print(f"Harvested {h / int(u['precision'])} {u['symbol']} from treasury")
+        # if u['symbol'] != 'ETH':
+        #   txn = tradingModule.setTokenPermissions(treasury.address, u['tokenAddress'], (True, 8, 15), {"from": notional.owner()})
+        #   append_txn(batchBase, txn)
 
-    json.dump(batchBase, open("batch-harvest-reserves.json", 'w'), indent=2)
+    json.dump(batchBase, open("treasury-manager.json", 'w'), indent=2)
