@@ -8,7 +8,7 @@ from brownie.network import Chain
 
 chain_ = Chain()
 
-END_TIME = 1724457600 # Aug 24
+END_TIME = 1720828800 # Jul 12
 ARB = '0x912CE59144191C1204E64559FE8253a0e49E6548'
 GHO = '0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f'
 
@@ -76,7 +76,7 @@ def transfer_and_set(symbol, currencyId, transferAmount, emissionRate, notional)
     if DRY_RUN:
         token.transfer(ETH_REWARDERS[symbol], transferAmount, {"from": notional.owner()})
         rewarder.setIncentiveEmissionRate(emissionRate, END_TIME, {"from": notional.owner()})
-        notional.setSecondaryIncentiveRewarder(currencyId, rewarder, {"from": notional.owner()})
+        # notional.setSecondaryIncentiveRewarder(currencyId, rewarder, {"from": notional.owner()})
 
     return tx
 
@@ -93,7 +93,7 @@ def main():
     # assert MockERC20.at(eth.NTOKEN_ADDRESS()).symbol() == 'nGHO'
     # assert eth.emissionRatePerYear() == 0
 
-    txns.append(transfer_and_set('GHO', 11, 14_490e18, 60_000e8, notional))
+    txns.append(transfer_and_set('GHO', 11, 14_990e18, 120_000e8, notional))
 
     GHO_WHALE = '0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d'
     token = MockERC20.at(GHO)
