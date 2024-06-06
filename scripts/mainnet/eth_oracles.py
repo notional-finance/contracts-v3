@@ -1,7 +1,7 @@
 from brownie import ZERO_ADDRESS, accounts
 from scripts.deployers.oracle_deployer import deploy_chainlink_usd_oracle
-# from scripts.mainnet.eth_config import ChainlinkOracles
-from scripts.arbitrum.arb_config import ChainlinkOracles
+from scripts.mainnet.eth_config import ChainlinkOracles
+# from scripts.arbitrum.arb_config import ChainlinkOracles
 
 DEPLOYER = "0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3"
 
@@ -27,8 +27,17 @@ weETH_USD = {
     'sequencerUptimeOracle': ZERO_ADDRESS
 }
 
+# Mainnet: 0x150aab1C3D63a1eD0560B95F23d7905CE6544cCB
+rsETH_USD = {
+    'oracleType': 'ChainlinkAdapter',
+    'baseOracle': ChainlinkOracles['rsETH/ETH'],
+    'quoteOracle': ChainlinkOracles['ETH/USD'],
+    'invertBase': False,
+    'invertQuote': True,
+    'sequencerUptimeOracle': ZERO_ADDRESS
+}
+
 def main():
     deployer = accounts.load("MAINNET_DEPLOYER")
     # deployer = DEPLOYER
-    ezETH = deploy_chainlink_usd_oracle("ezETH", deployer, ezETH_USD)
-    weETH = deploy_chainlink_usd_oracle("weETH", deployer, weETH_USD)
+    rsETH = deploy_chainlink_usd_oracle("rsETH", deployer, rsETH_USD)
