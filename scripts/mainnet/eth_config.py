@@ -21,7 +21,7 @@ ChainlinkOracles = {
     "osETH/ETH": "0x66ac817f997Efd114EDFcccdce99F3268557B32C", # Redstone
     "osETH/USD": "0x3d3d7d124B0B80674730e0D31004790559209DEb",
     "ezETH/ETH": "0x636A000262F6aA9e1F094ABF0aD8f645C44f641C",
-    "rsETH/ETH": "0xA736eAe8805dDeFFba40cAB8c99bCB309dEaBd9B" # Redstone
+    "rsETH/ETH": "0x03c68933f7a3F76875C0bc670a58e69294cDFD01" # Redstone
 }
 
 CurrencyDefaults = {
