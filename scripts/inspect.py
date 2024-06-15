@@ -1,7 +1,7 @@
 # flake8: noqa
 import json
 import math
-from brownie import NoteERC20, Router, network, interface
+from brownie import NoteERC20, Router, network, interface, accounts
 from brownie.network import Chain
 from brownie.network.contract import Contract
 from tests.constants import SECONDS_IN_YEAR
@@ -82,4 +82,13 @@ def get_addresses():
     return (addresses, notional, note, router, networkName, multicall, tradingModule)
 
 def main():
-    (addresses, notional, note, router, networkName, multicall) = get_addresses()
+    (addresses, notional, note, router, networkName, multicall, tradingModule) = get_addresses()
+
+def init_markets():
+    (addresses, notional, note, router, networkName, multicall, tradingModule) = get_addresses()
+    v3 = [1,2,3,5,6,7,8,9,11]
+    v2 = [1,2,3,4]
+    calls = [ (notional.address, notional.initializeMarkets.encode_input(i, False)) for i in v3 ] + \
+        [ ("0x1344A36A1B56144C3Bc62E7757377D288fDE0369", notional.initializeMarkets.encode_input(i, False)) for i in v2 ]
+    deployer = accounts.load("MAINNET_DEPLOYER")
+    multicall.aggregate(calls, {"from": deployer})
