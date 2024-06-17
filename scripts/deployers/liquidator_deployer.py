@@ -5,7 +5,6 @@ from brownie.network import Chain
 from scripts.inspect import get_addresses
 
 DEPLOYER = "0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3"
-FLASH_LENDER = "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2"
 chain = Chain()
 
 
@@ -15,7 +14,6 @@ def main():
 
     liquidator = FlashLiquidator.deploy(
         notional.address,
-        addresses["aaveLendingPool"],
         addresses["tokens"]["WETH"]["address"],
         deployer,
         addresses["tradingModule"],
