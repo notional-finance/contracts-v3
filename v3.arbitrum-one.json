@@ -46,7 +46,7 @@
     "note": "0x019bE259BC299F3F653688c7655C87F998Bc7bC1",
     "notional": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
     "routers": {
-        "PauseRouter": "0x3A571c167190d42a6aB822823d52b53D9a78Be95",
+        "PauseRouter": "0x7544B5b88b70ffB4385E15Fa815b2553bF163A0e",
         "Router": "0x484b4314933BacB9A706a7118C97608624Bce4C9"
     },
     "startBlock": 86540849,
