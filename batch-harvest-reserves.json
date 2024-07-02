@@ -1,0 +1,188 @@
+{
+  "version": "1.0",
+  "chainId": "42161",
+  "createdAt": "1716909720861",
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.16.1"
+  },
+  "transactions": [
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0xfe47a9f200000000000000000000000053144559c0d4a3304e2dd9dafbd685247429216d",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000002aabd904",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000001f0a86793c2",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000006a4ae15bc21",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000003586b0",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c0000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000afb3ba3",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c00000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000014099ea52e3",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c00000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000007eca632",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000163a8c21c57",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c00000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000001b3c91b",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000003d5579",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c000000000000000000000000000000000000000000000000000000000000000b0000000000000000000000000000000000000000000000000000000008febbc8",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000020493a6",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c000000000000000000000000000000000000000000000000000000000000000d00000000000000000000000000000000000000000000000000000000062cf42e",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000262d564",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    },
+    {
+      "to": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+      "value": "0",
+      "data": "0x8e73b23c000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000026eca6c",
+      "contractMethod": {
+        "inputs": [],
+        "name": "fallback",
+        "payable": true
+      },
+      "contractInputsValues": null
+    }
+  ]
+}

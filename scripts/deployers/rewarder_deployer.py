@@ -1,12 +1,18 @@
 import json
 from itertools import chain
 
-from brownie import SecondaryRewarder, accounts, MockERC20
+from brownie import ZERO_ADDRESS, SecondaryRewarder, accounts, MockERC20
 from scripts.inspect import get_addresses
+from tests.helpers import get_balance_action
+from brownie.network import Chain
 
-END_TIME = 1711728000 # March 18
+chain_ = Chain()
+
+END_TIME = 1720828800 # Jul 12
 ARB = '0x912CE59144191C1204E64559FE8253a0e49E6548'
-REWARDERS = {
+GHO = '0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f'
+
+ARB_REWARDERS = {
     "ETH": "0x3987F211d4BA25B6FF163B56051651bF6c6c5e54",
     "DAI": "0xE5b58DE62b71477aE4e10074fee48232DD7A2350",
     "USDC": "0xFc24ACF5BD2aFEe3efBd589F87B6610C9D162645",
@@ -18,9 +24,13 @@ REWARDERS = {
     "cbETH": "0x9Bfbd9DF9E5f0bA9B43843bf89B590e41Ac01174"
 }
 
+ETH_REWARDERS = {
+    "GHO": "0xbf35529d9333feEe50c17Aa0A39eeABea2b3ABB2",
+}
+
 batchBase = {
     "version": "1.0",
-    "chainId": "42161",
+    "chainId": "1",
     "createdAt": 1692567274357,
     "meta": {
         "name": "Transactions Batch",
@@ -33,14 +43,14 @@ batchBase = {
 DRY_RUN = True
 
 def transfer_and_set(symbol, currencyId, transferAmount, emissionRate, notional):
-    arb = MockERC20.at(ARB)
-    rewarder = SecondaryRewarder.at(REWARDERS[symbol])
+    token = MockERC20.at(GHO)
+    rewarder = SecondaryRewarder.at(ETH_REWARDERS[symbol])
     tx = []
     
     tx.append({
-        "to": arb.address,
+        "to": token.address,
         "value": "0",
-        "data": arb.transfer.encode_input(REWARDERS[symbol], transferAmount),
+        "data": token.transfer.encode_input(ETH_REWARDERS[symbol], transferAmount),
         "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
         "contractInputsValues": None
     })
@@ -53,21 +63,20 @@ def transfer_and_set(symbol, currencyId, transferAmount, emissionRate, notional)
         "contractInputsValues": None
     })
 
-    # if symbol != 'USDT':
-    #     tx.append({
-    #         "to": notional.address,
-    #         "value": "0",
-    #         "data": notional.setSecondaryIncentiveRewarder.encode_input(currencyId, rewarder),
-    #         "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
-    #         "contractInputsValues": None
-    #     })
+    if notional.getSecondaryIncentiveRewarder(currencyId) == ZERO_ADDRESS:
+        tx.append({
+            "to": notional.address,
+            "value": "0",
+            "data": notional.setSecondaryIncentiveRewarder.encode_input(currencyId, rewarder),
+            "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
+            "contractInputsValues": None
+        })
 
     # Transfer
     if DRY_RUN:
-        arb.transfer(REWARDERS[symbol], transferAmount, {"from": notional.owner()})
+        token.transfer(ETH_REWARDERS[symbol], transferAmount, {"from": notional.owner()})
         rewarder.setIncentiveEmissionRate(emissionRate, END_TIME, {"from": notional.owner()})
-        # if symbol != 'USDT':
-        #     notional.setSecondaryIncentiveRewarder(currencyId, rewarder, {"from": notional.owner()})
+        # notional.setSecondaryIncentiveRewarder(currencyId, rewarder, {"from": notional.owner()})
 
     return tx
 
@@ -75,25 +84,31 @@ def transfer_and_set(symbol, currencyId, transferAmount, emissionRate, notional)
 def main():
     (_, notional, *_) = get_addresses()
     txns = []
+    # deployer = accounts.load("MAINNET_DEPLOYER")
+    # deployer = accounts[0]
 
     # eth = SecondaryRewarder.deploy(
-    #     notional.address, 1, ARB, 0, END_TIME, {"from": deployer}
+    #     notional.address, 11, GHO, 0, END_TIME, {"from": deployer}
     # )
-    # assert MockERC20.at(eth.NTOKEN_ADDRESS()).symbol() == 'nETH'
+    # assert MockERC20.at(eth.NTOKEN_ADDRESS()).symbol() == 'nGHO'
     # assert eth.emissionRatePerYear() == 0
 
-    txns.append(transfer_and_set('ETH',    1, 12_655e18, 723_840e8, notional))
-    txns.append(transfer_and_set('DAI',    2,  5_265e18, 301_600e8, notional))
-    txns.append(transfer_and_set('USDC',   3, 12_655e18, 723_840e8, notional))
-    txns.append(transfer_and_set('WBTC',   4,  1_045e18,  60_320e8, notional))
-    txns.append(transfer_and_set('wstETH', 5,  5_265e18, 301_600e8, notional))
-    txns.append(transfer_and_set('FRAX',   6,  5_265e18, 347_360e8, notional))
-    txns.append(transfer_and_set('rETH',   7,  5_265e18, 301_600e8, notional))
-    txns.append(transfer_and_set('USDT',   8,  5_265e18, 301_600e8, notional))
-    # txns.append(transfer_and_set('cbETH', 9, 0e18, 0, notional))
-    
+    txns.append(transfer_and_set('GHO', 11, 14_990e18, 120_000e8, notional))
+
+    GHO_WHALE = '0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d'
+    token = MockERC20.at(GHO)
+    token.transfer(accounts[1], 900e18, {"from": GHO_WHALE})
+    token.approve(notional.address, 900e18, {"from": accounts[1]})
+    notional.batchBalanceAction(accounts[1], [
+        get_balance_action(11, depositActionType="DepositUnderlyingAndMintNToken", depositActionAmount=900e18)
+    ], {"from": accounts[1]})
+    chain_.mine(timestamp=END_TIME)
+    ghoBalanceBefore = token.balanceOf(accounts[1])
+    notional.nTokenClaimIncentives({"from": accounts[1]})
+    ghoBalanceAfter = token.balanceOf(accounts[1])
+
     flattened_list = list(chain.from_iterable(map(lambda x: x, txns)))
 
     batchBase['transactions'] = flattened_list
 
-    json.dump(batchBase, open("rewarders.json", "w"))
+    json.dump(batchBase, open("rewarders.json", "w"), indent=2)
