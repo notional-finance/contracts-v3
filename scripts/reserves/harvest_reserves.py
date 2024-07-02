@@ -41,7 +41,7 @@ def get_block_for_timestamp(network, timestamp):
 
 def get_reserves_at_timestamp(network, timestamp):
     # Define the URL for the GraphQL endpoint
-    url = f"https://api.studio.thegraph.com/query/36749/notional-v3-{network}/version/latest"
+    url = f"https://api.studio.thegraph.com/query/60626/notional-v3-{network}/version/latest"
 
     variables = {
         "block": get_block_for_timestamp(network, timestamp)
@@ -62,7 +62,7 @@ def get_reserves_at_timestamp(network, timestamp):
         raise Exception(f"Failed to retrieve data: {response.status_code}")
 
 REINVESTMENT_RATE = 0.2
-RESERVE_BALANCE_DATE = 1711868400
+RESERVE_BALANCE_DATE = 1719730800
 NETWORK = "arbitrum" # or "mainnet"
 
 def main():
