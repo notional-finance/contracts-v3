@@ -1,7 +1,21 @@
+from brownie import network
 from brownie import ZERO_ADDRESS, accounts
 from scripts.deployers.oracle_deployer import deploy_chainlink_usd_oracle
-# from scripts.mainnet.eth_config import ChainlinkOracles
-from scripts.arbitrum.arb_config import ChainlinkOracles
+
+networkName = network.show_active()
+if networkName == "mainnet-fork" or networkName == "mainnet-current":
+    networkName = "mainnet"
+    isFork = True
+elif networkName == "arbitrum-fork" or networkName == "arbitrum-current":
+    networkName = "arbitrum-one"
+    isFork = True
+else:
+    isFork = False
+
+if networkName == "mainnet":
+    from scripts.mainnet.eth_config import ChainlinkOracles
+elif networkName == "arbitrum":
+    from scripts.arbitrum.arb_config import ChainlinkOracles
 
 DEPLOYER = "0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3"
 
@@ -27,8 +41,20 @@ weETH_USD = {
     'sequencerUptimeOracle': ZERO_ADDRESS
 }
 
+# Mainnet: 0xb676EA4e0A54ffD579efFc1f1317C70d671f2028
+# Arbitrum: 0x02551ded3F5B25f60Ea67f258D907eD051E042b2
+rsETH_USD = {
+    'oracleType': 'ChainlinkAdapter',
+    'baseOracle': ChainlinkOracles['rsETH/ETH'],
+    'quoteOracle': ChainlinkOracles['ETH/USD'],
+    'invertBase': False,
+    'invertQuote': True,
+    'sequencerUptimeOracle': ZERO_ADDRESS
+}
+
 def main():
-    deployer = accounts.load("MAINNET_DEPLOYER")
-    # deployer = DEPLOYER
-    ezETH = deploy_chainlink_usd_oracle("ezETH", deployer, ezETH_USD)
-    weETH = deploy_chainlink_usd_oracle("weETH", deployer, weETH_USD)
+    if isFork:
+        deployer = DEPLOYER
+    else:
+        deployer = accounts.load("MAINNET_DEPLOYER")
+    rsETH = deploy_chainlink_usd_oracle("rsETH", deployer, rsETH_USD)
