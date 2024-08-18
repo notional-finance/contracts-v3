@@ -160,12 +160,7 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
         // This is the returned stored token balance of the aToken
         oracleData.currentExternalUnderlyingLend = _holdingValuesInUnderlying()[0];
 
-        // Sets a cap on the total deposits
-        if (0 < maxDeposit) {
-            oracleData.maxExternalDeposit =  oracleData.currentExternalUnderlyingLend < maxDeposit ?
-                maxDeposit - oracleData.currentExternalUnderlyingLend :
-                0;
-        } else if (supplyCap == 0) {
+        if (supplyCap == 0) {
             // If supply cap is zero, that means there is no cap on the pool
             oracleData.maxExternalDeposit = type(uint256).max;
         } else {
@@ -182,6 +177,16 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
             } else {
                 // underflow checked as consequence of if / else statement
                 oracleData.maxExternalDeposit = supplyCap - currentSupply;
+            }
+        }
+
+        // Sets a cap on the total deposits
+        if (0 < maxDeposit) {
+            uint256 remainingDepositCapacity = oracleData.currentExternalUnderlyingLend < maxDeposit ?
+                maxDeposit - oracleData.currentExternalUnderlyingLend :
+                0;
+            if (remainingDepositCapacity < oracleData.maxExternalDeposit) {
+                oracleData.maxExternalDeposit = remainingDepositCapacity;
             }
         }
 
