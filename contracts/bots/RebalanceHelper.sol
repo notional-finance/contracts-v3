@@ -28,12 +28,12 @@ contract RebalanceHelper {
     function checkAndRebalance() external {
         uint16[] memory currencyIdsToProcess = checkRebalance();
         if (currencyIdsToProcess.length > 0) {
-            rebalanceAll(currencyIdsToProcess);
+            rebalanceCurrencyIds(currencyIdsToProcess);
         }
     }
 
 
-    function rebalanceAll(uint16[] memory currencyIds) public {
+    function rebalanceCurrencyIds(uint16[] memory currencyIds) public {
         if (currencyIds.length == 0) {
             revert CurrencyIdsLengthCannotBeZero();
         }
@@ -44,7 +44,7 @@ contract RebalanceHelper {
         for (uint256 i = 0; i < currencyIds.length; i++) {
             uint16 currencyId = currencyIds[i];
             // ensure currency ids are unique and sorted
-            if (i != 0 && currencyIds[i - 1] < currencyId) {
+            if (i != 0 && currencyIds[i - 1] >= currencyId) {
                 revert CurrencyIdsNeedToBeSorted();
             }
 

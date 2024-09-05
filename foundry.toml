@@ -16,3 +16,6 @@ arbitrum = "${ARBITRUM_RPC_URL}"
 runs = 50
 seed='0x5792875'
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+[etherscan]
+# This needs to be here in order for contract verification to work with Tenderly
+unknown_chain = { key = "", chain = "52161", url = "" }
