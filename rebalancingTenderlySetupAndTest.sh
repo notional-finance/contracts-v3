@@ -334,7 +334,7 @@ perform_rebalancing() {
             exit 0
             ;;
         *)
-            echo "Invalid choice. Exiting."
+            echo "Invalid choice."
             perform_rebalancing
             ;;
     esac
