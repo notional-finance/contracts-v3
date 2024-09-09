@@ -248,7 +248,6 @@ check_rebalance_needed() {
 
 perform_rebalancing() {
     check_rebalance_needed
-    # Present options to the user
     echo "Please choose an option:"
     echo "1. Rebalance all currencies"
     echo "2. Enter custom currency IDs to rebalance"
@@ -256,8 +255,9 @@ perform_rebalancing() {
     echo "4. Change max deposit on holding oracle"
     echo "5. Check if rebalance is needed"
     echo "6. Deploy and set holding oracles"
-    echo "7. Exit"
-    read -p "Enter your choice (1-6): " choice
+    echo "7. Set rebalancing parameters(deploy oracle first before running this)"
+    echo "8. Exit"
+    read -p "Enter your choice (1-8): " choice
 
     case $choice in
         1)
@@ -346,7 +346,19 @@ perform_rebalancing() {
             fi
             perform_rebalancing
             ;;
+
         7)
+            echo "Enter currency ID, target utilization, and external withdraw threshold separated by spaces (e.g., 1 90 110):"
+            read -a custom_ids
+            if [ ${#custom_ids[@]} -eq 3 ]; then
+                echo "Setting rebalancing parameters"
+                set_rebalancing_parameters ${custom_ids[*]}
+            else
+                echo "Invalid input"
+            fi
+            perform_rebalancing
+            ;;
+        8)
             echo "Exiting without rebalancing."
             exit 0
             ;;
