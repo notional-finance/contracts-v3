@@ -124,79 +124,81 @@ FUND_ADDRESS=$(cast wallet address $PRIVATE_KEY)
 cast rpc tenderly_setBalance $FUND_ADDRESS "0x56bc75e2d63100000" > /dev/null
 
 
-# Get the currency ID from environment variable
-# Define an array of currency IDs
-CURRENCY_IDS=(2 3)
+deploy_and_update_oracles() {
+    # Define an array of currency IDs
+    CURRENCY_IDS=("$@")
 
-for CURRENCY_ID in "${CURRENCY_IDS[@]}"; do
-    echo "Processing Currency ID: $CURRENCY_ID"
+    for CURRENCY_ID in "${CURRENCY_IDS[@]}"; do
+        echo "Processing Currency ID: $CURRENCY_ID"
 
-    # Use foundry cast to call getPrimeCashHoldingsOracle
-    HOLDINGS_ORACLE=$(cast call $NOTIONAL_PROXY "getPrimeCashHoldingsOracle(uint16)(address)" $CURRENCY_ID)
-    # Validate that we got a valid address for the holdings oracle
-    if [ "$HOLDINGS_ORACLE" == "0x0000000000000000000000000000000000000000" ]; then
-        echo "Error: Invalid Holdings Oracle address returned"
-        exit 1
-    fi
+        # Use foundry cast to call getPrimeCashHoldingsOracle
+        HOLDINGS_ORACLE=$(cast call $NOTIONAL_PROXY "getPrimeCashHoldingsOracle(uint16)(address)" $CURRENCY_ID)
+        # Validate that we got a valid address for the holdings oracle
+        if [ "$HOLDINGS_ORACLE" == "0x0000000000000000000000000000000000000000" ]; then
+            echo "Error: Invalid Holdings Oracle address returned"
+            exit 1
+        fi
 
-    UNDERLYING=$(cast call $HOLDINGS_ORACLE "underlying()(address)")
-    # Query LENDING_POOL for ReserveData and extract aTokenAddress
-    RESERVE_DATA=$(cast call $AAVE_LENDING_POOL "getReserveData(address)((uint256,uint128,uint128,uint128,uint128,uint128,uint40,uint16,address,address,address,address,uint128,uint128,uint128))" $UNDERLYING)
-    ATOKEN_ADDRESS=$(echo $RESERVE_DATA | awk -F',' '{print $9}')
+        UNDERLYING=$(cast call $HOLDINGS_ORACLE "underlying()(address)")
+        # Query LENDING_POOL for ReserveData and extract aTokenAddress
+        RESERVE_DATA=$(cast call $AAVE_LENDING_POOL "getReserveData(address)((uint256,uint128,uint128,uint128,uint128,uint128,uint40,uint16,address,address,address,address,uint128,uint128,uint128))" $UNDERLYING)
+        ATOKEN_ADDRESS=$(echo $RESERVE_DATA | awk -F',' '{print $9}')
 
-    # Validate that we got a valid address for the aToken
-    if [ "$ATOKEN_ADDRESS" == "0x0000000000000000000000000000000000000000" ]; then
-        echo "Error: Invalid aToken address returned"
-        exit 1
-    fi
+        # Validate that we got a valid address for the aToken
+        if [ "$ATOKEN_ADDRESS" == "0x0000000000000000000000000000000000000000" ]; then
+            echo "Error: Invalid aToken address returned"
+            exit 1
+        fi
 
-    # Deploy the contract
-    NEW_ORACLE_ADDRESS=$(forge create \
-        --private-key $PRIVATE_KEY \
-        --legacy \
-        contracts/external/pCash/AaveV3HoldingsOracle.sol:AaveV3HoldingsOracle \
-        --constructor-args $NOTIONAL_PROXY $UNDERLYING $AAVE_LENDING_POOL $ATOKEN_ADDRESS $POOL_DATA_PROVIDER \
-        --json | jq -r '.deployedTo')
+        # Deploy the contract
+        NEW_ORACLE_ADDRESS=$(forge create \
+            --private-key $PRIVATE_KEY \
+            --legacy \
+            contracts/external/pCash/AaveV3HoldingsOracle.sol:AaveV3HoldingsOracle \
+            --constructor-args $NOTIONAL_PROXY $UNDERLYING $AAVE_LENDING_POOL $ATOKEN_ADDRESS $POOL_DATA_PROVIDER \
+            --json | jq -r '.deployedTo')
 
-    forge verify-contract $NEW_ORACLE_ADDRESS  \
-        contracts/external/pCash/AaveV3HoldingsOracle.sol:AaveV3HoldingsOracle \
-        --etherscan-api-key $TENDERLY_ACCESS_KEY \
-        --verifier-url $TENDERLY_VERIFIER_URL \
-        --watch > /dev/null 2>&1
-
-
-    if [ -z "$NEW_ORACLE_ADDRESS" ]; then
-        echo "Error: Failed to deploy AaveV3HoldingsOracle. NEW_ORACLE_ADDRESS is empty."
-        exit 1
-    else
-        echo "Deployed AaveV3HoldingsOracle to: $NEW_ORACLE_ADDRESS"
-    fi
-
-    OWNER=$(cast call $NOTIONAL_PROXY "owner()(address)")
-
-    set_max_deposit "$NEW_ORACLE_ADDRESS" "10000000000000000000000"  # 10,000 tokens with 18 decimals
+        forge verify-contract $NEW_ORACLE_ADDRESS  \
+            contracts/external/pCash/AaveV3HoldingsOracle.sol:AaveV3HoldingsOracle \
+            --etherscan-api-key $TENDERLY_ACCESS_KEY \
+            --verifier-url $TENDERLY_VERIFIER_URL \
+            --watch > /dev/null 2>&1
 
 
-    # Call updatePrimeCashHoldingsOracle on NOTIONAL contract to update the oracle
-    # Prepare the transaction data
-    TX_DATA=$(cast calldata "updatePrimeCashHoldingsOracle(uint16,address)" $CURRENCY_ID $NEW_ORACLE_ADDRESS)
+        if [ -z "$NEW_ORACLE_ADDRESS" ]; then
+            echo "Error: Failed to deploy AaveV3HoldingsOracle. NEW_ORACLE_ADDRESS is empty."
+            exit 1
+        else
+            echo "Deployed AaveV3HoldingsOracle to: $NEW_ORACLE_ADDRESS"
+        fi
 
-    cast rpc eth_sendTransaction '{ "from": "'"$OWNER"'", "to": "'"$NOTIONAL_PROXY"'", "data": "'"$TX_DATA"'" }' > /dev/null
+        OWNER=$(cast call $NOTIONAL_PROXY "owner()(address)")
 
-    # Verify the update by querying the new oracle address
-    NEW_HOLDINGS_ORACLE=$(cast call $NOTIONAL_PROXY "getPrimeCashHoldingsOracle(uint16)(address)" $CURRENCY_ID)
+        set_max_deposit "$NEW_ORACLE_ADDRESS" "10000000000000000000000"  # 10,000 tokens with 18 decimals
 
-    # Validate that the new oracle address matches the deployed address
-    if [ "$NEW_HOLDINGS_ORACLE" != "$NEW_ORACLE_ADDRESS" ]; then
-        echo "Error: New Holdings Oracle address does not match the deployed address for Currency ID $CURRENCY_ID"
-        exit 1
-    fi
 
-    set_rebalancing_parameters "$CURRENCY_ID" 90 110
-done
+        # Call updatePrimeCashHoldingsOracle on NOTIONAL contract to update the oracle
+        # Prepare the transaction data
+        TX_DATA=$(cast calldata "updatePrimeCashHoldingsOracle(uint16,address)" $CURRENCY_ID $NEW_ORACLE_ADDRESS)
+
+        cast rpc eth_sendTransaction '{ "from": "'"$OWNER"'", "to": "'"$NOTIONAL_PROXY"'", "data": "'"$TX_DATA"'" }' > /dev/null
+
+        # Verify the update by querying the new oracle address
+        NEW_HOLDINGS_ORACLE=$(cast call $NOTIONAL_PROXY "getPrimeCashHoldingsOracle(uint16)(address)" $CURRENCY_ID)
+
+        # Validate that the new oracle address matches the deployed address
+        if [ "$NEW_HOLDINGS_ORACLE" != "$NEW_ORACLE_ADDRESS" ]; then
+            echo "Error: New Holdings Oracle address does not match the deployed address for Currency ID $CURRENCY_ID"
+            exit 1
+        fi
+
+        set_rebalancing_parameters "$CURRENCY_ID" 90 110
+    done
+}
 
 # Deploy RebalanceHelper contract
 REBALANCE_HELPER_ADDRESS=$(forge create \
+    --legacy \
     --private-key $PRIVATE_KEY \
     contracts/bots/RebalanceHelper.sol:RebalanceHelper \
     --constructor-args $NOTIONAL_PROXY \
@@ -252,8 +254,10 @@ perform_rebalancing() {
     echo "2. Enter custom currency IDs to rebalance"
     echo "3. Fast forward time"
     echo "4. Change max deposit on holding oracle"
-    echo "5. Exit"
-    read -p "Enter your choice (1-3): " choice
+    echo "5. Check if rebalance is needed"
+    echo "6. Deploy and set holding oracles"
+    echo "7. Exit"
+    read -p "Enter your choice (1-6): " choice
 
     case $choice in
         1)
@@ -329,7 +333,20 @@ perform_rebalancing() {
             set_max_deposit $HOLDINGS_ORACLE $max_deposit_amount
             perform_rebalancing
             ;;
-        5)
+        5)  perform_rebalancing
+            ;;
+        6)    
+            echo "Enter currency IDs separated by spaces (e.g., 1 2 3):"
+            read -a custom_ids
+            if [ ${#custom_ids[@]} -eq 0 ]; then
+                echo "No currency IDs entered."
+            else
+                echo "Deploying and setting holding oracles for currency IDs: ${custom_ids[*]}"
+                deploy_and_update_oracles ${custom_ids[*]}
+            fi
+            perform_rebalancing
+            ;;
+        7)
             echo "Exiting without rebalancing."
             exit 0
             ;;
