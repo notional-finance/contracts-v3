@@ -152,9 +152,8 @@ for CURRENCY_ID in "${CURRENCY_IDS[@]}"; do
 
     # Deploy the contract
     NEW_ORACLE_ADDRESS=$(forge create \
-        --etherscan-api-key $ETHERSCAN_API_KEY \
-        --verifier-url $TENDERLY_VERIFIER_URL \
         --private-key $PRIVATE_KEY \
+        --legacy \
         contracts/external/pCash/AaveV3HoldingsOracle.sol:AaveV3HoldingsOracle \
         --constructor-args $NOTIONAL_PROXY $UNDERLYING $AAVE_LENDING_POOL $ATOKEN_ADDRESS $POOL_DATA_PROVIDER \
         --json | jq -r '.deployedTo')
@@ -198,8 +197,6 @@ done
 
 # Deploy RebalanceHelper contract
 REBALANCE_HELPER_ADDRESS=$(forge create \
-    --etherscan-api-key $ETHERSCAN_API_KEY \
-    --verifier-url $TENDERLY_VERIFIER_URL \
     --private-key $PRIVATE_KEY \
     contracts/bots/RebalanceHelper.sol:RebalanceHelper \
     --constructor-args $NOTIONAL_PROXY \
