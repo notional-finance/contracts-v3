@@ -1,21 +1,8 @@
 from brownie import network
 from brownie import ZERO_ADDRESS, accounts
-from scripts.deployers.oracle_deployer import deploy_chainlink_usd_oracle
-
-networkName = network.show_active()
-if networkName == "mainnet-fork" or networkName == "mainnet-current":
-    networkName = "mainnet"
-    isFork = True
-elif networkName == "arbitrum-fork" or networkName == "arbitrum-current":
-    networkName = "arbitrum-one"
-    isFork = True
-else:
-    isFork = False
-
-if networkName == "mainnet":
-    from scripts.mainnet.eth_config import ChainlinkOracles
-elif networkName == "arbitrum":
-    from scripts.arbitrum.arb_config import ChainlinkOracles
+from scripts.deployers.oracle_deployer import deploy_chainlink_usd_oracle, deploy_chainlink_eth_oracle
+# from scripts.mainnet.eth_config import ChainlinkOracles, CurrencyDefaults
+from scripts.arbitrum.arb_config import ChainlinkOracles, CurrencyDefaults
 
 DEPLOYER = "0x8B64fA5Fd129df9c755eB82dB1e16D6D0Bdf5Bc3"
 
@@ -41,20 +28,45 @@ weETH_USD = {
     'sequencerUptimeOracle': ZERO_ADDRESS
 }
 
-# Mainnet: 0xb676EA4e0A54ffD579efFc1f1317C70d671f2028
-# Arbitrum: 0x02551ded3F5B25f60Ea67f258D907eD051E042b2
-rsETH_USD = {
+tBTC_ETH = {
     'oracleType': 'ChainlinkAdapter',
-    'baseOracle': ChainlinkOracles['rsETH/ETH'],
+    'baseOracle': ChainlinkOracles['tBTC/USD'],
     'quoteOracle': ChainlinkOracles['ETH/USD'],
     'invertBase': False,
-    'invertQuote': True,
-    'sequencerUptimeOracle': ZERO_ADDRESS
+    'invertQuote': False,
+    'sequencerUptimeOracle': CurrencyDefaults['sequencerUptimeOracle']
 }
 
+# WBTC_USD = {
+#     'oracleType': 'ChainlinkAdapter',
+#     'baseOracle': ChainlinkOracles['WBTC/BTC'],
+#     'quoteOracle': ChainlinkOracles['BTC/USD'],
+#     'invertBase': False,
+#     'invertQuote': True,
+#     'sequencerUptimeOracle': ZERO_ADDRESS
+# }
+
+# Oracles To List:
+# - WBTC/USD: mainnet, trading module
+# https://etherscan.io/address/0xa15652067333e979b314735b36AB7582071fa538#readContract
+# - tBTC/USD: mainnet, trading module
+# https://etherscan.io/address/0x8350b7De6a6a2C1368E7D4Bd968190e13E354297#code
+# - tBTC/ETH: mainnet, notional
+# https://etherscan.io/address/0xe4d1FBeb9F1898a3107231C83668e684de826CC7#readContract 
+# - tBTC/ETH: arbitrum, notional
+# https://arbiscan.io/address/0x97Cc93E87655D3d0F41aA0F54f86973fbd4B9Af7#readContract
+
+
+
 def main():
-    if isFork:
-        deployer = DEPLOYER
-    else:
-        deployer = accounts.load("MAINNET_DEPLOYER")
-    rsETH = deploy_chainlink_usd_oracle("rsETH", deployer, rsETH_USD)
+    deployer = accounts.load("MAINNET_DEPLOYER")
+    # deployer = DEPLOYER
+    # Arbitrum
+    # https://arbiscan.io/address/0x97Cc93E87655D3d0F41aA0F54f86973fbd4B9Af7#readContract
+    tBTC = deploy_chainlink_eth_oracle("tBTC", deployer, tBTC_ETH)
+
+    # Mainnet
+    # https://etherscan.io/address/0xa15652067333e979b314735b36AB7582071fa538#readContract
+    # WBTC = deploy_chainlink_usd_oracle("WBTC", deployer, WBTC_USD)
+    # https://etherscan.io/address/0xe4d1FBeb9F1898a3107231C83668e684de826CC7#readContract
+    # tBTC = deploy_chainlink_eth_oracle("tBTC", deployer, tBTC_ETH)

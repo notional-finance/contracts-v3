@@ -19,6 +19,20 @@ def deploy_chainlink_usd_oracle(symbol, deployer, oracle):
             {"from": deployer}
         )
 
+def deploy_chainlink_eth_oracle(symbol, deployer, oracle):
+    if isinstance(oracle, str):
+        return ChainlinkAdapter.at(oracle)
+    elif oracle["oracleType"] == "ChainlinkAdapter":
+        return ChainlinkAdapter.deploy(
+            oracle['baseOracle'],
+            oracle['quoteOracle'],
+            oracle['invertBase'],
+            oracle['invertQuote'],
+            "Notional {} Chainlink Adapter".format(symbol),
+            oracle['sequencerUptimeOracle'],
+            {"from": deployer}
+        )
+
 
 def deploy_chainlink_oracle(symbol, deployer, config):
     token = config[symbol]
