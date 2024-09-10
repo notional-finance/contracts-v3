@@ -1,6 +1,18 @@
 #!/bin/bash
 set -e
 
+NETWORK="arbitrum-one" # mainnet or arbitrum-one
+TENDERLY_ACCOUNT_SLUG="notional-finance"
+TENDERLY_PROJECT_SLUG="notionalv2"
+TENDERLY_RPC_URL=$(grep ^TENDERLY_RPC_URL .env | cut -d '=' -f2)
+TENDERLY_ACCESS_KEY=$(grep ^TENDERLY_ACCESS_KEY .env | cut -d '=' -f2)
+# Parse contract parameters from v3.arbitrum-one.json file
+NOTIONAL_PROXY=$(jq -r '.notional' v3.$NETWORK.json)
+AAVE_LENDING_POOL=$(jq -r '.aaveLendingPool' v3.$NETWORK.json)
+POOL_DATA_PROVIDER=$(jq -r '.aavePoolDataProvider' v3.$NETWORK.json)
+TREASURY_MANAGER=$(jq -r '.treasuryManager' v3.$NETWORK.json)
+NETWORK_ID=$(jq -r '.chainId' v3.$NETWORK.json)  # Arbitrum One
+
 # Function to delete Tenderly virtual testnet
 delete_tenderly_testnet() {
     if [ "$ALREADY_DELETED" = true ]; then
@@ -27,8 +39,6 @@ delete_tenderly_testnet() {
     fi
     exit 0
 }
-
-
 # Trap to catch errors, explicit exits, and normal script completion
 trap delete_tenderly_testnet EXIT SIGINT
 
@@ -60,9 +70,8 @@ set_rebalancing_parameters() {
 
 create_tenderly_virtual_testnet() {
     VNET_SLUG="rebalancing-test-net-$(date +%Y%m%d-%H%M%S)"
-    NETWORK_ID="42161"  # Arbitrum One
     BLOCK_NUMBER="latest"
-    CHAIN_ID="52161"  # Arbitrum One chain ID
+    CHAIN_ID=$NETWORK_ID  # Use custom chain ID in order to make contract verification work with tenderly
 
     VNET_RESPONSE=$(curl -s -X POST "https://api.tenderly.co/api/v1/account/$TENDERLY_ACCOUNT_SLUG/project/$TENDERLY_PROJECT_SLUG/vnets" \
         -H "X-Access-Key: $TENDERLY_ACCESS_KEY" \
@@ -90,18 +99,6 @@ create_tenderly_virtual_testnet() {
     
 }
 
-
-
-TENDERLY_ACCOUNT_SLUG="notional-finance"
-TENDERLY_PROJECT_SLUG="notionalv2"
-TENDERLY_RPC_URL=$(grep ^TENDERLY_RPC_URL .env | cut -d '=' -f2)
-TENDERLY_ACCESS_KEY=$(grep ^TENDERLY_ACCESS_KEY .env | cut -d '=' -f2)
-# Parse contract parameters from v3.arbitrum-one.json file
-NOTIONAL_PROXY=$(jq -r '.notional' v3.arbitrum-one.json)
-AAVE_LENDING_POOL=$(jq -r '.aaveLendingPool' v3.arbitrum-one.json)
-POOL_DATA_PROVIDER=$(jq -r '.aavePoolDataProvider' v3.arbitrum-one.json)
-OWNER=$(cast call $NOTIONAL_PROXY "owner()(address)")
-
 # Check if TENDERLY_RPC_URL is set
 if [ -z "$TENDERLY_RPC_URL" ]; then
     # If TENDERLY_RPC_URL is not set, create a new Tenderly virtual testnet
@@ -111,6 +108,7 @@ if [ -z "$TENDERLY_RPC_URL" ]; then
 
 fi
 
+OWNER=$(cast call $NOTIONAL_PROXY "owner()(address)")
 export ETH_RPC_URL="$TENDERLY_RPC_URL"
 echo "ETH_RPC_URL set to: $ETH_RPC_URL"
 
@@ -246,6 +244,27 @@ check_rebalance_needed() {
     fi
 }
 
+harvest_asset_interest() {
+    echo "Enter currency ID to harvest asset interest:"
+    read currency_id
+
+    if [[ ! $currency_id =~ ^[0-9]+$ ]]; then
+        echo "Invalid input. Please enter a valid currency ID (integer)."
+        return
+    fi
+
+    echo "Harvesting asset interest for currency ID: $currency_id"
+
+    # Encode the function call for harvestAssetInterest with the given currency ID
+    HARVEST_DATA=$(cast calldata "harvestAssetInterest(uint16[])" "[$currency_id]")
+
+    # Call harvestAssetInterest on NOTIONAL_PROXY
+    TX_HASH=$(cast rpc eth_sendTransaction '{ "from": "'"$TREASURY_MANAGER"'", "to": "'"$NOTIONAL_PROXY"'", "data": "'"$HARVEST_DATA"'" }')
+
+    echo "Asset interest harvest transaction sent"
+}
+
+
 perform_rebalancing() {
     check_rebalance_needed
     echo "Please choose an option:"
@@ -256,8 +275,9 @@ perform_rebalancing() {
     echo "5. Check if rebalance is needed"
     echo "6. Deploy and set holding oracles"
     echo "7. Set rebalancing parameters(deploy oracle first before running this)"
-    echo "8. Exit"
-    read -p "Enter your choice (1-8): " choice
+    echo "8. Harvest asset interest(deploy oracle first before running this)"
+    echo "9. Exit"
+    read -p "Enter your choice (1-9): " choice
 
     case $choice in
         1)
@@ -359,6 +379,10 @@ perform_rebalancing() {
             perform_rebalancing
             ;;
         8)
+            harvest_asset_interest
+            perform_rebalancing
+            ;;
+        9)
             echo "Exiting without rebalancing."
             exit 0
             ;;
