@@ -689,7 +689,7 @@ ListedTokens = {
     'tBTC': PrimeOnlyDefaults | {
         "currencyId": 16,
         "address": "0x6c84a8f1c29108F47a79964b5Fe888D4f4D0dE40",
-        "name": "tBTC v2",
+        "name": "Arbitrum tBTC v2",
         "decimals": 18,
         "oracleType": "ChainlinkAdapter",
         "ethOracle": "0x97Cc93E87655D3d0F41aA0F54f86973fbd4B9Af7",
