@@ -405,6 +405,35 @@ ListedTokens = {
         "depositShare": [0.6e8, 0.4e8],
         "leverageThreshold": [0.86e9, 0.86e9],
     },
+    'tBTC': PrimeOnlyDefaults | {
+        "currencyId": 12,
+        "address": "0x18084fbA666a33d37592fA2633fD49a74DD93a88",
+        "name": "tBTC v2",
+        "decimals": 18,
+        "oracleType": "ChainlinkAdapter",
+        "ethOracle": "0xe4d1FBeb9F1898a3107231C83668e684de826CC7",
+        "usdOracle": "0x8350b7De6a6a2C1368E7D4Bd968190e13E354297",
+        "pCashOracle": "",
+
+        # Prime Cash Curve
+        "primeCashCurve": {
+            "kinkUtilization1": 65,
+            "kinkUtilization2": 70,
+            "kinkRate1": 1,
+            "kinkRate2": 4,
+            "maxRate25BPS": 225,
+            "feeRatePercent": 20,
+            "minFeeRate5BPS": 10,
+            "maxFeeRate25BPS": 160
+        },
+
+        "allowDebt": True,
+        "buffer": 120,
+        "haircut": 84,
+        "liquidationDiscount": 106,
+        "maxUnderlyingSupply": 100e8,
+        "maxPrimeDebtUtilization": 80,
+    },
 }
 
 ListedOrder = [
@@ -412,6 +441,6 @@ ListedOrder = [
     'ETH', 'DAI', 'USDC', 'WBTC',
     # 5-8
     'wstETH', 'FRAX', 'rETH', 'USDT',
-    # 9-11
-    'cbETH', 'sDAI', 'GHO'
+    # 9-12
+    'cbETH', 'sDAI', 'GHO', 'tBTC'
 ]
