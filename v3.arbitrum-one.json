@@ -71,6 +71,9 @@
         }
     },
     "tradingModule": "0xBf6B9c5608D520469d8c4BD1E24F850497AF0Bb8",
-    "liquidator": "0xaCe757160cedD8b735f3dc19870A52F611F04a2e",
+    "liquidator": [
+        "0x326746FD16FdA81599a80280AC94d3EdE71E2CE1",
+        "0xaCe757160cedD8b735f3dc19870A52F611F04a2e"
+    ], 
     "treasuryManager": "0x53144559C0d4a3304e2DD9dAfBD685247429216d"
 }

@@ -685,6 +685,35 @@ ListedTokens = {
             "minFeeRate5BPS": 10,
             "maxFeeRate25BPS": 160
         },
+    },
+    'tBTC': PrimeOnlyDefaults | {
+        "currencyId": 16,
+        "address": "0x6c84a8f1c29108F47a79964b5Fe888D4f4D0dE40",
+        "name": "tBTC v2",
+        "decimals": 18,
+        "oracleType": "ChainlinkAdapter",
+        "ethOracle": "0x97Cc93E87655D3d0F41aA0F54f86973fbd4B9Af7",
+        "usdOracle": "",
+        "pCashOracle": "",
+
+        # Prime Cash Curve
+        "primeCashCurve": {
+            "kinkUtilization1": 65,
+            "kinkUtilization2": 70,
+            "kinkRate1": 1,
+            "kinkRate2": 4,
+            "maxRate25BPS": 225,
+            "feeRatePercent": 20,
+            "minFeeRate5BPS": 10,
+            "maxFeeRate25BPS": 160
+        },
+
+        "allowDebt": True,
+        "buffer": 125,
+        "haircut": 80,
+        "liquidationDiscount": 106,
+        "maxUnderlyingSupply": 50e8,
+        "maxPrimeDebtUtilization": 80,
     }
 }
 
@@ -695,6 +724,6 @@ ListedOrder = [
     'wstETH', 'FRAX', 'rETH', 'USDT',
     # 9-12
     'cbETH', 'GMX', 'ARB', 'RDNT',
-    # 13-15
-    'UNI', 'LINK', 'LDO'
+    # 13-16
+    'UNI', 'LINK', 'LDO', 'tBTC'
 ]

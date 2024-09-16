@@ -18,7 +18,8 @@ WHALES = {
     'GMX': "0x908c4d94d34924765f1edc22a1dd098397c59dd4",
     'ARB': "0xf3fc178157fb3c87548baa86f9d24ba38e649b58",
     'RDNT': "0x9d9e4A95765154A575555039E9E2a321256B5704",
-    'GHO': '0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d'
+    'GHO': '0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d',
+    'tBTC': '0xAB13B8eecf5AA2460841d75da5d5D861fD5B8A39'
 }
 
 def donate_initial(symbol, notional, config):
@@ -29,8 +30,8 @@ def donate_initial(symbol, notional, config):
         txn = fundingAccount.transfer(notional, 0.01e18)
     else:
         erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
-        # whale = WHALES[symbol]
-        # erc20.transfer(fundingAccount, 100.05 * 10 ** erc20.decimals(), {"from": whale})
+        whale = WHALES[symbol]
+        erc20.transfer(fundingAccount, 100.05 * 10 ** erc20.decimals(), {"from": whale})
         # Donate the initial balance
         txn = erc20.transfer(notional, 0.05 * 10 ** erc20.decimals(), {"from": fundingAccount})
 
@@ -124,13 +125,14 @@ def _list_currency(notional, symbol, tradingModule, config, liquidator):
         callData.append(txn)
     
     # Set trading module approvals for the liquidator
-    txn = tradingModule.setTokenPermissions(
-        liquidator,
-        token['address'],
-        (True, 8, 15), # allow sell, 8 is 0x, 15 is all trade types
-        {"from": "0x22341fB5D92D3d801144aA5A925F401A91418A05"}
-    )
-    callData.append(txn)
+    for l in liquidator:
+        txn = tradingModule.setTokenPermissions(
+            l,
+            token['address'],
+            (True, 8, 15), # allow sell, 8 is 0x, 15 is all trade types
+            {"from": notional.owner()}
+        )
+        callData.append(txn)
 
     return callData
 
@@ -182,7 +184,7 @@ def deploy_oracles(ListedTokens, listToken, notional, deployer):
 
 def list_currency(ListedTokens, listTokens):
     (addresses, notional, *_, tradingModule) = get_addresses()
-    liquidator = addresses["liquidator"]
+    liquidators = addresses["liquidator"]
 
     batchBase = {
         "version": "1.0",
@@ -203,9 +205,9 @@ def list_currency(ListedTokens, listTokens):
 
         # This is inside a fork so we just fake the account
         deployer = accounts.at("0x8F5ea3CDe898B208280c0e93F3aDaaf1F5c35a7e", force=True)
-        deploy_oracles(ListedTokens, t, deployer, notional)
+        deploy_oracles(ListedTokens, t, notional, deployer)
 
-        transactions = _list_currency(notional, t, tradingModule, ListedTokens, liquidator)
+        transactions = _list_currency(notional, t, tradingModule, ListedTokens, liquidators)
         for txn in transactions:
             append_txn(batchBase, txn)
 
