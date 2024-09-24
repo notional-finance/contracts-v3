@@ -18,8 +18,7 @@ WHALES = {
     'GMX': "0x908c4d94d34924765f1edc22a1dd098397c59dd4",
     'ARB': "0xf3fc178157fb3c87548baa86f9d24ba38e649b58",
     'RDNT': "0x9d9e4A95765154A575555039E9E2a321256B5704",
-    'GHO': '0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d',
-    'tBTC': '0xAB13B8eecf5AA2460841d75da5d5D861fD5B8A39'
+    'GHO': '0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d'
 }
 
 def donate_initial(symbol, notional, config):
@@ -30,8 +29,9 @@ def donate_initial(symbol, notional, config):
         txn = fundingAccount.transfer(notional, 0.01e18)
     else:
         erc20 = Contract.from_abi("token", token['address'], interface.IERC20.abi)
-        whale = WHALES[symbol]
-        erc20.transfer(fundingAccount, 100.05 * 10 ** erc20.decimals(), {"from": whale})
+        if symbol in WHALES:
+            whale = WHALES[symbol]
+            erc20.transfer(fundingAccount, 1 * 10 ** erc20.decimals(), {"from": whale})
         # Donate the initial balance
         txn = erc20.transfer(notional, 0.05 * 10 ** erc20.decimals(), {"from": fundingAccount})
 
