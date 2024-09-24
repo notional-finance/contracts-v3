@@ -413,7 +413,7 @@ ListedTokens = {
         "oracleType": "ChainlinkAdapter",
         "ethOracle": "0xe4d1FBeb9F1898a3107231C83668e684de826CC7",
         "usdOracle": "0x8350b7De6a6a2C1368E7D4Bd968190e13E354297",
-        "pCashOracle": "",
+        "pCashOracle": "0xc0Ab10848Ffa1D5422925E21AcF2fd0070De9d25",
 
         # Prime Cash Curve
         "primeCashCurve": {
@@ -431,7 +431,7 @@ ListedTokens = {
         "buffer": 120,
         "haircut": 84,
         "liquidationDiscount": 106,
-        "maxUnderlyingSupply": 100e8,
+        "maxUnderlyingSupply": 0.1e8,
         "maxPrimeDebtUtilization": 80,
     },
 }
