@@ -1,17 +1,17 @@
 import json
 from brownie import interface, Contract
-from scripts.arbitrum.arb_config import ListedTokens
+from scripts.mainnet.eth_config import ListedTokens
 
 def main():
     tradingModule = Contract.from_abi(
         "Trading Module",
-        "0xbf6b9c5608d520469d8c4bd1e24f850497af0bb8",
+        "0x594734c7e06C3D483466ADBCe401C6Bd269746C8",
         interface.ITradingModule.abi
     )
-    flashLiquidator = "0xcef77c74c88b6deceaf2e954038e7789a0f1bb33"
+    flashLiquidator = "0x7E9819C4fd31Efdd16Abb9e4C2b87F9991195493"
     batchBase = {
         "version": "1.0",
-        "chainId": "42161",
+        "chainId": "1",
         "createdAt": 1692567274357,
         "meta": {
             "name": "Transactions Batch",
@@ -32,7 +32,18 @@ def main():
             }
 
             for (_, l) in ListedTokens.items()
-        ]
+        ] + [ {
+                "to": tradingModule.address,
+                "value": "0",
+                "data": tradingModule.setTokenPermissions.encode_input(
+                    flashLiquidator,
+                    # WETH address
+                    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                    (True, 8, 15)
+                ),
+                "contractMethod": { "inputs": [], "name": "fallback", "payable": True },
+                "contractInputsValues": None
+        }]
     }
 
     json.dump(batchBase, open("batch-liquidator.json", 'w'))
