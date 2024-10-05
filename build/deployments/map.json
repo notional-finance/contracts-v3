@@ -57,6 +57,7 @@
       "0x90c3c405716B8fF965dc905C91eee82A0b41A4fF"
     ],
     "FlashLiquidator": [
+      "0x7E9819C4fd31Efdd16Abb9e4C2b87F9991195493",
       "0x9BFc1ca64E8065514fED89c85AA0E98161F64395",
       "0x0A058E89B904A701063fec9D0e770BA087ED3e76"
     ],
@@ -412,6 +413,7 @@
     ],
     "FlashLiquidator": [
       "0xaCe757160cedD8b735f3dc19870A52F611F04a2e",
+      "0x326746FD16FdA81599a80280AC94d3EdE71E2CE1",
       "0xCeF77C74C88B6deCeAF2E954038e7789A0F1bB33"
     ],
     "FreeCollateralExternal": [
