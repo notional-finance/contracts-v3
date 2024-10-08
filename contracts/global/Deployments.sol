@@ -42,9 +42,9 @@ library Deployments {
     IUpgradeableBeacon internal constant PCASH_BEACON = IUpgradeableBeacon(0x1F681977aF5392d9Ca5572FB394BC4D12939A6A9);
     IUpgradeableBeacon internal constant PDEBT_BEACON = IUpgradeableBeacon(0xDF08039c0af34E34660aC7c2705C0Da953247640);
     // Mainnet:
-    IUpgradeableBeacon internal constant WRAPPED_FCASH_BEACON = IUpgradeableBeacon(0xEBe1BF1653d55d31F6ED38B1A4CcFE2A92338f66);
+    // IUpgradeableBeacon internal constant WRAPPED_FCASH_BEACON = IUpgradeableBeacon(0xEBe1BF1653d55d31F6ED38B1A4CcFE2A92338f66);
     // Arbitrum:
-    // IUpgradeableBeacon internal constant WRAPPED_FCASH_BEACON = IUpgradeableBeacon(0xD676d720E4e8B14F545F9116F0CAD47aF32329DD);
+    IUpgradeableBeacon internal constant WRAPPED_FCASH_BEACON = IUpgradeableBeacon(0xD676d720E4e8B14F545F9116F0CAD47aF32329DD);
     
 
     // NOTE: this is unused and should be removed if the contract is ever deployed again

@@ -31,6 +31,8 @@ contract AaveV3HoldingsOracle is UnderlyingHoldingsOracle {
         POOL_DATA_PROVIDER = poolDataProvider;
     }
 
+    /// @notice Sets the maximum absolute deposit amount in external precision, a zero value means
+    /// there is no cap on the deposit amount
     function setMaxAbsoluteDeposit(uint256 _maxDeposit) external {
         require(msg.sender == NOTIONAL.owner());
         maxDeposit = _maxDeposit;
