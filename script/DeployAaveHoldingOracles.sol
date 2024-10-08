@@ -45,8 +45,7 @@ contract DeployAaveHoldingOracles is Script, Test {
         // rebalancingBot = new RebalancingHelper(address(NOTIONAL));
 
         address underlying = IPrimeCashHoldingsOracle(NOTIONAL.getPrimeCashHoldingsOracle(currencyId)).underlying();
-        // aToken = IERC20(ILendingPool(AAVE_LENDING_POOL).getReserveData(underlying).aTokenAddress);
-        aToken = IERC20(0x724dc807b04555b71ed48a6896b6F41593b8C637);
+        aToken = IERC20(ILendingPool(AAVE_LENDING_POOL).getReserveData(underlying).aTokenAddress);
 
         require(address(aToken) != address(0), "Token not supported");
 

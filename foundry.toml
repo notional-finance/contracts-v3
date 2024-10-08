@@ -2,6 +2,7 @@
 src = "contracts"
 out = "artifacts"
 libs = ["node_modules", "lib"]
+evm_version = "cancun"
 remappings = [
     "@openzeppelin-4.6/=node_modules/@openzeppelin-4.6/",
     "@openzeppelin/=node_modules/@openzeppelin/",
