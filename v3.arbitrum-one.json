@@ -1,6 +1,6 @@
 {
     "aaveLendingPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-    "aavePoolDataProvider": "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654",
+    "aavePoolDataProvider": "0x7F23D86Ee20D869112572136221e173428DD740B",
     "treasuryManager": "0x53144559C0d4a3304e2DD9dAfBD685247429216d",
     "actions": {
         "AccountAction": "0xCeEcaf20c6d5A168Ad4f73180217007B66E3d594",
