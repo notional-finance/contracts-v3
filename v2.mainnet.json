@@ -1,4 +1,5 @@
 {
+    "treasuryManager": "0x53144559C0d4a3304e2DD9dAfBD685247429216d",
     "actions": {
         "AccountAction": "0x8A096f6C6D89dBd3c3Df3EEBA45710Aa367F9A8c",
         "BatchAction": "0x1d1a531CBcb969040Da7527bf1092DfC4FF7DD46",

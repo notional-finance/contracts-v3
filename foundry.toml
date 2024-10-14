@@ -2,6 +2,7 @@
 src = "contracts"
 out = "artifacts"
 libs = ["node_modules", "lib"]
+evm_version = "cancun"
 remappings = [
     "@openzeppelin-4.6/=node_modules/@openzeppelin-4.6/",
     "@openzeppelin/=node_modules/@openzeppelin/",
@@ -16,3 +17,6 @@ arbitrum = "${ARBITRUM_RPC_URL}"
 runs = 50
 seed='0x5792875'
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+[etherscan]
+# This needs to be here in order for contract verification to work with Tenderly
+# unknown_chain = { key = "", chain = "52161", url = "" }
